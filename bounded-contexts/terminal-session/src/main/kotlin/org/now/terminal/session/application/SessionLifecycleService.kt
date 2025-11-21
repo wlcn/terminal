@@ -60,6 +60,10 @@ class SessionLifecycleService(
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
+        if (!session.canTerminate()) {
+            throw IllegalStateException("Session cannot be terminated: $sessionId")
+        }
+        
         session.terminate(reason)
         sessionRepository.save(session)
         
@@ -77,6 +81,10 @@ class SessionLifecycleService(
     override fun handleInput(sessionId: SessionId, input: String) {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
+        
+        if (!session.canReceiveInput()) {
+            throw IllegalStateException("Session cannot receive input: $sessionId")
+        }
         
         session.handleInput(input)
         sessionRepository.save(session)
@@ -122,7 +130,17 @@ class SessionLifecycleService(
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
-        return session.readOutput()
+        val output = session.readOutput()
+        sessionRepository.save(session)
+        
+        // 发布领域事件
+        runBlocking {
+            session.getDomainEvents().forEach { event ->
+                eventBus.publish(event)
+            }
+        }
+        
+        return output
     }
     
     /**
@@ -143,6 +161,14 @@ class SessionLifecycleService(
         userSessions.forEach { session ->
             if (session.canTerminate()) {
                 session.terminate(reason)
+                sessionRepository.save(session)
+                
+                // 发布领域事件
+                runBlocking {
+                    session.getDomainEvents().forEach { event ->
+                        eventBus.publish(event)
+                    }
+                }
             }
         }
     }
