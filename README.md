@@ -17,8 +17,37 @@
 - **语言**: Kotlin 2.2.21+
 - **JDK**: 21 (LTS) + Virtual Threads
 - **协程**: Kotlin Coroutines + Flow/Channel
-- **构建**: Gradle Kotlin DSL
+- **构建**: Gradle Kotlin DSL + 版本目录管理
 - **模块化**: Gradle Composite Builds
+
+### 版本管理
+项目使用Gradle版本目录进行统一的依赖管理，所有依赖版本在`gradle/libs.versions.toml`中集中配置：
+
+```toml
+[versions]
+# Kotlin相关
+kotlin = "2.2.21"
+kotlinx-coroutines = "1.8.1"
+kotlinx-serialization = "1.7.0"
+
+# 插件版本
+[libraries]
+# Kotlin标准库
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+
+[plugins]
+# Kotlin JVM插件
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+```
+
+构建文件通过类型安全访问器引用版本目录：
+```kotlin
+// 插件声明
+alias(libs.plugins.kotlin.jvm)
+
+// 依赖声明
+implementation(libs.kotlin.stdlib)
+```
 
 ## 📁 项目目录结构（DDD优化版）
 
@@ -81,6 +110,110 @@
 3. **共享内核 → 限界上下文**（共享内核应保持稳定）
 4. **任何循环依赖**
 
+### 🚫 继承使用原则
+
+本项目遵循**组合优于继承**的设计原则，严格限制继承的使用：
+
+#### ❌ 禁止使用继承的场景
+1. **领域模型继承** - 避免在聚合根、实体、值对象之间使用继承
+2. **异常类继承** - 使用工厂模式和数据类替代异常类层次结构
+3. **服务类继承** - 使用接口和组合实现多态性
+
+#### ✅ 推荐的设计模式
+1. **组合模式** - 通过对象组合实现功能复用
+2. **工厂模式** - 使用工厂方法创建不同类型的对象
+3. **接口隔离** - 定义小而专注的接口
+4. **数据类** - 使用Kotlin数据类表示不可变数据
+
+#### 示例：领域异常设计（避免继承）
+```kotlin
+// ✅ 推荐：使用数据类和工厂模式
+data class DomainException(
+    val code: String,
+    val message: String,
+    val context: Map<String, Any> = emptyMap()
+) : RuntimeException(message)
+
+object DomainExceptionFactory {
+    fun invalidUserId(userId: String) = DomainException(
+        code = "VAL_002", 
+        message = "Invalid user ID: $userId",
+        context = mapOf("userId" to userId, "type" to "validation")
+    )
+}
+
+// ❌ 避免：继承层次结构
+open class DomainException(message: String) : RuntimeException(message)
+class ValidationException(message: String) : DomainException(message)
+class InvalidUserIdException(userId: String) : ValidationException("Invalid user ID: $userId")
+```
+
+### 🔍 ID值对象设计讨论
+
+#### 当前ID值对象设计
+当前ID值对象（如UserId、SessionId、EventId）使用UUID格式，但缺乏明确的职责标识：
+
+```kotlin
+// 当前设计
+value class UserId(val value: UUID) {
+    companion object {
+        fun create(value: String): UserId = UserId(UUID.fromString(value))
+        fun generate(): UserId = UserId(UUID.randomUUID())
+    }
+}
+```
+
+#### 添加前缀的优缺点分析
+
+**✅ 优点：**
+- **明确职责**：通过前缀明确标识ID所属的领域概念
+- **调试友好**：在日志和错误信息中更容易识别ID类型
+- **序列化清晰**：JSON/数据库存储时类型信息明确
+
+**❌ 缺点：**
+- **存储开销**：增加存储空间和传输成本
+- **复杂性**：需要处理前缀的验证和解析
+- **迁移成本**：现有数据需要迁移
+
+#### 推荐方案：类型安全的ID包装器
+
+```kotlin
+// 推荐方案：类型安全的ID包装器
+sealed interface DomainId {
+    val rawValue: String
+    val prefix: String
+}
+
+@JvmInline
+value class UserId private constructor(
+    val value: UUID
+) : DomainId {
+    override val rawValue: String get() = value.toString()
+    override val prefix: String get() = "usr"
+    
+    companion object {
+        fun create(value: String): UserId {
+            require(value.startsWith("usr_")) { "Invalid user ID format" }
+            val uuidPart = value.removePrefix("usr_")
+            return UserId(UUID.fromString(uuidPart))
+        }
+        
+        fun generate(): UserId = UserId(UUID.randomUUID())
+    }
+    
+    override fun toString(): String = "${prefix}_${value}"
+}
+
+// 使用示例
+val userId = UserId.generate() // usr_123e4567-e89b-12d3-a456-426614174000
+val sessionId = SessionId.generate() // ses_123e4567-e89b-12d3-a456-426614174000
+```
+
+#### 决策建议
+1. **新项目**：推荐使用前缀方案，提高可读性和调试便利性
+2. **现有项目**：评估迁移成本，可在新功能中逐步引入
+3. **混合方案**：在序列化时添加前缀，内部仍使用纯UUID
+
 ```
 kt-terminal/
 ├── buildSrc/                          # 构建配置共享
@@ -95,8 +228,9 @@ kt-terminal/
 │   │   │   ├── UserId.kt
 │   │   │   ├── SessionId.kt
 │   │   │   └── TerminalSize.kt
-│   │   └── integration-events/        # 集成事件（基础设施层）
-│   │       └── SystemHeartbeatEvent.kt
+│   │   └── events/                    # 集成事件（基础设施层）
+│   │       ├── SystemHeartbeatEvent.kt
+│   │       └── SessionLifecycleEvent.kt
 │   └── build.gradle.kts
 ├── bounded-contexts/                   # 限界上下文
 │   ├── terminal-session/              # 终端会话上下文
@@ -112,10 +246,10 @@ kt-terminal/
 │   │   │   │   │   ├── TerminalCommand.kt
 │   │   │   │   │   ├── OutputBuffer.kt
 │   │   │   │   │   └── EnvironmentVariables.kt
-│   │   │   │   ├── domain-services/   # 领域服务
+│   │   │   │   ├── services/          # 领域服务
 │   │   │   │   │   ├── SessionLifecycleService.kt
 │   │   │   │   │   └── TerminalOutputProcessor.kt
-│   │   │   │   ├── domain-events/     # 领域事件
+│   │   │   │   ├── events/            # 领域事件
 │   │   │   │   │   ├── SessionCreatedEvent.kt
 │   │   │   │   │   ├── TerminalOutputEvent.kt
 │   │   │   │   │   └── SessionTerminatedEvent.kt
@@ -152,7 +286,7 @@ kt-terminal/
 │   │   │   ├── domain/
 │   │   │   │   ├── aggregates/TerminalSessionTest.kt
 │   │   │   │   ├── value-objects/TerminalCommandTest.kt
-│   │   │   │   └── domain-services/SessionLifecycleServiceTest.kt
+│   │   │   │   └── services/SessionLifecycleServiceTest.kt
 │   │   │   ├── application/
 │   │   │   └── infrastructure/
 │   │   ├── src/integrationTest/kotlin/org/now/terminal/session/  # 集成测试
