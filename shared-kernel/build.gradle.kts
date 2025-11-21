@@ -9,7 +9,8 @@ repositories {
 
 dependencies {
     implementation(libs.kotlin.stdlib)
-    implementation(libs.kotlinx.serialization.json)
+    // Kotlin序列化（编译时注解）
+    compileOnly(libs.kotlinx.serialization.json)
     
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.framework.engine)

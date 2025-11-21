@@ -152,7 +152,7 @@
 ### 推荐工具
 - **IDE**: IntelliJ IDEA
 - **构建工具**: Gradle Kotlin DSL
-- **测试框架**: JUnit 5 + Kotlin Test
+- **测试框架**: Kotest + Kotlin Test
 
 ## 📈 质量保证
 
@@ -185,6 +185,6 @@
 
 ---
 
-**最后更新**: 2024年12月
+**最后更新**: 2025年12月
 **负责人**: 开发团队
 **状态**: ✅ 基础设施层和共享内核已完成，准备进入terminal-session开发

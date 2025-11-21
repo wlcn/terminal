@@ -9,10 +9,9 @@ dependencies {
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)
-    implementation(libs.kotlinx.coroutines.core)
     
-    // Kotlin序列化
-    implementation(libs.kotlinx.serialization.json)
+    // Kotlin序列化（编译时注解）
+    compileOnly(libs.kotlinx.serialization.json)
     
     // 配置框架 - Kotlinx Configuration
     implementation(libs.typesafe.config)

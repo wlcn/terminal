@@ -10,7 +10,6 @@ dependencies {
     
     // Kotlin
     implementation(libs.kotlin.stdlib)
-    implementation(libs.kotlinx.serialization.json)
     
     // 日志依赖
     implementation(libs.slf4j.api)
