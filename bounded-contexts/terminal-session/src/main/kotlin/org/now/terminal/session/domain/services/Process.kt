@@ -1,4 +1,4 @@
-package org.now.terminal.session.domain
+package org.now.terminal.session.domain.services
 
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 
@@ -6,6 +6,11 @@ import org.now.terminal.session.domain.valueobjects.TerminalSize
  * 进程接口 - 定义终端进程的基本操作
  */
 interface Process {
+    
+    /**
+     * 启动进程
+     */
+    fun start()
     
     /**
      * 写入输入到进程

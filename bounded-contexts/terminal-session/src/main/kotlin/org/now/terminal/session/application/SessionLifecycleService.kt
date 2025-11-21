@@ -1,17 +1,18 @@
-package org.now.terminal.session.domain.services
+package org.now.terminal.session.application
 
-import org.now.sharedkernel.domain.DomainEventPublisher
-import org.now.sharedkernel.domain.SessionId
-import org.now.sharedkernel.domain.UserId
-import org.now.terminal.session.domain.TerminalSession
-import org.now.terminal.session.domain.TerminationReason
+import org.now.terminal.infrastructure.eventbus.EventBus
+import org.now.terminal.shared.events.Event
+import org.now.terminal.shared.valueobjects.SessionId
+import org.now.terminal.shared.valueobjects.UserId
+import org.now.terminal.session.domain.entities.TerminalSession
+import org.now.terminal.session.domain.valueobjects.TerminationReason
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 
 /**
  * 会话生命周期管理服务
  */
 class SessionLifecycleService(
-    private val eventPublisher: DomainEventPublisher
+    private val eventBus: EventBus
 ) {
     
     /**
@@ -25,8 +26,7 @@ class SessionLifecycleService(
         val session = TerminalSession(
             sessionId = sessionId,
             userId = userId,
-            ptyConfig = ptyConfig,
-            eventPublisher = eventPublisher
+            ptyConfig = ptyConfig
         )
         
         session.start()

@@ -1,14 +1,22 @@
-package org.now.terminal.session.domain
+package org.now.terminal.session.domain.entities
 
+import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHelper
-import org.now.terminal.shared.valueobjects.EventId
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.shared.valueobjects.UserId
+import org.now.terminal.session.domain.events.SessionCreatedEvent
+import org.now.terminal.session.domain.events.SessionTerminatedEvent
+import org.now.terminal.session.domain.events.TerminalInputProcessedEvent
+import org.now.terminal.session.domain.events.TerminalOutputEvent
+import org.now.terminal.session.domain.events.TerminalResizedEvent
+import org.now.terminal.session.domain.services.Process
+import org.now.terminal.session.domain.services.ProcessFactory
 import org.now.terminal.session.domain.valueobjects.OutputBuffer
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalCommand
 import org.now.terminal.session.domain.valueobjects.TerminalSize
+import org.now.terminal.session.domain.valueobjects.TerminationReason
 import java.time.Instant
 
 /**
@@ -18,8 +26,9 @@ import java.time.Instant
 class TerminalSession(
     val sessionId: SessionId,
     val userId: UserId,
-    private val ptyConfig: PtyConfiguration,
-    private val eventPublisher: DomainEventPublisher
+    val ptyConfig: PtyConfiguration,
+    private val eventBus: EventBus,
+    private val processFactory: ProcessFactory
 ) {
     private var process: Process? = null
     private val outputBuffer = OutputBuffer()
@@ -27,6 +36,7 @@ class TerminalSession(
     private val createdAt: Instant = Instant.now()
     private var terminatedAt: Instant? = null
     private var exitCode: Int? = null
+    private val domainEvents = mutableListOf<Event>()
     
     /**
      * 启动会话
@@ -35,12 +45,16 @@ class TerminalSession(
         require(status == SessionStatus.CREATED) { "Session must be in CREATED state" }
         
         // 创建并启动进程
-        process = createProcessAdapter()
+        process = createProcess()
         status = SessionStatus.RUNNING
         
-        // 发布会话创建事件
-        eventPublisher.publish(SessionCreatedEvent(
-            eventId = EventId.generate(),
+        // 添加会话创建领域事件
+        domainEvents.add(SessionCreatedEvent(
+            eventHelper = EventHelper(
+                eventType = "SessionCreated",
+                aggregateId = sessionId.value,
+                aggregateType = "TerminalSession"
+            ),
             sessionId = sessionId,
             userId = userId,
             configuration = ptyConfig,
@@ -57,11 +71,15 @@ class TerminalSession(
         val currentProcess = process ?: throw IllegalStateException("No active process")
         currentProcess.writeInput(input)
         
-        // 发布输入处理事件
-        eventPublisher.publish(TerminalInputProcessedEvent(
-            eventId = EventId.generate(),
+        // 添加输入处理领域事件
+        domainEvents.add(TerminalInputProcessedEvent(
+            eventHelper = EventHelper(
+                eventType = "TerminalInputProcessed",
+                aggregateId = sessionId.value,
+                aggregateType = "TerminalSession"
+            ),
             sessionId = sessionId,
-            command = TerminalCommand.fromString(input),
+            input = input,
             processedAt = Instant.now()
         ))
     }
@@ -74,11 +92,16 @@ class TerminalSession(
         
         process?.resize(newSize)
         
-        // 发布尺寸调整事件
-        eventPublisher.publish(TerminalResizedEvent(
-            eventId = EventId.generate(),
+        // 添加尺寸调整领域事件
+        domainEvents.add(TerminalResizedEvent(
+            eventHelper = EventHelper(
+                eventType = "TerminalResized",
+                aggregateId = sessionId.value,
+                aggregateType = "TerminalSession"
+            ),
             sessionId = sessionId,
-            newSize = newSize,
+            columns = newSize.columns,
+            rows = newSize.rows,
             resizedAt = Instant.now()
         ))
     }
@@ -94,9 +117,13 @@ class TerminalSession(
         terminatedAt = Instant.now()
         exitCode = process?.getExitCode()
         
-        // 发布会话终止事件
-        eventPublisher.publish(SessionTerminatedEvent(
-            eventId = EventId.generate(),
+        // 添加会话终止领域事件
+        domainEvents.add(SessionTerminatedEvent(
+            eventHelper = EventHelper(
+                eventType = "SessionTerminated",
+                aggregateId = sessionId.value,
+                aggregateType = "TerminalSession"
+            ),
             sessionId = sessionId,
             reason = reason,
             exitCode = exitCode,
@@ -114,9 +141,13 @@ class TerminalSession(
         outputBuffer.append(output)
         
         if (output.isNotEmpty()) {
-            // 发布输出事件
-            eventPublisher.publish(TerminalOutputEvent(
-                eventId = EventId.generate(),
+            // 添加输出领域事件
+            domainEvents.add(TerminalOutputEvent(
+                eventHelper = EventHelper(
+                    eventType = "TerminalOutput",
+                    aggregateId = sessionId.value,
+                    aggregateType = "TerminalSession"
+                ),
                 sessionId = sessionId,
                 output = output,
                 outputAt = Instant.now()
@@ -152,11 +183,22 @@ class TerminalSession(
     fun getConfiguration(): PtyConfiguration = ptyConfig
     
     /**
-     * 创建进程适配器（工厂方法）
+     * 获取领域事件并清空事件列表
      */
-    private fun createProcessAdapter(): Process {
-        // 这里使用基础设施层的Pty4jProcessAdapter
-        return Pty4jProcessAdapter(ptyConfig).also { it.start() }
+    fun getDomainEvents(): List<Event> {
+        val events = domainEvents.toList()
+        domainEvents.clear()
+        return events
+    }
+    
+    /**
+     * 创建进程实例（工厂方法）
+     */
+    private fun createProcess(): Process {
+        // 使用ProcessFactory创建Process实例，实现依赖倒置
+        val process = processFactory.createProcess(ptyConfig, sessionId)
+        process.start()
+        return process
     }
 }
 

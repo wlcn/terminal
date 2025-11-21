@@ -24,7 +24,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     
     // Pty4j - 伪终端实现
-    runtimeOnly(libs.pty4j)
+    implementation(libs.pty4j)
     
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.runner.junit5)

@@ -1,4 +1,4 @@
-package org.now.terminal.session.domain
+package org.now.terminal.session.domain.valueobjects
 
 /**
  * 会话终止原因
