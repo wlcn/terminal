@@ -15,8 +15,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     
     // 配置框架 - Kotlinx Configuration
-    implementation("com.typesafe:config:1.4.3")
-    implementation("com.charleskorn.kaml:kaml:0.55.0")
+    implementation(libs.typesafe.config)
+    implementation(libs.kaml)
     
     // 日志
     implementation(libs.logback.classic)

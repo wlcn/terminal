@@ -146,4 +146,79 @@ object ConfigurationManager {
      * 检查当前是否为生产环境
      */
     fun isProduction(): Boolean = getEnvironment().equals("prod", ignoreCase = true)
+    
+    /**
+     * 获取服务器端口
+     */
+    fun getServerPort(): Int = getServerConfig().port
+    
+    /**
+     * 获取服务器主机名
+     */
+    fun getServerHost(): String = getServerConfig().host
+    
+    /**
+     * 获取数据库连接URL
+     */
+    fun getDatabaseUrl(): String = getDatabaseConfig().url
+    
+    /**
+     * 获取数据库用户名
+     */
+    fun getDatabaseUsername(): String = getDatabaseConfig().username
+    
+    /**
+     * 获取数据库密码
+     */
+    fun getDatabasePassword(): String = getDatabaseConfig().password
+    
+    /**
+     * 获取日志级别
+     */
+    fun getLogLevel(): String = getLoggingConfig().level
+    
+    /**
+     * 检查文件日志是否启用
+     */
+    fun isFileLoggingEnabled(): Boolean = getLoggingConfig().file.enabled
+    
+    /**
+     * 获取日志文件路径
+     */
+    fun getLogFilePath(): String = getLoggingConfig().file.path
+    
+    /**
+     * 获取事件总线缓冲区大小
+     */
+    fun getEventBusBufferSize(): Int = getEventBusConfig().bufferSize
+    
+    /**
+     * 检查事件总线重试机制是否启用
+     */
+    fun isEventBusRetryEnabled(): Boolean = getEventBusConfig().maxRetries > 0
+    
+    /**
+     * 检查监控是否启用
+     */
+    fun isMonitoringEnabled(): Boolean = getMonitoringConfig().enabled
+    
+    /**
+     * 检查指标监控是否启用
+     */
+    fun isMetricsEnabled(): Boolean = getMonitoringConfig().metrics.enabled
+    
+    /**
+     * 检查健康检查是否启用
+     */
+    fun isHealthCheckEnabled(): Boolean = getMonitoringConfig().health.enabled
+    
+    /**
+     * 获取指标导出间隔（毫秒）
+     */
+    fun getMetricsExportInterval(): Long = getMonitoringConfig().metrics.exportInterval
+    
+    /**
+     * 获取健康检查间隔（毫秒）
+     */
+    fun getHealthCheckInterval(): Long = getMonitoringConfig().health.checkInterval
 }

@@ -1,6 +1,7 @@
 package org.now.terminal.infrastructure.eventbus
 
 import kotlinx.serialization.Serializable
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 
 /**
  * 事件总线配置属性

@@ -6,6 +6,7 @@ plugins {
 dependencies {
     // 项目内部依赖
     implementation(project(":shared-kernel"))
+    implementation(project(":infrastructure:configuration"))
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)

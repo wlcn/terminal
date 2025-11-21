@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
@@ -12,7 +12,7 @@ dependencies {
     
     // Kotlin
     implementation(libs.findLibrary("kotlin-stdlib").get())
-    implementation(libs.findLibrary("kotlinx-serialization").get())
+    implementation(libs.findLibrary("kotlinx-serialization-json").get())
     
     // 日志依赖
     implementation(libs.findLibrary("slf4j-api").get())

@@ -6,7 +6,6 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
-import ch.qos.logback.core.FileAppender
 import ch.qos.logback.core.rolling.RollingFileAppender
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy
 import ch.qos.logback.core.util.FileSize
@@ -79,15 +78,15 @@ object LoggingConfigurator {
         loggingConfig: org.now.terminal.infrastructure.configuration.LoggingConfig
     ): ConsoleAppender<ch.qos.logback.classic.spi.ILoggingEvent> {
         val encoder = PatternLayoutEncoder().apply {
-            context = context
+            this.context = context
             pattern = loggingConfig.format
             start()
         }
         
         return ConsoleAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
-            context = context
+            this.context = context
             name = "CONSOLE"
-            encoder = encoder
+            this.encoder = encoder
             start()
         }
     }
@@ -98,9 +97,9 @@ object LoggingConfigurator {
     private fun createFileAppender(
         context: LoggerContext,
         loggingConfig: org.now.terminal.infrastructure.configuration.LoggingConfig
-    ): FileAppender<ch.qos.logback.classic.spi.ILoggingEvent> {
+    ): RollingFileAppender<ch.qos.logback.classic.spi.ILoggingEvent> {
         val encoder = PatternLayoutEncoder().apply {
-            context = context
+            this.context = context
             pattern = loggingConfig.format
             start()
         }
@@ -109,23 +108,21 @@ object LoggingConfigurator {
         val logPath = Paths.get(loggingConfig.file.path)
         logPath.parent?.toFile()?.mkdirs()
         
+        val rollingPolicy = SizeAndTimeBasedRollingPolicy<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
+            this.context = context
+            fileNamePattern = "${loggingConfig.file.path}.%d{yyyy-MM-dd}.%i.gz"
+            setMaxFileSize(FileSize.valueOf(loggingConfig.file.maxFileSize))
+            maxHistory = loggingConfig.file.maxHistory
+            setTotalSizeCap(FileSize.valueOf("1GB"))
+            start()
+        }
+        
         return RollingFileAppender<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
-            context = context
+            this.context = context
             name = "FILE"
             file = loggingConfig.file.path
-            encoder = encoder
-            
-            val rollingPolicy = SizeAndTimeBasedRollingPolicy<ch.qos.logback.classic.spi.ILoggingEvent>().apply {
-                context = context
-                fileNamePattern = "${loggingConfig.file.path}.%d{yyyy-MM-dd}.%i.gz"
-                maxFileSize = FileSize.valueOf(loggingConfig.file.maxFileSize)
-                maxHistory = loggingConfig.file.maxHistory
-                totalSizeCap = FileSize.valueOf("1GB")
-                setParent(this@apply)
-                start()
-            }
-            
-            rollingPolicy = rollingPolicy
+            this.encoder = encoder
+            setRollingPolicy(rollingPolicy)
             start()
         }
     }
