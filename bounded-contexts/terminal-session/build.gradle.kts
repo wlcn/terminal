@@ -1,0 +1,46 @@
+plugins {
+    id("org.jetbrains.kotlin.jvm")
+    kotlin("plugin.serialization") version "2.2.21"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 项目内部依赖
+    implementation(project(":shared-kernel"))
+    implementation(project(":infrastructure:configuration"))
+    implementation(project(":infrastructure:logging"))
+    implementation(project(":infrastructure:event-bus"))
+    
+    // Kotlin标准库
+    implementation(libs.kotlin.stdlib)
+    
+    // Kotlin协程
+    implementation(libs.kotlinx.coroutines.core)
+    
+    // Kotlin序列化
+    implementation(libs.kotlinx.serialization.json)
+    
+    // Pty4j - 伪终端实现
+    runtimeOnly(libs.pty4j)
+    
+    // Test dependencies - Kotest (现代化测试框架)
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
+    testImplementation(libs.kotest.framework.engine)
+    
+    // Test dependencies - Mockk (Kotlin模拟框架)
+    testImplementation(libs.mockk)
+    
+    // Test dependencies - Kotlin Test
+    testImplementation(libs.kotlin.test.junit5)
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}

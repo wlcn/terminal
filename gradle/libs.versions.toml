@@ -33,6 +33,9 @@ koin-core = "4.1.1"
 typesafe-config = "1.4.3"
 kaml = "0.104.0"
 
+# Terminal
+pty4j = "0.13.11"
+
 [libraries]
 # Kotlin Standard Library
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
@@ -75,6 +78,9 @@ koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin-core" }
 # Configuration
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
+
+# Terminal
+pty4j = { module = "org.jetbrains.pty4j:pty4j", version.ref = "pty4j" }
 
 [plugins]
 # Kotlin Plugins
