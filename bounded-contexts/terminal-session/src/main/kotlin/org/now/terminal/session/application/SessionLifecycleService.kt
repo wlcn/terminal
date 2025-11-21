@@ -1,5 +1,6 @@
 package org.now.terminal.session.application
 
+import kotlinx.coroutines.runBlocking
 import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.session.domain.entities.SessionStatistics
 import org.now.terminal.session.domain.entities.TerminalSession
@@ -36,12 +37,19 @@ class SessionLifecycleService(
             sessionId = sessionId,
             userId = userId,
             ptyConfig = ptyConfig,
-            eventBus = eventBus,
             processFactory = processFactory
         )
         
         session.start()
         sessionRepository.save(session)
+        
+        // 发布领域事件
+        runBlocking {
+            session.getDomainEvents().forEach { event ->
+                eventBus.publish(event)
+            }
+        }
+        
         return sessionId
     }
     
@@ -53,6 +61,14 @@ class SessionLifecycleService(
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         session.terminate(reason)
+        sessionRepository.save(session)
+        
+        // 发布领域事件
+        runBlocking {
+            session.getDomainEvents().forEach { event ->
+                eventBus.publish(event)
+            }
+        }
     }
     
     /**
@@ -63,6 +79,14 @@ class SessionLifecycleService(
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         session.handleInput(input)
+        sessionRepository.save(session)
+        
+        // 发布领域事件
+        runBlocking {
+            session.getDomainEvents().forEach { event ->
+                eventBus.publish(event)
+            }
+        }
     }
     
     /**
@@ -73,6 +97,14 @@ class SessionLifecycleService(
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         session.resize(size)
+        sessionRepository.save(session)
+        
+        // 发布领域事件
+        runBlocking {
+            session.getDomainEvents().forEach { event ->
+                eventBus.publish(event)
+            }
+        }
     }
     
     /**
@@ -86,7 +118,7 @@ class SessionLifecycleService(
     /**
      * 读取会话输出
      */
-    fun readOutput(sessionId: SessionId): String {
+    override fun readOutput(sessionId: SessionId): String {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
@@ -96,7 +128,7 @@ class SessionLifecycleService(
     /**
      * 获取会话统计信息
      */
-    fun getSessionStatistics(sessionId: SessionId): SessionStatistics {
+    override fun getSessionStatistics(sessionId: SessionId): SessionStatistics {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
@@ -106,7 +138,7 @@ class SessionLifecycleService(
     /**
      * 强制终止所有用户会话
      */
-    fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
+    override fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
         val userSessions = sessionRepository.findByUserId(userId)
         userSessions.forEach { session ->
             if (session.canTerminate()) {

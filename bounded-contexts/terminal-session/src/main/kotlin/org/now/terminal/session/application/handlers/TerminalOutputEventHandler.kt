@@ -3,7 +3,7 @@ package org.now.terminal.session.application.handlers
 import org.now.terminal.session.domain.events.TerminalOutputEvent
 import org.now.terminal.session.domain.services.TerminalOutputPublisher
 import org.now.terminal.infrastructure.eventbus.EventBus
-import org.now.terminal.infrastructure.eventbus.EventHandler
+import org.now.terminal.shared.events.EventHandler
 import jakarta.inject.Singleton
 
 /**
@@ -15,7 +15,11 @@ class TerminalOutputEventHandler(
     private val terminalOutputPublisher: TerminalOutputPublisher
 ) : EventHandler<TerminalOutputEvent> {
 
-    override fun handle(event: TerminalOutputEvent) {
+    override suspend fun handle(event: TerminalOutputEvent) {
         terminalOutputPublisher.publishOutput(event.sessionId, event.output)
+    }
+
+    override fun canHandle(eventType: String): Boolean {
+        return eventType == "TerminalOutputEvent"
     }
 }

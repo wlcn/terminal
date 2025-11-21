@@ -1,6 +1,5 @@
 package org.now.terminal.session.domain.entities
 
-import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHelper
 import org.now.terminal.shared.valueobjects.SessionId
@@ -14,7 +13,6 @@ import org.now.terminal.session.domain.services.Process
 import org.now.terminal.session.domain.services.ProcessFactory
 import org.now.terminal.session.domain.valueobjects.OutputBuffer
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
-import org.now.terminal.session.domain.valueobjects.TerminalCommand
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 import org.now.terminal.session.domain.valueobjects.TerminationReason
 import java.time.Instant
@@ -27,7 +25,6 @@ class TerminalSession(
     val sessionId: SessionId,
     val userId: UserId,
     val ptyConfig: PtyConfiguration,
-    private val eventBus: EventBus,
     private val processFactory: ProcessFactory
 ) {
     private var process: Process? = null
