@@ -6,10 +6,10 @@ package org.now.terminal.shared.exceptions
  */
 data class DomainException(
     val code: String,
-    val message: String,
-    val cause: Throwable? = null,
+    override val message: String,
+    override val cause: Throwable? = null,
     val context: Map<String, Any> = emptyMap()
-) : RuntimeException(message, cause)
+) : RuntimeException(message, cause) {
 
 /**
  * 异常类型枚举 - 定义所有可能的异常类型和错误码
@@ -155,22 +155,38 @@ object DomainExceptionFactory {
         )
     
     // 并发异常
-    fun concurrencyError(resourceId: String, expectedVersion: Long? = null, actualVersion: Long? = null, cause: Throwable? = null): DomainException =
-        DomainException(
+    fun concurrencyError(resourceId: String, expectedVersion: Long? = null, actualVersion: Long? = null, cause: Throwable? = null): DomainException {
+        val contextMap = mutableMapOf<String, Any>(
+            "resourceId" to resourceId,
+            "type" to "concurrency"
+        )
+        expectedVersion?.let { contextMap["expectedVersion"] = it }
+        actualVersion?.let { contextMap["actualVersion"] = it }
+        
+        return DomainException(
             code = ExceptionType.CONCURRENCY_ERROR.errorCode,
             message = "Concurrency error for resource $resourceId",
             cause = cause,
-            context = mapOf("resourceId" to resourceId, "expectedVersion" to expectedVersion, "actualVersion" to actualVersion, "type" to "concurrency")
+            context = contextMap
         )
+    }
     
     // 通用验证异常
-    fun validationError(field: String, value: Any?, reason: String, cause: Throwable? = null): DomainException =
-        DomainException(
+    fun validationError(field: String, value: Any?, reason: String, cause: Throwable? = null): DomainException {
+        val contextMap = mutableMapOf<String, Any>(
+            "field" to field,
+            "reason" to reason,
+            "type" to "validation"
+        )
+        value?.let { contextMap["value"] = it }
+        
+        return DomainException(
             code = ExceptionType.VALIDATION_ERROR.errorCode,
             message = "Validation error for field '$field': $reason",
             cause = cause,
-            context = mapOf("field" to field, "value" to value, "reason" to reason, "type" to "validation")
+            context = contextMap
         )
+    }
 }
 
 /**
@@ -186,3 +202,4 @@ fun DomainException.getUserId(): String? = context["userId"] as? String
 fun DomainException.getSessionId(): String? = context["sessionId"] as? String
 fun DomainException.getResourceType(): String? = context["resourceType"] as? String
 fun DomainException.getResourceId(): String? = context["resourceId"] as? String
+}

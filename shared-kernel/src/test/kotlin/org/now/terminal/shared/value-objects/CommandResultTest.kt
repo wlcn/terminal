@@ -1,135 +1,123 @@
 package org.now.terminal.shared.valueobjects
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.nulls.shouldBeNull
 
-class CommandResultTest {
+class CommandResultTest : StringSpec({
 
-    @Test
-    fun `should create success result with default exit code`() {
+    "should create success result with default exit code" {
         val result = CommandResult.Success("Command executed successfully")
         
-        assertEquals("Command executed successfully", result.output)
-        assertEquals(0, result.code)
-        assertTrue(result.isSuccess())
-        assertFalse(result.isFailure())
-        assertFalse(result.isTimeout())
+        result.output shouldBe "Command executed successfully"
+        result.code shouldBe 0
+        result.isSuccess() shouldBe true
+        result.isFailure() shouldBe false
+        result.isTimeout() shouldBe false
     }
 
-    @Test
-    fun `should create success result with custom exit code`() {
+
+
+    "should create success result with custom exit code" {
         val result = CommandResult.Success("Command executed", 1)
         
-        assertEquals("Command executed", result.output)
-        assertEquals(1, result.code)
+        result.output shouldBe "Command executed"
+        result.code shouldBe 1
     }
 
-    @Test
-    fun `should create failure result with default exit code`() {
+    "should create failure result with default exit code" {
         val result = CommandResult.Failure("Command failed")
         
-        assertEquals("Command failed", result.errorMessage)
-        assertEquals(1, result.code)
-        assertFalse(result.isSuccess())
-        assertTrue(result.isFailure())
-        assertFalse(result.isTimeout())
+        result.errorMessage shouldBe "Command failed"
+        result.code shouldBe 1
+        result.isSuccess() shouldBe false
+        result.isFailure() shouldBe true
+        result.isTimeout() shouldBe false
     }
 
-    @Test
-    fun `should create failure result with custom exit code`() {
+    "should create failure result with custom exit code" {
         val result = CommandResult.Failure("Permission denied", 126)
         
-        assertEquals("Permission denied", result.errorMessage)
-        assertEquals(126, result.code)
+        result.errorMessage shouldBe "Permission denied"
+        result.code shouldBe 126
     }
 
-    @Test
-    fun `should create timeout result`() {
+    "should create timeout result" {
         val result = CommandResult.Timeout(5000L)
         
-        assertEquals(5000L, result.timeoutMs)
-        assertFalse(result.isSuccess())
-        assertFalse(result.isFailure())
-        assertTrue(result.isTimeout())
+        result.timeoutMs shouldBe 5000L
+        result.isSuccess() shouldBe false
+        result.isFailure() shouldBe false
+        result.isTimeout() shouldBe true
     }
 
-    @Test
-    fun `should get output from success result`() {
+    "should get output from success result" {
         val result = CommandResult.Success("output text")
         
-        assertEquals("output text", result.getOutputOrNull())
+        result.getOutputOrNull() shouldBe "output text"
     }
 
-    @Test
-    fun `should return null output from non-success result`() {
+    "should return null output from non-success result" {
         val failureResult = CommandResult.Failure("error")
         val timeoutResult = CommandResult.Timeout(1000L)
         
-        assertNull(failureResult.getOutputOrNull())
-        assertNull(timeoutResult.getOutputOrNull())
+        failureResult.getOutputOrNull().shouldBeNull()
+        timeoutResult.getOutputOrNull().shouldBeNull()
     }
 
-    @Test
-    fun `should get error message from failure result`() {
+    "should get error message from failure result" {
         val result = CommandResult.Failure("error occurred")
         
-        assertEquals("error occurred", result.getErrorMessageOrNull())
+        result.getErrorMessageOrNull() shouldBe "error occurred"
     }
 
-    @Test
-    fun `should return null error message from non-failure result`() {
+    "should return null error message from non-failure result" {
         val successResult = CommandResult.Success("output")
         val timeoutResult = CommandResult.Timeout(1000L)
         
-        assertNull(successResult.getErrorMessageOrNull())
-        assertNull(timeoutResult.getErrorMessageOrNull())
+        successResult.getErrorMessageOrNull().shouldBeNull()
+        timeoutResult.getErrorMessageOrNull().shouldBeNull()
     }
 
-    @Test
-    fun `should get exit code from success result`() {
+    "should get exit code from success result" {
         val result = CommandResult.Success("output", 0)
         
-        assertEquals(0, result.getExitCode())
+        result.getExitCode() shouldBe 0
     }
 
-    @Test
-    fun `should get exit code from failure result`() {
+    "should get exit code from failure result" {
         val result = CommandResult.Failure("error", 127)
         
-        assertEquals(127, result.getExitCode())
+        result.getExitCode() shouldBe 127
     }
 
-    @Test
-    fun `should get exit code -1 from timeout result`() {
+    "should get exit code -1 from timeout result" {
         val result = CommandResult.Timeout(1000L)
         
-        assertEquals(-1, result.getExitCode())
+        result.getExitCode() shouldBe -1
     }
 
-    @Test
-    fun `should check result types correctly`() {
+    "should check result types correctly" {
         val success = CommandResult.Success("success")
         val failure = CommandResult.Failure("failure")
         val timeout = CommandResult.Timeout(1000L)
         
-        assertTrue(success.isSuccess())
-        assertFalse(success.isFailure())
-        assertFalse(success.isTimeout())
+        success.isSuccess() shouldBe true
+        success.isFailure() shouldBe false
+        success.isTimeout() shouldBe false
         
-        assertFalse(failure.isSuccess())
-        assertTrue(failure.isFailure())
-        assertFalse(failure.isTimeout())
+        failure.isSuccess() shouldBe false
+        failure.isFailure() shouldBe true
+        failure.isTimeout() shouldBe false
         
-        assertFalse(timeout.isSuccess())
-        assertFalse(timeout.isFailure())
-        assertTrue(timeout.isTimeout())
+        timeout.isSuccess() shouldBe false
+        timeout.isFailure() shouldBe false
+        timeout.isTimeout() shouldBe true
     }
 
-    @Test
-    fun `should use when expression with sealed class`() {
+    "should use when expression with sealed class" {
         val success = CommandResult.Success("success")
         val failure = CommandResult.Failure("failure")
         val timeout = CommandResult.Timeout(1000L)
@@ -152,8 +140,8 @@ class CommandResultTest {
             is CommandResult.Timeout -> "timeout"
         }
         
-        assertEquals("success", successType)
-        assertEquals("failure", failureType)
-        assertEquals("timeout", timeoutType)
+        successType shouldBe "success"
+        failureType shouldBe "failure"
+        timeoutType shouldBe "timeout"
     }
-}
+})

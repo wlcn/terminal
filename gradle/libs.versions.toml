@@ -18,9 +18,7 @@ logback = "1.5.21"
 # Testing
 mockk = "1.14.6"
 kotlin-test = "2.2.21"
-kotest = "5.9.2"
-kotest-assertions-core = "5.9.2"
-kotest-runner-junit5 = "5.9.2"
+kotest = "5.8.0"
 
 # Dependency Injection
 koin-core = "4.1.1"
@@ -52,8 +50,8 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin-test" }
 kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
-kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest-assertions-core" }
-kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest-runner-junit5" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 
 # Dependency Injection
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin-core" }

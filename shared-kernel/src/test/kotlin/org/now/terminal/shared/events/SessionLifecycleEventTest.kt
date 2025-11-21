@@ -1,219 +1,217 @@
 package org.now.terminal.shared.events
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.collections.shouldContain
+import org.now.terminal.shared.valueobjects.SessionId
+import org.now.terminal.shared.valueobjects.UserId
+import java.time.Instant
 
-class SessionLifecycleEventTest {
-
-    @Test
-    fun `should create session created event`() {
+class SessionLifecycleEventTest : StringSpec({
+    "should create session created event" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
         val event = SessionLifecycleEvent.SessionCreated(
-            sessionId = "session-123",
-            userId = "user-456",
-            terminalSize = SessionLifecycleEvent.TerminalSize(80, 24),
-            command = "/bin/bash",
-            workingDirectory = "/home/user"
+            sessionId = sessionId,
+            userId = userId,
+            terminalType = "xterm",
+            initialSize = "24x80",
+            environment = mapOf("PATH" to "/usr/bin")
         )
         
-        assertEquals("session-123", event.sessionId)
-        assertEquals("user-456", event.userId)
-        assertEquals(80, event.terminalSize.columns)
-        assertEquals(24, event.terminalSize.rows)
-        assertEquals("/bin/bash", event.command)
-        assertEquals("/home/user", event.workingDirectory)
-        assertTrue(event.isSessionCreated())
+        event.sessionId shouldBe sessionId
+        event.userId shouldBe userId
+        event.terminalType shouldBe "xterm"
+        event.initialSize shouldBe "24x80"
+        event.environment["PATH"] shouldBe "/usr/bin"
+        event.isCreationEvent() shouldBe true
+        event.isTerminationEvent() shouldBe false
     }
 
-    @Test
-    fun `should create session terminated event`() {
+    "should create session terminated event" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
         val event = SessionLifecycleEvent.SessionTerminated(
-            sessionId = "session-123",
+            sessionId = sessionId,
+            userId = userId,
             exitCode = 0,
-            reason = SessionLifecycleEvent.TerminationReason.NORMAL
+            reason = SessionLifecycleEvent.TerminationReason.USER_REQUEST
         )
         
-        assertEquals("session-123", event.sessionId)
-        assertEquals(0, event.exitCode)
-        assertEquals(SessionLifecycleEvent.TerminationReason.NORMAL, event.reason)
-        assertTrue(event.isSessionTerminated())
+        event.sessionId shouldBe sessionId
+        event.userId shouldBe userId
+        event.exitCode shouldBe 0
+        event.reason shouldBe SessionLifecycleEvent.TerminationReason.USER_REQUEST
+        event.isCreationEvent() shouldBe false
+        event.isTerminationEvent() shouldBe true
     }
 
-    @Test
-    fun `should create session resized event`() {
-        val event = SessionLifecycleEvent.SessionResized(
-            sessionId = "session-123",
-            newSize = SessionLifecycleEvent.TerminalSize(120, 40)
+    "should create session active event" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
+        val event = SessionLifecycleEvent.SessionActive(
+            sessionId = sessionId,
+            userId = userId,
+            lastActivityAt = Instant.now(),
+            commandCount = 5
         )
         
-        assertEquals("session-123", event.sessionId)
-        assertEquals(120, event.newSize.columns)
-        assertEquals(40, event.newSize.rows)
-        assertTrue(event.isSessionResized())
+        event.sessionId shouldBe sessionId
+        event.userId shouldBe userId
+        event.lastActivityAt shouldNotBe null
+        event.commandCount shouldBe 5
+        event.isCreationEvent() shouldBe false
+        event.isTerminationEvent() shouldBe false
     }
 
-    @Test
-    fun `should create session activity event`() {
-        val event = SessionLifecycleEvent.SessionActivity(
-            sessionId = "session-123",
-            activityType = SessionLifecycleEvent.ActivityType.INPUT,
-            data = "ls -la"
+    "should create session idle event" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
+        val event = SessionLifecycleEvent.SessionIdle(
+            sessionId = sessionId,
+            userId = userId,
+            idleDurationSeconds = 300L
         )
         
-        assertEquals("session-123", event.sessionId)
-        assertEquals(SessionLifecycleEvent.ActivityType.INPUT, event.activityType)
-        assertEquals("ls -la", event.data)
-        assertTrue(event.isSessionActivity())
+        event.sessionId shouldBe sessionId
+        event.userId shouldBe userId
+        event.idleDurationSeconds shouldBe 300L
+        event.isCreationEvent() shouldBe false
+        event.isTerminationEvent() shouldBe false
     }
 
-    @Test
-    fun `should check event types correctly`() {
+    "should check event types correctly" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
         val created = SessionLifecycleEvent.SessionCreated(
-            sessionId = "session-1",
-            userId = "user-1",
-            terminalSize = SessionLifecycleEvent.TerminalSize(80, 24),
-            command = "/bin/bash",
-            workingDirectory = "/home/user"
+            sessionId = sessionId,
+            userId = userId,
+            terminalType = "xterm",
+            initialSize = "24x80",
+            environment = mapOf("PATH" to "/usr/bin")
         )
         
         val terminated = SessionLifecycleEvent.SessionTerminated(
-            sessionId = "session-1",
+            sessionId = sessionId,
+            userId = userId,
             exitCode = 0,
-            reason = SessionLifecycleEvent.TerminationReason.NORMAL
+            reason = SessionLifecycleEvent.TerminationReason.USER_REQUEST
         )
         
-        val resized = SessionLifecycleEvent.SessionResized(
-            sessionId = "session-1",
-            newSize = SessionLifecycleEvent.TerminalSize(120, 40)
+        val active = SessionLifecycleEvent.SessionActive(
+            sessionId = sessionId,
+            userId = userId,
+            lastActivityAt = Instant.now(),
+            commandCount = 5
         )
         
-        val activity = SessionLifecycleEvent.SessionActivity(
-            sessionId = "session-1",
-            activityType = SessionLifecycleEvent.ActivityType.OUTPUT,
-            data = "output data"
+        val idle = SessionLifecycleEvent.SessionIdle(
+            sessionId = sessionId,
+            userId = userId,
+            idleDurationSeconds = 300L
         )
         
-        assertTrue(created.isSessionCreated())
-        assertFalse(created.isSessionTerminated())
-        assertFalse(created.isSessionResized())
-        assertFalse(created.isSessionActivity())
+        created.isCreationEvent() shouldBe true
+        created.isTerminationEvent() shouldBe false
         
-        assertFalse(terminated.isSessionCreated())
-        assertTrue(terminated.isSessionTerminated())
-        assertFalse(terminated.isSessionResized())
-        assertFalse(terminated.isSessionActivity())
+        terminated.isCreationEvent() shouldBe false
+        terminated.isTerminationEvent() shouldBe true
         
-        assertFalse(resized.isSessionCreated())
-        assertFalse(resized.isSessionTerminated())
-        assertTrue(resized.isSessionResized())
-        assertFalse(resized.isSessionActivity())
+        active.isCreationEvent() shouldBe false
+        active.isTerminationEvent() shouldBe false
         
-        assertFalse(activity.isSessionCreated())
-        assertFalse(activity.isSessionTerminated())
-        assertFalse(activity.isSessionResized())
-        assertTrue(activity.isSessionActivity())
+        idle.isCreationEvent() shouldBe false
+        idle.isTerminationEvent() shouldBe false
     }
 
-    @Test
-    fun `should use when expression with sealed class`() {
+    "should use when expression with sealed class" {
+        val sessionId = SessionId.fromString("ses_12345678-1234-1234-1234-123456789012")
+        val userId = UserId.fromString("usr_12345678-1234-1234-1234-123456789012")
+        
         val created = SessionLifecycleEvent.SessionCreated(
-            sessionId = "session-1",
-            userId = "user-1",
-            terminalSize = SessionLifecycleEvent.TerminalSize(80, 24),
-            command = "/bin/bash",
-            workingDirectory = "/home/user"
+            sessionId = sessionId,
+            userId = userId,
+            terminalType = "xterm",
+            initialSize = "24x80",
+            environment = mapOf("PATH" to "/usr/bin")
         )
         
         val terminated = SessionLifecycleEvent.SessionTerminated(
-            sessionId = "session-1",
+            sessionId = sessionId,
+            userId = userId,
             exitCode = 1,
             reason = SessionLifecycleEvent.TerminationReason.ERROR
         )
         
-        val resized = SessionLifecycleEvent.SessionResized(
-            sessionId = "session-1",
-            newSize = SessionLifecycleEvent.TerminalSize(120, 40)
+        val active = SessionLifecycleEvent.SessionActive(
+            sessionId = sessionId,
+            userId = userId,
+            lastActivityAt = Instant.now(),
+            commandCount = 3
         )
         
-        val activity = SessionLifecycleEvent.SessionActivity(
-            sessionId = "session-1",
-            activityType = SessionLifecycleEvent.ActivityType.INPUT,
-            data = "command"
+        val idle = SessionLifecycleEvent.SessionIdle(
+            sessionId = sessionId,
+            userId = userId,
+            idleDurationSeconds = 300L
         )
         
         val createdType = when (created) {
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
-            is SessionLifecycleEvent.SessionResized -> "resized"
-            is SessionLifecycleEvent.SessionActivity -> "activity"
+            is SessionLifecycleEvent.SessionActive -> "active"
+            is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
         val terminatedType = when (terminated) {
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
-            is SessionLifecycleEvent.SessionResized -> "resized"
-            is SessionLifecycleEvent.SessionActivity -> "activity"
+            is SessionLifecycleEvent.SessionActive -> "active"
+            is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
-        val resizedType = when (resized) {
+        val activeType = when (active) {
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
-            is SessionLifecycleEvent.SessionResized -> "resized"
-            is SessionLifecycleEvent.SessionActivity -> "activity"
+            is SessionLifecycleEvent.SessionActive -> "active"
+            is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
-        val activityType = when (activity) {
+        val idleType = when (idle) {
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
-            is SessionLifecycleEvent.SessionResized -> "resized"
-            is SessionLifecycleEvent.SessionActivity -> "activity"
+            is SessionLifecycleEvent.SessionActive -> "active"
+            is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
-        assertEquals("created", createdType)
-        assertEquals("terminated", terminatedType)
-        assertEquals("resized", resizedType)
-        assertEquals("activity", activityType)
+        createdType shouldBe "created"
+        terminatedType shouldBe "terminated"
+        activeType shouldBe "active"
+        idleType shouldBe "idle"
     }
 
-    @Test
-    fun `should have correct termination reason values`() {
+    "should have correct termination reason values" {
         val reasons = SessionLifecycleEvent.TerminationReason.values()
         
-        assertEquals(4, reasons.size)
-        assertTrue(reasons.contains(SessionLifecycleEvent.TerminationReason.NORMAL))
-        assertTrue(reasons.contains(SessionLifecycleEvent.TerminationReason.ERROR))
-        assertTrue(reasons.contains(SessionLifecycleEvent.TerminationReason.TIMEOUT))
-        assertTrue(reasons.contains(SessionLifecycleEvent.TerminationReason.FORCE))
+        reasons.size shouldBe 5
+        reasons shouldContain SessionLifecycleEvent.TerminationReason.USER_REQUEST
+        reasons shouldContain SessionLifecycleEvent.TerminationReason.ERROR
+        reasons shouldContain SessionLifecycleEvent.TerminationReason.TIMEOUT
+        reasons shouldContain SessionLifecycleEvent.TerminationReason.SYSTEM_SHUTDOWN
+        reasons shouldContain SessionLifecycleEvent.TerminationReason.RESOURCE_LIMIT
     }
 
-    @Test
-    fun `should have correct activity type values`() {
-        val activityTypes = SessionLifecycleEvent.ActivityType.values()
-        
-        assertEquals(3, activityTypes.size)
-        assertTrue(activityTypes.contains(SessionLifecycleEvent.ActivityType.INPUT))
-        assertTrue(activityTypes.contains(SessionLifecycleEvent.ActivityType.OUTPUT))
-        assertTrue(activityTypes.contains(SessionLifecycleEvent.ActivityType.ERROR))
+    "should handle all termination reasons correctly" {
+        SessionLifecycleEvent.TerminationReason.USER_REQUEST.name shouldBe "USER_REQUEST"
+        SessionLifecycleEvent.TerminationReason.ERROR.name shouldBe "ERROR"
+        SessionLifecycleEvent.TerminationReason.TIMEOUT.name shouldBe "TIMEOUT"
+        SessionLifecycleEvent.TerminationReason.SYSTEM_SHUTDOWN.name shouldBe "SYSTEM_SHUTDOWN"
+        SessionLifecycleEvent.TerminationReason.RESOURCE_LIMIT.name shouldBe "RESOURCE_LIMIT"
     }
-
-    @Test
-    fun `should create terminal size correctly`() {
-        val size = SessionLifecycleEvent.TerminalSize(80, 24)
-        
-        assertEquals(80, size.columns)
-        assertEquals(24, size.rows)
-        assertEquals(1920, size.area) // 80 * 24
-    }
-
-    @Test
-    fun `should calculate terminal area correctly`() {
-        val size1 = SessionLifecycleEvent.TerminalSize(80, 24)
-        val size2 = SessionLifecycleEvent.TerminalSize(120, 40)
-        val size3 = SessionLifecycleEvent.TerminalSize(40, 20)
-        
-        assertEquals(1920, size1.area)
-        assertEquals(4800, size2.area)
-        assertEquals(800, size3.area)
-    }
-}
+})

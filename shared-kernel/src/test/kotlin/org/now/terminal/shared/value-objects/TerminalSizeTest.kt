@@ -1,155 +1,138 @@
 package org.now.terminal.shared.valueobjects
 
-import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.assertions.throwables.shouldThrow
 
-class TerminalSizeTest {
-
-    @Test
-    fun `should create terminal size with valid dimensions`() {
+class TerminalSizeTest : StringSpec({
+    "should create terminal size with valid dimensions" {
         val size = TerminalSize.create(24, 80)
         
-        assertEquals(24, size.rows)
-        assertEquals(80, size.columns)
-        assertTrue(size.isValid())
+        size.rows shouldBe 24
+        size.columns shouldBe 80
+        size.isValid() shouldBe true
     }
 
-    @Test
-    fun `should throw exception for zero rows`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for zero rows" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(0, 80)
         }
         
-        assertEquals("Rows must be positive", exception.message)
+        exception.message shouldBe "Rows must be positive"
     }
 
-    @Test
-    fun `should throw exception for zero columns`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for zero columns" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(24, 0)
         }
         
-        assertEquals("Columns must be positive", exception.message)
+        exception.message shouldBe "Columns must be positive"
     }
 
-    @Test
-    fun `should throw exception for negative rows`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for negative rows" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(-1, 80)
         }
         
-        assertEquals("Rows must be positive", exception.message)
+        exception.message shouldBe "Rows must be positive"
     }
 
-    @Test
-    fun `should throw exception for negative columns`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for negative columns" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(24, -1)
         }
         
-        assertEquals("Columns must be positive", exception.message)
+        exception.message shouldBe "Columns must be positive"
     }
 
-    @Test
-    fun `should parse terminal size from string`() {
+    "should parse terminal size from string" {
         val size = TerminalSize.fromString("24x80")
         
-        assertEquals(24, size.rows)
-        assertEquals(80, size.columns)
+        size.rows shouldBe 24
+        size.columns shouldBe 80
     }
 
-    @Test
-    fun `should throw exception for invalid format`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for invalid format" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.fromString("24-80")
         }
         
-        assertEquals("Size string must be in format 'rowsxcolumns'", exception.message)
+        exception.message shouldBe "Size string must be in format 'rowsxcolumns'"
     }
 
-    @Test
-    fun `should throw exception for non-numeric values`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for non-numeric values" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.fromString("abcx80")
         }
         
-        assertEquals("Invalid rows format", exception.message)
+        exception.message shouldBe "Invalid rows format"
     }
 
-    @Test
-    fun `should calculate area correctly`() {
+    "should calculate area correctly" {
         val size = TerminalSize.create(24, 80)
         
-        assertEquals(1920, size.area())
+        size.area() shouldBe 1920
     }
 
-    @Test
-    fun `should check size comparison correctly`() {
+    "should check size comparison correctly" {
         val size1 = TerminalSize.create(24, 80)
         val size2 = TerminalSize.create(40, 120)
         val size3 = TerminalSize.create(24, 80)
         
-        assertTrue(size2.isLargerThan(size1))
-        assertTrue(size1.isSmallerThan(size2))
-        assertTrue(size1.isEqualTo(size3))
+        size2.isLargerThan(size1) shouldBe true
+        size1.isSmallerThan(size2) shouldBe true
+        size1.isEqualTo(size3) shouldBe true
     }
 
-    @Test
-    fun `should convert to string representation`() {
+    "should convert to string representation" {
         val size = TerminalSize.create(24, 80)
         
-        assertEquals("24x80", size.toString())
+        size.toString() shouldBe "24x80"
     }
 
-    @Test
-    fun `should use default size`() {
+    "should use default size" {
         val defaultSize = TerminalSize.DEFAULT
         
-        assertEquals(24, defaultSize.rows)
-        assertEquals(80, defaultSize.columns)
+        defaultSize.rows shouldBe 24
+        defaultSize.columns shouldBe 80
     }
 
-    @Test
-    fun `should check validity correctly`() {
+    "should check validity correctly" {
         val validSize = TerminalSize.create(24, 80)
         
-        assertTrue(validSize.isValid())
+        validSize.isValid() shouldBe true
     }
 
-    @Test
-    fun `should throw exception for rows exceeding max`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for rows exceeding max" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(1001, 80)
         }
         
-        assertEquals("Rows cannot exceed 1000", exception.message)
+        exception.message shouldBe "Rows cannot exceed 1000"
     }
 
-    @Test
-    fun `should throw exception for columns exceeding max`() {
-        val exception = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+    "should throw exception for columns exceeding max" {
+        val exception = shouldThrow<IllegalArgumentException> {
             TerminalSize.create(24, 1001)
         }
         
-        assertEquals("Columns cannot exceed 1000", exception.message)
+        exception.message shouldBe "Columns cannot exceed 1000"
     }
 
-    @Test
-    fun `should be equal when dimensions are same`() {
+    "should be equal when dimensions are same" {
         val size1 = TerminalSize.create(24, 80)
         val size2 = TerminalSize.create(24, 80)
         
-        assertEquals(size1, size2)
-        assertEquals(size1.hashCode(), size2.hashCode())
+        size1 shouldBe size2
+        size1.hashCode() shouldBe size2.hashCode()
     }
 
-    @Test
-    fun `should not be equal when dimensions are different`() {
+    "should not be equal when dimensions are different" {
         val size1 = TerminalSize.create(24, 80)
         val size2 = TerminalSize.create(25, 80)
         
-        assertFalse(size1 == size2)
+        (size1 == size2) shouldBe false
     }
-}
+})
