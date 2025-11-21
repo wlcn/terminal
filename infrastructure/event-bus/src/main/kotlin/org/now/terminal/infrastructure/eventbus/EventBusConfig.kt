@@ -45,3 +45,35 @@ class EventBusConfig(
         }
     }
 }
+
+/**
+ * 配置化的事件总线工厂
+ */
+object ConfiguredEventBusFactory {
+    
+    /**
+     * 从配置管理器创建事件总线
+     */
+    fun createFromConfiguration(): EventBus {
+        val eventBusConfig = org.now.terminal.infrastructure.configuration.ConfigurationManager.getEventBusConfig()
+        val properties = EventBusProperties(
+            bufferSize = eventBusConfig.bufferSize,
+            maxRetries = eventBusConfig.maxRetries,
+            enableMetrics = eventBusConfig.enableMetrics,
+            enableDeadLetterQueue = eventBusConfig.enableDeadLetterQueue,
+            deadLetterQueueCapacity = eventBusConfig.deadLetterQueueCapacity
+        )
+        
+        return EventBusConfig(properties).createEventBus()
+    }
+    
+    /**
+     * 创建带监控的事件总线
+     */
+    fun createMonitoredFromConfiguration(): EventBus {
+        val baseEventBus = createFromConfiguration()
+        val metrics = EventBusMetrics()
+        
+        return MonitoredEventBus(baseEventBus, metrics)
+    }
+}

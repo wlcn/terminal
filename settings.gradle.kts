@@ -17,6 +17,7 @@ include("shared-kernel")
 include("infrastructure:event-bus")
 include("infrastructure:monitoring")
 include("infrastructure:configuration")
+include("infrastructure:logging")
 
 // 限界上下文模块
 include("bounded-contexts:terminal-session")

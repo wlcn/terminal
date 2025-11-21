@@ -13,6 +13,7 @@ ktor = "3.3.0"
 clikt = "5.0.3"
 
 # Logging
+slf4j = "2.1.6"
 logback = "1.5.21"
 
 # Monitoring
@@ -54,6 +55,7 @@ micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus
 clikt = { module = "com.github.ajalt:clikt", version.ref = "clikt" }
 
 # Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Testing
