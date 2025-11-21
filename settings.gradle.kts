@@ -25,15 +25,7 @@ include("bounded-contexts:file-transfer")
 include("bounded-contexts:collaboration")
 include("bounded-contexts:audit-logging")
 
-// 端口层模块
-include("ports:cli-port")
-include("ports:http-port")
-include("ports:websocket-port")
 
-// 防腐层模块
-include("anti-corruption-layers:session-acl")
-include("anti-corruption-layers:filetransfer-acl")
 
-// 应用层模块
-include("applications:cli-application")
-include("applications:ktor-application")
+// Gateway层模块
+include("gateways:websocket-gateway")

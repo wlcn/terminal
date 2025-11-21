@@ -1,46 +1,37 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    kotlin("plugin.serialization") version "2.2.21"
-}
-
-repositories {
-    mavenCentral()
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 dependencies {
     // 项目内部依赖
+    implementation(project(":bounded-contexts:terminal-session"))
     implementation(project(":shared-kernel"))
     implementation(project(":infrastructure:configuration"))
-    implementation(project(":infrastructure:logging"))
     implementation(project(":infrastructure:event-bus"))
-    
-
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)
-    
-    // Kotlin协程
     implementation(libs.kotlinx.coroutines.core)
     
     // Kotlin序列化
     implementation(libs.kotlinx.serialization.json)
     
-    // Pty4j - 伪终端实现
-    implementation(libs.pty4j)
+    // Ktor WebSocket
+    implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
     
-    // Koin依赖注入框架
+    // 日志
+    implementation(libs.logback.classic)
+    
+    // 依赖注入
     implementation(libs.koin.core)
     
-    // Test dependencies - Kotest (现代化测试框架)
+    // 测试依赖
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)
-    testImplementation(libs.kotest.framework.engine)
-    
-    // Test dependencies - Mockk (Kotlin模拟框架)
-    testImplementation(libs.mockk)
-    
-    // Test dependencies - Kotlin Test
-    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.ktor.server.test.host)
 }
 
 tasks.test {

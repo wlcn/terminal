@@ -12,13 +12,10 @@ import org.now.terminal.shared.valueobjects.UserId
 import org.now.terminal.session.domain.valueobjects.TerminationReason
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalSize
-import jakarta.inject.Singleton
-
 /**
  * 会话生命周期管理服务
  * 实现TerminalSessionService接口
  */
-@Singleton
 class SessionLifecycleService(
     private val eventBus: EventBus,
     private val sessionRepository: TerminalSessionRepository,
