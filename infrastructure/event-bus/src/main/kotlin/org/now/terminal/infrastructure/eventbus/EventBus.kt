@@ -18,6 +18,11 @@ interface EventBus {
     suspend fun <T : Event> unsubscribe(eventType: Class<T>, handler: EventHandler<T>)
     fun start()
     fun stop()
+    
+    /**
+     * 检查事件总线是否正在运行
+     */
+    fun isRunning(): Boolean
 }
 
 /**
@@ -74,6 +79,8 @@ class InMemoryEventBus(
         eventChannel.close()
         logger.info("In-memory event bus stopped")
     }
+    
+    override fun isRunning(): Boolean = processingJob?.isActive == true
     
     /**
      * 获取死信队列（用于监控和管理）
@@ -159,20 +166,5 @@ object EventBusFactory {
         return MonitoredEventBus(delegate, metrics)
     }
     
-    /**
-     * 创建持久化事件总线
-     */
-    fun createPersistentEventBus(
-        delegate: EventBus = createInMemoryEventBus(),
-        eventStore: EventStore = FileEventStore(),
-        enablePersistence: Boolean = true,
-        persistenceScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    ): EventBus {
-        return PersistentEventBus(
-            delegate = delegate,
-            eventStore = eventStore,
-            enablePersistence = enablePersistence,
-            persistenceScope = persistenceScope
-        )
-    }
+
 }

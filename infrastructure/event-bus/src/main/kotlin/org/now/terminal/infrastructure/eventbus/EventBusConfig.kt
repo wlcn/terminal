@@ -38,7 +38,7 @@ class EventBusConfig(
     fun createEventBus(): EventBus {
         return when (properties.type) {
             EventBusType.IN_MEMORY -> EventBusFactory.createInMemoryEventBus(
-                bufferSize = properties.bufferSize
+                config = properties
             )
             EventBusType.KAFKA -> throw UnsupportedOperationException("Kafka event bus not yet implemented")
             EventBusType.RABBITMQ -> throw UnsupportedOperationException("RabbitMQ event bus not yet implemented")

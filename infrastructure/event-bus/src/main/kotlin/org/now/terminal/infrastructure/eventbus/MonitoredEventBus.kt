@@ -92,6 +92,8 @@ class MonitoredEventBus(
         delegate.stop()
         logger.info("Monitored event bus stopped")
     }
+    
+    override fun isRunning(): Boolean = delegate.isRunning()
 }
 
 /**
