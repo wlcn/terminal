@@ -1,7 +1,6 @@
 package org.now.terminal.session.application.usecases
 
-import org.now.terminal.session.domain.entities.TerminalSession
-import org.now.terminal.session.domain.services.SessionLifecycleService
+import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.shared.valueobjects.UserId
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
@@ -12,13 +11,13 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class CreateSessionUseCase(
-    private val sessionLifecycleService: SessionLifecycleService
+    private val terminalSessionService: TerminalSessionService
 ) {
     
     fun execute(
         userId: UserId,
         ptyConfig: PtyConfiguration
     ): SessionId {
-        return sessionLifecycleService.createSession(userId, ptyConfig)
+        return terminalSessionService.createSession(userId, ptyConfig)
     }
 }

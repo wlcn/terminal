@@ -1,7 +1,7 @@
 package org.now.terminal.session.application.usecases
 
+import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.session.domain.entities.TerminalSession
-import org.now.terminal.session.domain.services.SessionLifecycleService
 import org.now.terminal.shared.valueobjects.UserId
 import jakarta.inject.Singleton
 
@@ -10,10 +10,10 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class ListActiveSessionsUseCase(
-    private val sessionLifecycleService: SessionLifecycleService
+    private val terminalSessionService: TerminalSessionService
 ) {
     
     fun execute(userId: UserId): List<TerminalSession> {
-        return sessionLifecycleService.listActiveSessions(userId)
+        return terminalSessionService.listActiveSessions(userId)
     }
 }

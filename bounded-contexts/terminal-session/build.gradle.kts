@@ -26,6 +26,9 @@ dependencies {
     // Pty4j - 伪终端实现
     implementation(libs.pty4j)
     
+    // Jakarta Inject API (依赖注入)
+    implementation("jakarta.inject:jakarta.inject-api:2.0.1")
+    
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)

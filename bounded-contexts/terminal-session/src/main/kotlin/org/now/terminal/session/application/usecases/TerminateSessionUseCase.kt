@@ -1,6 +1,6 @@
 package org.now.terminal.session.application.usecases
 
-import org.now.terminal.session.domain.services.SessionLifecycleService
+import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.session.domain.valueobjects.TerminationReason
 import jakarta.inject.Singleton
@@ -10,10 +10,10 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class TerminateSessionUseCase(
-    private val sessionLifecycleService: SessionLifecycleService
+    private val terminalSessionService: TerminalSessionService
 ) {
     
     fun execute(sessionId: SessionId, reason: TerminationReason) {
-        sessionLifecycleService.terminateSession(sessionId, reason)
+        terminalSessionService.terminateSession(sessionId, reason)
     }
 }

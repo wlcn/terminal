@@ -1,6 +1,6 @@
 package org.now.terminal.session.application.usecases
 
-import org.now.terminal.session.domain.services.SessionLifecycleService
+import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.shared.valueobjects.SessionId
 import jakarta.inject.Singleton
 
@@ -9,10 +9,10 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class HandleInputUseCase(
-    private val sessionLifecycleService: SessionLifecycleService
+    private val terminalSessionService: TerminalSessionService
 ) {
     
     fun execute(sessionId: SessionId, input: String) {
-        sessionLifecycleService.handleInput(sessionId, input)
+        terminalSessionService.handleInput(sessionId, input)
     }
 }

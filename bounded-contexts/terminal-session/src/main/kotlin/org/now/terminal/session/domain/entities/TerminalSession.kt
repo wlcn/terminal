@@ -200,6 +200,48 @@ class TerminalSession(
         process.start()
         return process
     }
+    
+    /**
+     * 获取会话创建时间
+     */
+    fun getCreatedAt(): Instant = createdAt
+    
+    /**
+     * 获取会话终止时间
+     */
+    fun getTerminatedAt(): Instant? = terminatedAt
+    
+    /**
+     * 获取会话持续时间（如果已终止）
+     */
+    fun getDuration(): java.time.Duration? {
+        return terminatedAt?.let { java.time.Duration.between(createdAt, it) }
+    }
+    
+    /**
+     * 检查会话是否可被终止
+     */
+    fun canTerminate(): Boolean = status != SessionStatus.TERMINATED
+    
+    /**
+     * 检查会话是否可接收输入
+     */
+    fun canReceiveInput(): Boolean = status == SessionStatus.RUNNING
+    
+    /**
+     * 获取会话统计信息
+     */
+    fun getStatistics(): SessionStatistics {
+        return SessionStatistics(
+            sessionId = sessionId,
+            userId = userId,
+            status = status,
+            createdAt = createdAt,
+            terminatedAt = terminatedAt,
+            exitCode = exitCode,
+            outputSize = outputBuffer.size()
+        )
+    }
 }
 
 /**
@@ -210,3 +252,16 @@ enum class SessionStatus {
     RUNNING,    // 正在运行
     TERMINATED  // 已终止
 }
+
+/**
+ * 会话统计信息数据类
+ */
+data class SessionStatistics(
+    val sessionId: SessionId,
+    val userId: UserId,
+    val status: SessionStatus,
+    val createdAt: Instant,
+    val terminatedAt: Instant?,
+    val exitCode: Int?,
+    val outputSize: Int
+)

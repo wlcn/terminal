@@ -1,6 +1,6 @@
 package org.now.terminal.session.application.usecases
 
-import org.now.terminal.session.domain.services.SessionLifecycleService
+import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 import jakarta.inject.Singleton
@@ -10,10 +10,10 @@ import jakarta.inject.Singleton
  */
 @Singleton
 class ResizeTerminalUseCase(
-    private val sessionLifecycleService: SessionLifecycleService
+    private val terminalSessionService: TerminalSessionService
 ) {
     
     fun execute(sessionId: SessionId, size: TerminalSize) {
-        sessionLifecycleService.resizeTerminal(sessionId, size)
+        terminalSessionService.resizeTerminal(sessionId, size)
     }
 }
