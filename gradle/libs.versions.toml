@@ -15,6 +15,9 @@ clikt = "5.0.3"
 # Logging
 logback = "1.5.21"
 
+# Monitoring
+micrometer = "1.14.0"
+
 # Testing
 mockk = "1.14.6"
 kotlin-test = "2.2.21"
@@ -41,6 +44,11 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-status-pages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
+ktor-server-metrics-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer", version.ref = "ktor" }
+
+# Monitoring
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 
 # CLI Framework
 clikt = { module = "com.github.ajalt:clikt", version.ref = "clikt" }
