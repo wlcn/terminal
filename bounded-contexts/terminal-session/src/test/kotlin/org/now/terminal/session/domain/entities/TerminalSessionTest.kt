@@ -213,8 +213,8 @@ class TerminalSessionTest {
         assertEquals(SessionStatus.RUNNING, statistics.status)
         assertNotNull(statistics.createdAt)
         assertNull(statistics.terminatedAt)
-        assertEquals(0, statistics.durationSeconds)
-        assertTrue(statistics.isActive)
+        assertNull(statistics.exitCode)
+        assertEquals(0, statistics.outputSize)
     }
     
     @Test

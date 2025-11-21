@@ -1,5 +1,6 @@
 package org.now.terminal.session.infrastructure.repositories
 
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -12,21 +13,18 @@ import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 class InMemoryTerminalSessionRepositoryTest {
     
     private lateinit var repository: InMemoryTerminalSessionRepository
-    private lateinit var sessionId: SessionId
-    private lateinit var userId: UserId
+    private var sessionId: SessionId = SessionId.generate()
+    private var userId: UserId = UserId.generate()
     private lateinit var mockSession: TerminalSession
     
     @BeforeEach
     fun setUp() {
         repository = InMemoryTerminalSessionRepository()
-        sessionId = SessionId.generate()
-        userId = UserId.generate()
         
         mockSession = mockk()
         every { mockSession.sessionId } returns sessionId
         every { mockSession.userId } returns userId
-        every { mockSession.getStatus() } returns mockk()
-        every { mockSession.getStatus().isActive } returns true
+        every { mockSession.isAlive() } returns true
     }
     
     @Test
@@ -111,18 +109,15 @@ class InMemoryTerminalSessionRepositoryTest {
         
         every { activeSession1.sessionId } returns SessionId.generate()
         every { activeSession1.userId } returns UserId.generate()
-        every { activeSession1.getStatus() } returns mockk()
-        every { activeSession1.getStatus().isActive } returns true
+        every { activeSession1.isAlive() } returns true
         
         every { activeSession2.sessionId } returns SessionId.generate()
         every { activeSession2.userId } returns UserId.generate()
-        every { activeSession2.getStatus() } returns mockk()
-        every { activeSession2.getStatus().isActive } returns true
+        every { activeSession2.isAlive() } returns true
         
         every { inactiveSession.sessionId } returns SessionId.generate()
         every { inactiveSession.userId } returns UserId.generate()
-        every { inactiveSession.getStatus() } returns mockk()
-        every { inactiveSession.getStatus().isActive } returns false
+        every { inactiveSession.isAlive() } returns false
         
         repository.save(activeSession1)
         repository.save(activeSession2)
@@ -144,8 +139,7 @@ class InMemoryTerminalSessionRepositoryTest {
         val inactiveSession = mockk<TerminalSession>()
         every { inactiveSession.sessionId } returns SessionId.generate()
         every { inactiveSession.userId } returns UserId.generate()
-        every { inactiveSession.getStatus() } returns mockk()
-        every { inactiveSession.getStatus().isActive } returns false
+        every { inactiveSession.isAlive() } returns false
         
         repository.save(inactiveSession)
         
@@ -164,13 +158,11 @@ class InMemoryTerminalSessionRepositoryTest {
         
         every { session1.sessionId } returns SessionId.generate()
         every { session1.userId } returns UserId.generate()
-        every { session1.getStatus() } returns mockk()
-        every { session1.getStatus().isActive } returns true
+        every { session1.isAlive() } returns true
         
         every { session2.sessionId } returns SessionId.generate()
         every { session2.userId } returns UserId.generate()
-        every { session2.getStatus() } returns mockk()
-        every { session2.getStatus().isActive } returns true
+        every { session2.isAlive() } returns true
         
         // When
         repository.save(session1)

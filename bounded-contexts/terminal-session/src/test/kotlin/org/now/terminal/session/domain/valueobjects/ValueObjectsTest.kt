@@ -9,7 +9,7 @@ class ValueObjectsTest {
     @Test
     fun `should create valid TerminalCommand`() {
         // When
-        val command = TerminalCommand.fromString("ls -la")
+        val command = TerminalCommand("ls -la")
         
         // Then
         assertEquals("ls -la", command.value)
@@ -19,7 +19,7 @@ class ValueObjectsTest {
     fun `should throw exception for blank TerminalCommand`() {
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
-            TerminalCommand.fromString("   ")
+            TerminalCommand("   ")
         }
         
         assertEquals("Command cannot be blank", exception.message)
@@ -32,7 +32,7 @@ class ValueObjectsTest {
         
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
-            TerminalCommand.fromString(longCommand)
+            TerminalCommand(longCommand)
         }
         
         assertEquals("Command too long", exception.message)
@@ -112,13 +112,13 @@ class ValueObjectsTest {
     fun `should create valid PtyConfiguration`() {
         // When
         val config = PtyConfiguration(
-            command = "/bin/bash",
+            command = TerminalCommand("/bin/bash"),
             environment = mapOf("PATH" to "/usr/bin"),
             size = TerminalSize.DEFAULT
         )
         
         // Then
-        assertEquals("/bin/bash", config.command)
+        assertEquals("/bin/bash", config.command.value)
         assertEquals("/usr/bin", config.environment["PATH"])
         assertEquals(TerminalSize.DEFAULT, config.size)
     }
@@ -128,7 +128,7 @@ class ValueObjectsTest {
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
             PtyConfiguration(
-                command = "/bin/bash",
+                command = TerminalCommand("/bin/bash"),
                 environment = emptyMap(),
                 size = TerminalSize.DEFAULT
             )
@@ -140,10 +140,10 @@ class ValueObjectsTest {
     @Test
     fun `should create default PtyConfiguration`() {
         // When
-        val config = PtyConfiguration.createDefault()
+        val config = PtyConfiguration.createDefault(TerminalCommand("/bin/bash"))
         
         // Then
-        assertEquals("/bin/bash", config.command)
+        assertEquals("/bin/bash", config.command.value)
         assertTrue(config.environment.isNotEmpty())
         assertEquals(TerminalSize.DEFAULT, config.size)
     }
@@ -180,13 +180,13 @@ class ValueObjectsTest {
     fun `should respect OutputBuffer size limit`() {
         // Given
         val buffer = OutputBuffer()
-        val longContent = "a".repeat(OutputBuffer.MAX_SIZE + 100)
+        val longContent = "a".repeat(100_000 + 100)
         
         // When
         buffer.append(longContent)
         
         // Then
-        assertEquals(OutputBuffer.MAX_SIZE, buffer.size())
+        assertEquals(100_000, buffer.size())
     }
     
     @Test
