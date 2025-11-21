@@ -129,15 +129,15 @@ class CommandResultTest : StringSpec({
         }
         
         val failureType = when (failure) {
-            is CommandResult.Success -> "success"
             is CommandResult.Failure -> "failure"
+            is CommandResult.Success -> "success"
             is CommandResult.Timeout -> "timeout"
         }
         
         val timeoutType = when (timeout) {
+            is CommandResult.Timeout -> "timeout"
             is CommandResult.Success -> "success"
             is CommandResult.Failure -> "failure"
-            is CommandResult.Timeout -> "timeout"
         }
         
         successType shouldBe "success"

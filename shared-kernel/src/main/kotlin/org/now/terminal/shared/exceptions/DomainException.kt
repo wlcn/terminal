@@ -9,7 +9,7 @@ data class DomainException(
     override val message: String,
     override val cause: Throwable? = null,
     val context: Map<String, Any> = emptyMap()
-) : RuntimeException(message, cause) {
+) : RuntimeException(message, cause)
 
 /**
  * 异常类型枚举 - 定义所有可能的异常类型和错误码
@@ -202,4 +202,3 @@ fun DomainException.getUserId(): String? = context["userId"] as? String
 fun DomainException.getSessionId(): String? = context["sessionId"] as? String
 fun DomainException.getResourceType(): String? = context["resourceType"] as? String
 fun DomainException.getResourceId(): String? = context["resourceId"] as? String
-}

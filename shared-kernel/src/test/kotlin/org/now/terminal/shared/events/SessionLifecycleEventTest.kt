@@ -170,24 +170,24 @@ class SessionLifecycleEventTest : StringSpec({
         }
         
         val terminatedType = when (terminated) {
-            is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
+            is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionActive -> "active"
             is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
         val activeType = when (active) {
+            is SessionLifecycleEvent.SessionActive -> "active"
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
-            is SessionLifecycleEvent.SessionActive -> "active"
             is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
         val idleType = when (idle) {
+            is SessionLifecycleEvent.SessionIdle -> "idle"
             is SessionLifecycleEvent.SessionCreated -> "created"
             is SessionLifecycleEvent.SessionTerminated -> "terminated"
             is SessionLifecycleEvent.SessionActive -> "active"
-            is SessionLifecycleEvent.SessionIdle -> "idle"
         }
         
         createdType shouldBe "created"
