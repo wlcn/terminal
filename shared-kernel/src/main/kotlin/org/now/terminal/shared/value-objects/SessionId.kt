@@ -1,5 +1,6 @@
 package org.now.terminal.shared.valueobjects
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
@@ -8,6 +9,7 @@ import java.util.UUID
  * 格式：ses_{UUID}
  */
 @JvmInline
+@Serializable
 value class SessionId private constructor(val value: String) {
     private val helper: IdValueObjectHelper get() = value.toIdHelper(PREFIX)
     

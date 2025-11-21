@@ -1,13 +1,14 @@
 package org.now.terminal.shared.valueobjects
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * 用户ID值对象
- * 表示系统中的唯一用户标识符，使用前缀明确职责
- * 格式：usr_{UUID}
+ * 表示用户的唯一标识符
  */
 @JvmInline
+@Serializable
 value class UserId private constructor(val value: String) {
     private val helper: IdValueObjectHelper get() = value.toIdHelper(PREFIX)
     

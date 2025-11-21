@@ -6,15 +6,19 @@ import java.time.Instant
 /**
  * 系统心跳事件
  * 用于监控系统运行状态和健康检查
+ * 采用组合方式实现Event接口
  */
+@kotlinx.serialization.Serializable
 data class SystemHeartbeatEvent(
-    val eventId: EventId = EventId.generate(),
-    val occurredAt: Instant = Instant.now(),
+    override val eventHelper: EventHelper = EventHelper(
+        eventType = "SystemHeartbeatEvent",
+        aggregateType = "System"
+    ),
     val systemId: String,
     val component: String,
     val status: SystemStatus,
     val metrics: SystemMetrics = SystemMetrics()
-) {
+) : Event {
     /**
      * 系统状态枚举
      */
@@ -28,13 +32,14 @@ data class SystemHeartbeatEvent(
     /**
      * 系统指标数据
      */
+    @kotlinx.serialization.Serializable
     data class SystemMetrics(
         val cpuUsage: Double = 0.0,
         val memoryUsage: Double = 0.0,
         val diskUsage: Double = 0.0,
         val activeSessions: Int = 0,
         val uptimeSeconds: Long = 0,
-        val customMetrics: Map<String, Any> = emptyMap()
+        val customMetrics: Map<String, String> = emptyMap()
     )
 
     /**

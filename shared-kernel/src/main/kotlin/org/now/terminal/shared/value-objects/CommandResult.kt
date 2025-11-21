@@ -1,15 +1,19 @@
 package org.now.terminal.shared.valueobjects
 
+import kotlinx.serialization.Serializable
+
 /**
  * 命令执行结果值对象
  * 表示命令执行的结果状态和输出
  */
+@Serializable
 sealed class CommandResult {
     /**
      * 命令执行成功
      * @property output 命令输出内容
      * @property code 退出代码
      */
+    @Serializable
     data class Success(
         val output: String,
         val code: Int = 0
@@ -20,6 +24,7 @@ sealed class CommandResult {
      * @property errorMessage 错误信息
      * @property code 退出代码
      */
+    @Serializable
     data class Failure(
         val errorMessage: String,
         val code: Int = 1
@@ -29,6 +34,7 @@ sealed class CommandResult {
      * 命令执行超时
      * @property timeoutMs 超时时间（毫秒）
      */
+    @Serializable
     data class Timeout(
         val timeoutMs: Long
     ) : CommandResult()
