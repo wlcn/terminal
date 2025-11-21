@@ -44,30 +44,44 @@ object IdUtils {
 }
 
 /**
- * ID值对象的通用扩展函数
+ * ID值对象的组合式工具类
+ * 使用组合而不是继承，提供ID相关的通用功能
  */
-interface IdValueObject {
-    val value: String
-    val prefix: String
+class IdValueObjectHelper(private val value: String, private val prefix: String) {
+    
+    /**
+     * 获取UUID部分（不含前缀）
+     */
+    val uuid: UUID
+        get() = UUID.fromString(value.removePrefix("${prefix}_"))
+
+    /**
+     * 检查ID是否有效
+     */
+    fun isValid(): Boolean = value.isNotBlank() && IdUtils.isValidFormat(value, prefix)
+
+    /**
+     * 获取简化的ID表示（前缀 + 前8个字符）
+     */
+    fun toShortString(): String = "${prefix}_${uuid.toString().substring(0, 8)}"
+
+    /**
+     * 获取纯UUID字符串（不含前缀）
+     */
+    fun toUuidString(): String = uuid.toString()
+    
+    /**
+     * 获取完整的ID值
+     */
+    fun getValue(): String = value
+    
+    /**
+     * 获取前缀
+     */
+    fun getPrefix(): String = prefix
 }
 
 /**
- * 获取UUID部分（不含前缀）
+ * 创建ID值对象辅助工具的扩展函数
  */
-val IdValueObject.uuid: UUID
-    get() = UUID.fromString(value.removePrefix("${prefix}_"))
-
-/**
- * 检查ID是否有效
- */
-fun IdValueObject.isValid(): Boolean = value.isNotBlank() && IdUtils.isValidFormat(value, prefix)
-
-/**
- * 获取简化的ID表示（前缀 + 前8个字符）
- */
-fun IdValueObject.toShortString(): String = "${prefix}_${uuid.toString().substring(0, 8)}"
-
-/**
- * 获取纯UUID字符串（不含前缀）
- */
-fun IdValueObject.toUuidString(): String = uuid.toString()
+fun String.toIdHelper(prefix: String): IdValueObjectHelper = IdValueObjectHelper(this, prefix)

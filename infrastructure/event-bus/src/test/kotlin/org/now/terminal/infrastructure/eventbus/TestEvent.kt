@@ -1,8 +1,10 @@
 package org.now.terminal.infrastructure.eventbus
 
 import kotlinx.serialization.Serializable
+import org.now.terminal.shared.events.Event
+import org.now.terminal.shared.events.EventHelper
+import org.now.terminal.shared.valueobjects.EventId
 import java.time.Instant
-import org.now.terminal.infrastructure.eventbus.Event
 
 /**
  * 测试事件 - 用于事件总线测试
@@ -10,11 +12,13 @@ import org.now.terminal.infrastructure.eventbus.Event
  */
 @Serializable
 data class TestEvent(
-    override val eventId: String = "test-event-" + System.currentTimeMillis(),
-    override val occurredAt: Instant = Instant.now(),
-    override val eventType: String = "TestEvent",
-    override val aggregateId: String? = null,
-    override val aggregateType: String? = null,
-    override val version: Int = 1,
+    override val eventHelper: EventHelper = EventHelper(
+        eventId = EventId.generate(),
+        occurredAt = Instant.now(),
+        eventType = "TestEvent",
+        aggregateId = null,
+        aggregateType = null,
+        version = 1
+    ),
     val testData: String = "test-data"
 ) : Event

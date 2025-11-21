@@ -1,4 +1,4 @@
-package org.now.terminal.shared.valueobjects
+package org.now.terminal.session.domain.valueobjects
 
 /**
  * 终端尺寸值对象

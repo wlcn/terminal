@@ -1,4 +1,4 @@
-package org.now.terminal.shared.events
+package org.now.terminal.session.domain.events
 
 import org.now.terminal.shared.valueobjects.EventId
 import org.now.terminal.shared.valueobjects.SessionId
@@ -7,7 +7,7 @@ import java.time.Instant
 
 /**
  * 会话生命周期事件
- * 用于跨限界上下文通信的会话状态变更事件
+ * 用于终端会话上下文内部的会话状态变更事件
  */
 sealed class SessionLifecycleEvent(
     open val eventId: EventId = EventId.generate(),

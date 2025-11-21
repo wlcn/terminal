@@ -1,6 +1,9 @@
 package org.now.terminal.session.domain.events
 
 import org.now.terminal.session.domain.aggregates.PtyConfiguration
+import org.now.terminal.session.domain.valueobjects.TerminalSize
+import org.now.terminal.shared.events.Event
+import org.now.terminal.shared.valueobjects.EventId
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.shared.valueobjects.UserId
 import java.time.Instant
@@ -13,8 +16,20 @@ data class SessionCreatedEvent(
     val sessionId: SessionId,
     val userId: UserId,
     val configuration: PtyConfiguration,
-    val occurredAt: Instant = Instant.now()
-) : DomainEvent()
+    val eventHelper: DomainEventHelper = DomainEventHelper()
+) : Event {
+    override val eventHelper: EventHelper get() = EventHelper(
+        eventId = eventHelper.eventId,
+        occurredAt = eventHelper.occurredAt,
+        eventType = "SessionCreatedEvent",
+        aggregateId = sessionId.value,
+        aggregateType = "Session"
+    )
+    
+    // 保持向后兼容的便捷访问
+    val eventId: EventId get() = eventHelper.eventId
+    val occurredAt: Instant get() = eventHelper.occurredAt
+}
 
 /**
  * 终端输入处理事件
@@ -23,8 +38,20 @@ data class SessionCreatedEvent(
 data class TerminalInputProcessedEvent(
     val sessionId: SessionId,
     val command: TerminalCommand,
-    val occurredAt: Instant = Instant.now()
-) : DomainEvent()
+    val eventHelper: DomainEventHelper = DomainEventHelper()
+) : Event {
+    override val eventHelper: EventHelper get() = EventHelper(
+        eventId = eventHelper.eventId,
+        occurredAt = eventHelper.occurredAt,
+        eventType = "TerminalInputProcessedEvent",
+        aggregateId = sessionId.value,
+        aggregateType = "Session"
+    )
+    
+    // 保持向后兼容的便捷访问
+    val eventId: EventId get() = eventHelper.eventId
+    val occurredAt: Instant get() = eventHelper.occurredAt
+}
 
 /**
  * 终端调整尺寸事件
@@ -33,8 +60,20 @@ data class TerminalInputProcessedEvent(
 data class TerminalResizedEvent(
     val sessionId: SessionId,
     val newSize: TerminalSize,
-    val occurredAt: Instant = Instant.now()
-) : DomainEvent()
+    val eventHelper: DomainEventHelper = DomainEventHelper()
+) : Event {
+    override val eventHelper: EventHelper get() = EventHelper(
+        eventId = eventHelper.eventId,
+        occurredAt = eventHelper.occurredAt,
+        eventType = "TerminalResizedEvent",
+        aggregateId = sessionId.value,
+        aggregateType = "Session"
+    )
+    
+    // 保持向后兼容的便捷访问
+    val eventId: EventId get() = eventHelper.eventId
+    val occurredAt: Instant get() = eventHelper.occurredAt
+}
 
 /**
  * 会话终止事件
@@ -43,14 +82,26 @@ data class TerminalResizedEvent(
 data class SessionTerminatedEvent(
     val sessionId: SessionId,
     val reason: TerminationReason,
-    val occurredAt: Instant = Instant.now()
-) : DomainEvent()
+    val eventHelper: DomainEventHelper = DomainEventHelper()
+) : Event {
+    override val eventHelper: EventHelper get() = EventHelper(
+        eventId = eventHelper.eventId,
+        occurredAt = eventHelper.occurredAt,
+        eventType = "SessionTerminatedEvent",
+        aggregateId = sessionId.value,
+        aggregateType = "Session"
+    )
+    
+    // 保持向后兼容的便捷访问
+    val eventId: EventId get() = eventHelper.eventId
+    val occurredAt: Instant get() = eventHelper.occurredAt
+}
 
 /**
- * 领域事件基类
+ * 领域事件助手类（组合方式）
  */
-open class DomainEvent(
-    val eventId: String = java.util.UUID.randomUUID().toString(),
+class DomainEventHelper(
+    val eventId: org.now.terminal.shared.valueobjects.EventId = org.now.terminal.shared.valueobjects.EventId.generate(),
     val occurredAt: Instant = Instant.now()
 )
 
@@ -60,10 +111,7 @@ open class DomainEvent(
 @JvmInline
 value class TerminalCommand(val value: String)
 
-/**
- * 终端尺寸值对象（领域事件中使用）
- */
-data class TerminalSize(val rows: Int, val columns: Int)
+
 
 /**
  * 终止原因枚举

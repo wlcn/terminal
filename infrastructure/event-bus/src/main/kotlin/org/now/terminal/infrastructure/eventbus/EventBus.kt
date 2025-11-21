@@ -3,6 +3,8 @@ package org.now.terminal.infrastructure.eventbus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import org.now.terminal.shared.events.Event
+import org.now.terminal.shared.events.EventHandler
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList

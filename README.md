@@ -125,6 +125,102 @@ implementation(libs.kotlin.stdlib)
 3. **接口隔离** - 定义小而专注的接口
 4. **数据类** - 使用Kotlin数据类表示不可变数据
 
+### 🔄 重构示例：从继承到组合
+
+#### 示例1：ID值对象重构
+**重构前（使用接口继承）：**
+```kotlin
+// 接口定义
+interface IdValueObject {
+    val value: String
+    val prefix: String
+    val uuid: UUID
+    fun isValid(): Boolean
+    fun toShortString(): String
+    fun toUuidString(): String
+}
+
+// 实现类
+@JvmInline
+value class EventId private constructor(override val value: String) : IdValueObject {
+    override val prefix: String get() = "evt"
+    override val uuid: UUID get() = UUID.fromString(value.removePrefix("${prefix}_"))
+    override fun isValid(): Boolean = value.startsWith("${prefix}_")
+    override fun toShortString(): String = "${prefix}_${value.substring(0, 8)}"
+    override fun toUuidString(): String = value.removePrefix("${prefix}_")
+}
+```
+
+**重构后（使用组合）：**
+```kotlin
+// 组合助手类
+class IdValueObjectHelper private constructor(
+    val value: String,
+    val prefix: String
+) {
+    val uuid: UUID get() = UUID.fromString(value.removePrefix("${prefix}_"))
+    fun isValid(): Boolean = value.startsWith("${prefix}_")
+    fun toShortString(): String = "${prefix}_${value.substring(0, 8)}"
+    fun toUuidString(): String = value.removePrefix("${prefix}_")
+}
+
+// 扩展函数
+fun String.toIdHelper(prefix: String): IdValueObjectHelper = 
+    IdValueObjectHelper(this, prefix)
+
+// 值对象（使用组合）
+@JvmInline
+value class EventId private constructor(val value: String) {
+    private val helper: IdValueObjectHelper get() = value.toIdHelper("evt")
+    val prefix: String get() = "evt"
+    val uuid: UUID get() = helper.uuid
+    fun isValid(): Boolean = helper.isValid()
+    fun toShortString(): String = helper.toShortString()
+    fun toUuidString(): String = helper.toUuidString()
+}
+```
+
+#### 示例2：领域事件重构
+**重构前（使用继承）：**
+```kotlin
+open class DomainEvent(
+    val eventId: String = UUID.randomUUID().toString(),
+    val occurredAt: Instant = Instant.now()
+)
+
+data class SessionCreatedEvent(
+    val sessionId: SessionId,
+    val userId: UserId,
+    val configuration: PtyConfiguration,
+    val occurredAt: Instant = Instant.now()
+) : DomainEvent()
+```
+
+**重构后（使用组合）：**
+```kotlin
+class DomainEventHelper(
+    val eventId: String = UUID.randomUUID().toString(),
+    val occurredAt: Instant = Instant.now()
+)
+
+data class SessionCreatedEvent(
+    val sessionId: SessionId,
+    val userId: UserId,
+    val configuration: PtyConfiguration,
+    val eventHelper: DomainEventHelper = DomainEventHelper()
+) {
+    val eventId: String get() = eventHelper.eventId
+    val occurredAt: Instant get() = eventHelper.occurredAt
+}
+```
+
+#### 组合设计的优势
+1. **灵活性**：可以轻松替换或扩展功能组件
+2. **可测试性**：可以独立测试各个组件
+3. **单一职责**：每个类专注于单一职责
+4. **避免脆弱的基类问题**：基类变更不会影响所有子类
+5. **更好的封装**：内部实现细节可以隐藏
+
 #### 示例：领域异常设计（避免继承）
 ```kotlin
 // ✅ 推荐：使用数据类和工厂模式

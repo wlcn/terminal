@@ -8,8 +8,10 @@ import java.util.UUID
  * 格式：usr_{UUID}
  */
 @JvmInline
-value class UserId private constructor(override val value: String) : IdValueObject {
-    override val prefix: String get() = PREFIX
+value class UserId private constructor(val value: String) {
+    private val helper: IdValueObjectHelper get() = value.toIdHelper(PREFIX)
+    
+    val prefix: String get() = PREFIX
     
     companion object {
         private const val PREFIX = "usr"
@@ -46,4 +48,24 @@ value class UserId private constructor(override val value: String) : IdValueObje
      * 转换为字符串表示（包含前缀）
      */
     override fun toString(): String = value
+    
+    /**
+     * 获取UUID部分（不含前缀）
+     */
+    val uuid: UUID get() = helper.uuid
+    
+    /**
+     * 检查ID是否有效
+     */
+    fun isValid(): Boolean = helper.isValid()
+    
+    /**
+     * 获取简化的ID表示（前缀 + 前8个字符）
+     */
+    fun toShortString(): String = helper.toShortString()
+    
+    /**
+     * 获取纯UUID字符串（不含前缀）
+     */
+    fun toUuidString(): String = helper.toUuidString()
 }

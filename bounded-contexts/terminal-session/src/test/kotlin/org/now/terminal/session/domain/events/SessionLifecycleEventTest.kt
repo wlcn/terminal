@@ -1,4 +1,4 @@
-package org.now.terminal.shared.events
+package org.now.terminal.session.domain.events
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
