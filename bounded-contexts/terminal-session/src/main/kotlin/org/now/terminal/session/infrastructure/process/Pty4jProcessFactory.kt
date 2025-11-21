@@ -11,6 +11,6 @@ import org.now.terminal.shared.valueobjects.SessionId
 class Pty4jProcessFactory : ProcessFactory {
     
     override fun createProcess(ptyConfig: PtyConfiguration, sessionId: SessionId): Process {
-        return Pty4jProcessImpl(ptyConfig, sessionId)
+        return Pty4jProcess(ptyConfig, sessionId)
     }
 }

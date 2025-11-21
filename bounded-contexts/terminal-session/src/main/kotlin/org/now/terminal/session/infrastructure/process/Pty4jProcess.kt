@@ -18,7 +18,7 @@ import kotlin.coroutines.CoroutineContext
  * 基于Pty4j的Process接口实现
  * 提供伪终端进程管理功能
  */
-class Pty4jProcessImpl(
+class Pty4jProcess(
     private val ptyConfig: PtyConfiguration,
     private val sessionId: SessionId,
     private val customCoroutineContext: CoroutineContext = Dispatchers.IO
