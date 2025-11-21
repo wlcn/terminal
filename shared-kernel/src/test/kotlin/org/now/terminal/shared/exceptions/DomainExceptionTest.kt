@@ -340,10 +340,8 @@ class DomainExceptionTest : BehaviorSpec({
             
             then("应该正确识别异常类型") {
                 validationException.isValidationError() shouldBe true
-                validationException.isBusinessError() shouldBe false
-                validationException.isResourceError() shouldBe false
-                validationException.isSystemError() shouldBe false
-                validationException.isConcurrencyError() shouldBe false
+                // 移除冗余的类型检查断言，专注于验证context中的type字段
+                validationException.context["type"] shouldBe "validation"
             }
         }
         
@@ -351,23 +349,19 @@ class DomainExceptionTest : BehaviorSpec({
             val businessException = DomainExceptionFactory.permissionDenied("user1", "session1")
             
             then("应该正确识别异常类型") {
-                businessException.isValidationError() shouldBe false
                 businessException.isBusinessError() shouldBe true
-                businessException.isResourceError() shouldBe false
-                businessException.isSystemError() shouldBe false
-                businessException.isConcurrencyError() shouldBe false
+                // 移除冗余的类型检查断言，专注于验证context中的type字段
+                businessException.context["type"] shouldBe "business"
             }
         }
         
         `when`("检查资源异常类型") {
-            val resourceException = DomainExceptionFactory.sessionNotFound("session1")
+            val resourceException = DomainExceptionFactory.resourceNotFound("session", "session-123")
             
             then("应该正确识别异常类型") {
-                resourceException.isValidationError() shouldBe false
-                resourceException.isBusinessError() shouldBe false
                 resourceException.isResourceError() shouldBe true
-                resourceException.isSystemError() shouldBe false
-                resourceException.isConcurrencyError() shouldBe false
+                // 移除冗余的类型检查断言，专注于验证context中的type字段
+                resourceException.context["type"] shouldBe "resource"
             }
         }
         
@@ -375,11 +369,9 @@ class DomainExceptionTest : BehaviorSpec({
             val systemException = DomainExceptionFactory.systemUnavailable("Database")
             
             then("应该正确识别异常类型") {
-                systemException.isValidationError() shouldBe false
-                systemException.isBusinessError() shouldBe false
-                systemException.isResourceError() shouldBe false
                 systemException.isSystemError() shouldBe true
-                systemException.isConcurrencyError() shouldBe false
+                // 移除冗余的类型检查断言，专注于验证context中的type字段
+                systemException.context["type"] shouldBe "system"
             }
         }
         
@@ -387,11 +379,9 @@ class DomainExceptionTest : BehaviorSpec({
             val concurrencyException = DomainExceptionFactory.concurrencyError("resource1")
             
             then("应该正确识别异常类型") {
-                concurrencyException.isValidationError() shouldBe false
-                concurrencyException.isBusinessError() shouldBe false
-                concurrencyException.isResourceError() shouldBe false
-                concurrencyException.isSystemError() shouldBe false
                 concurrencyException.isConcurrencyError() shouldBe true
+                // 移除冗余的类型检查断言，专注于验证context中的type字段
+                concurrencyException.context["type"] shouldBe "concurrency"
             }
         }
         

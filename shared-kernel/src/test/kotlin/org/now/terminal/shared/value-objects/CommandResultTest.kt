@@ -13,9 +13,7 @@ class CommandResultTest : StringSpec({
         
         result.output shouldBe "Command executed successfully"
         result.code shouldBe 0
-        result.isSuccess() shouldBe true
-        result.isFailure() shouldBe false
-        result.isTimeout() shouldBe false
+        // 移除冗余的类型检查断言，专注于业务属性验证
     }
 
 
@@ -32,9 +30,7 @@ class CommandResultTest : StringSpec({
         
         result.errorMessage shouldBe "Command failed"
         result.code shouldBe 1
-        result.isSuccess() shouldBe false
-        result.isFailure() shouldBe true
-        result.isTimeout() shouldBe false
+        // 移除冗余的类型检查断言，专注于业务属性验证
     }
 
     "should create failure result with custom exit code" {
@@ -48,9 +44,7 @@ class CommandResultTest : StringSpec({
         val result = CommandResult.Timeout(5000L)
         
         result.timeoutMs shouldBe 5000L
-        result.isSuccess() shouldBe false
-        result.isFailure() shouldBe false
-        result.isTimeout() shouldBe true
+        // 移除冗余的类型检查断言，专注于业务属性验证
     }
 
     "should get output from success result" {

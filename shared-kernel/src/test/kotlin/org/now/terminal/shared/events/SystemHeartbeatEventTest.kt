@@ -17,7 +17,7 @@ class SystemHeartbeatEventTest : StringSpec({
             diskUsage = 45.0,
             activeSessions = 10,
             uptimeSeconds = 3600,
-            customMetrics = mapOf("queue_size" to 5)
+            customMetrics = mapOf("queue_size" to "5")
         )
         
         val event = SystemHeartbeatEvent.createHealthy("system1", "database", metrics)
@@ -30,7 +30,7 @@ class SystemHeartbeatEventTest : StringSpec({
         event.metrics.diskUsage shouldBe 45.0
         event.metrics.activeSessions shouldBe 10
         event.metrics.uptimeSeconds shouldBe 3600
-        event.metrics.customMetrics["queue_size"] shouldBe 5
+        event.metrics.customMetrics["queue_size"] shouldBe "5"
         event.isHealthy() shouldBe true
         event.isAvailable() shouldBe true
     }
@@ -77,9 +77,9 @@ class SystemHeartbeatEventTest : StringSpec({
         val event1 = SystemHeartbeatEvent.createHealthy("system1", "component1")
         val event2 = SystemHeartbeatEvent.createHealthy("system1", "component1")
         
-        event1.eventId shouldNotBe event2.eventId
-        event1.eventId.toString().isNotEmpty() shouldBe true
-        event2.eventId.toString().isNotEmpty() shouldBe true
+        event1.eventHelper.eventId shouldNotBe event2.eventHelper.eventId
+        event1.eventHelper.eventId.toString().isNotEmpty() shouldBe true
+        event2.eventHelper.eventId.toString().isNotEmpty() shouldBe true
     }
     
     "应该自动设置发生时间" {
@@ -89,15 +89,20 @@ class SystemHeartbeatEventTest : StringSpec({
         TimeUnit.MILLISECONDS.sleep(10)
         val after = Instant.now()
         
-        event.occurredAt.isAfter(before) shouldBe true
-        event.occurredAt.isBefore(after) shouldBe true
+        event.eventHelper.occurredAt.isAfter(before) shouldBe true
+        event.eventHelper.occurredAt.isBefore(after) shouldBe true
     }
     
     "应该正确计算事件年龄" {
         val oldTime = Instant.now().minusSeconds(60) // 1分钟前
-        val event = SystemHeartbeatEvent(
+        val eventHelper = EventHelper(
             eventId = org.now.terminal.shared.valueobjects.EventId.generate(),
             occurredAt = oldTime,
+            eventType = "SystemHeartbeatEvent",
+            aggregateType = "System"
+        )
+        val event = SystemHeartbeatEvent(
+            eventHelper = eventHelper,
             systemId = "system1",
             component = "component1",
             status = SystemHeartbeatEvent.SystemStatus.HEALTHY
@@ -148,9 +153,9 @@ class SystemHeartbeatEventTest : StringSpec({
     
     "应该处理自定义指标" {
         val customMetrics = mapOf(
-            "response_time" to 150.0,
-            "error_rate" to 0.01,
-            "throughput" to 1000
+            "response_time" to "150.0",
+            "error_rate" to "0.01",
+            "throughput" to "1000"
         )
         
         val metrics = SystemHeartbeatEvent.SystemMetrics(
@@ -160,9 +165,9 @@ class SystemHeartbeatEventTest : StringSpec({
         metrics.customMetrics.containsKey("response_time") shouldBe true
         metrics.customMetrics.containsKey("error_rate") shouldBe true
         metrics.customMetrics.containsKey("throughput") shouldBe true
-        metrics.customMetrics["response_time"] shouldBe 150.0
-        metrics.customMetrics["error_rate"] shouldBe 0.01
-        metrics.customMetrics["throughput"] shouldBe 1000
+        metrics.customMetrics["response_time"] shouldBe "150.0"
+        metrics.customMetrics["error_rate"] shouldBe "0.01"
+        metrics.customMetrics["throughput"] shouldBe "1000"
     }
     
     "应该验证系统状态转换" {
