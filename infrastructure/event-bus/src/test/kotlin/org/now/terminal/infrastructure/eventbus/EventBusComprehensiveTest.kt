@@ -1,14 +1,13 @@
 package org.now.terminal.infrastructure.eventbus
 
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.longs.shouldBeGreaterThan
+import io.kotest.matchers.numerics.shouldBeGreaterThan
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import org.now.terminal.shared.events.EventHandler
-import org.now.terminal.shared.events.SystemHeartbeatEvent
+import org.now.terminal.infrastructure.eventbus.*
+import org.now.terminal.infrastructure.eventbus.test.TestEvent
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -20,27 +19,27 @@ class EventBusComprehensiveTest : StringSpec({
         val eventBus = InMemoryEventBus(bufferSize = 100)
         eventBus.start()
         
-        val receivedEvent = AtomicReference<SystemHeartbeatEvent?>()
+        val receivedEvent = AtomicReference<TestEvent?>()
         val latch = CountDownLatch(1)
         
         // 创建事件处理器
-        val handler = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val handler = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 receivedEvent.set(event)
                 latch.countDown()
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
         // 订阅事件
         runBlocking {
-            eventBus.subscribe(SystemHeartbeatEvent::class.java, handler)
+            eventBus.subscribe(TestEvent::class.java, handler)
             
             // 发布事件
-            val event = SystemHeartbeatEvent.createHealthy("test-system", "test-component")
+            val event = TestEvent(testData = "test-data-1")
             eventBus.publish(event)
         }
         
@@ -49,8 +48,7 @@ class EventBusComprehensiveTest : StringSpec({
         
         // 验证事件被正确接收
         receivedEvent.get() shouldNotBe null
-        receivedEvent.get()!!.systemId shouldBe "test-system"
-        receivedEvent.get()!!.component shouldBe "test-component"
+        receivedEvent.get()!!.testData shouldBe "test-data-1"
         
         eventBus.stop()
     }
@@ -64,36 +62,36 @@ class EventBusComprehensiveTest : StringSpec({
         val latch = CountDownLatch(2)
         
         // 创建两个事件处理器
-        val handler1 = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val handler1 = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 handler1Count.incrementAndGet()
                 latch.countDown()
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
-        val handler2 = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val handler2 = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 handler2Count.incrementAndGet()
                 latch.countDown()
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
         runBlocking {
             // 订阅事件
-            eventBus.subscribe(SystemHeartbeatEvent::class.java, handler1)
-            eventBus.subscribe(SystemHeartbeatEvent::class.java, handler2)
+            eventBus.subscribe(TestEvent::class.java, handler1)
+            eventBus.subscribe(TestEvent::class.java, handler2)
             
             // 发布事件
-            val event = SystemHeartbeatEvent.createHealthy("test-system", "test-component")
-            eventBus.publish(event as Event)
+            val event = TestEvent(testData = "test-data-2")
+            eventBus.publish(event)
         }
         
         // 等待事件处理完成
@@ -114,33 +112,33 @@ class EventBusComprehensiveTest : StringSpec({
         val latch = CountDownLatch(1)
         
         // 创建事件处理器
-        val handler = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val handler = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 handlerCount.incrementAndGet()
                 latch.countDown()
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
         runBlocking {
             // 订阅事件
-            eventBus.subscribe(SystemHeartbeatEvent::class.java, handler)
+            eventBus.subscribe(TestEvent::class.java, handler)
             
             // 发布第一个事件
-            val event1 = SystemHeartbeatEvent.createHealthy("test-system", "test-component")
+            val event1 = TestEvent(testData = "test-data-3")
             eventBus.publish(event1)
             
             // 等待第一个事件处理完成
             latch.await(5, TimeUnit.SECONDS)
             
             // 取消订阅
-            eventBus.unsubscribe(SystemHeartbeatEvent::class.java, handler)
+            eventBus.unsubscribe(TestEvent::class.java, handler)
             
             // 发布第二个事件
-            val event2 = SystemHeartbeatEvent.createHealthy("test-system", "test-component-2")
+            val event2 = TestEvent(testData = "test-data-4")
             eventBus.publish(event2)
             
             // 等待一小段时间确保第二个事件不会被处理
@@ -162,25 +160,25 @@ class EventBusComprehensiveTest : StringSpec({
         val latch = CountDownLatch(1)
         
         // 创建事件处理器
-        val handler = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val handler = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 latch.countDown()
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
         runBlocking {
             // 订阅事件
-            monitoredEventBus.subscribe(SystemHeartbeatEvent::class.java, handler)
+            monitoredEventBus.subscribe(TestEvent::class.java, handler)
             
             // 获取初始指标
             val initialMetrics = metrics.getMetricsSnapshot()
             
             // 发布事件
-            val event = SystemHeartbeatEvent.createHealthy("test-system", "test-component")
+            val event = TestEvent(testData = "test-data-5")
             monitoredEventBus.publish(event)
         }
         
@@ -192,7 +190,7 @@ class EventBusComprehensiveTest : StringSpec({
         
         // 验证指标被正确更新
         finalMetrics.totalEvents shouldBeGreaterThan initialMetrics.totalEvents
-        finalMetrics.eventCounts["SystemHeartbeatEvent"] shouldBe 1L
+        finalMetrics.eventCounts["TestEvent"] shouldBe 1L
         
         monitoredEventBus.stop()
     }
@@ -205,24 +203,24 @@ class EventBusComprehensiveTest : StringSpec({
         val latch = CountDownLatch(1)
         
         // 创建会抛出异常的事件处理器
-        val errorHandler = object : EventHandler<SystemHeartbeatEvent> {
-            override suspend fun handle(event: SystemHeartbeatEvent) {
+        val errorHandler = object : EventHandler<TestEvent> {
+            override suspend fun handle(event: TestEvent) {
                 errorHandlerCalled.set(true)
                 latch.countDown()
                 throw RuntimeException("Test exception")
             }
             
             override fun canHandle(eventType: String): Boolean {
-                return eventType == "SystemHeartbeatEvent"
+                return eventType == "TestEvent"
             }
         }
         
         runBlocking {
             // 订阅事件
-            eventBus.subscribe(SystemHeartbeatEvent::class.java, errorHandler)
+            eventBus.subscribe(TestEvent::class.java, errorHandler)
             
             // 发布事件
-            val event = SystemHeartbeatEvent.createHealthy("test-system", "test-component")
+            val event = TestEvent(testData = "test-data-6")
             eventBus.publish(event)
         }
         
