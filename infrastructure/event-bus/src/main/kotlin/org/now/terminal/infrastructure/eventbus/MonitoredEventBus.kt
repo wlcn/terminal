@@ -13,6 +13,11 @@ class MonitoredEventBus(
     private val delegate: EventBus,
     private val metrics: EventBusMetrics
 ) : EventBus {
+    
+    /**
+     * 获取底层事件总线（用于访问特定功能）
+     */
+    fun getDelegate(): EventBus = delegate
     private val logger = LoggerFactory.getLogger(MonitoredEventBus::class.java)
     
     override suspend fun <T : Event> publish(event: T) {

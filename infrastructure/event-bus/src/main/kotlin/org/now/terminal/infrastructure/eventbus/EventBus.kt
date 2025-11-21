@@ -25,7 +25,10 @@ interface EventBus {
  */
 class InMemoryEventBus(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val bufferSize: Int = 1000
+    private val bufferSize: Int = 1000,
+    private val config: EventBusProperties = EventBusProperties(),
+    private val deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
+    private val retryHandler: EventRetryHandler = EventRetryHandler(config)
 ) : EventBus {
     private val logger = LoggerFactory.getLogger(InMemoryEventBus::class.java)
     private val handlers = ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventHandler<*>>>()
@@ -72,6 +75,23 @@ class InMemoryEventBus(
         logger.info("In-memory event bus stopped")
     }
     
+    /**
+     * 获取死信队列（用于监控和管理）
+     */
+    fun getDeadLetterQueue(): DeadLetterQueue = deadLetterQueue
+    
+    /**
+     * 获取当前配置
+     */
+    fun getConfig(): EventBusProperties = config
+    
+    /**
+     * 获取活跃订阅者数量
+     */
+    fun getActiveSubscriptions(): Int {
+        return handlers.values.sumOf { it.size }
+    }
+    
     private suspend fun handleEvent(event: Event) {
         val eventHandlers = handlers[event::class.java] ?: return
         
@@ -81,9 +101,30 @@ class InMemoryEventBus(
             if (handler.canHandle(event.eventType)) {
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    (handler as EventHandler<Event>).handle(event)
+                    val typedHandler = handler as EventHandler<Event>
+                    
+                    // 使用重试机制处理事件
+                    val success = retryHandler.retry(event, handler.javaClass.simpleName) { eventToProcess ->
+                        typedHandler.handle(eventToProcess)
+                    }
+                    
+                    if (!success && config.enableDeadLetterQueue) {
+                        // 重试失败，将事件添加到死信队列
+                        val error = EventHandlingException(
+                            eventType = event.eventType,
+                            handlerId = handler.javaClass.simpleName,
+                            message = "Event processing failed after ${config.maxRetries} retries"
+                        )
+                        deadLetterQueue.add(event, error, config.maxRetries)
+                    }
+                    
                 } catch (e: Exception) {
                     logger.error("Handler error for event: {}", event.eventId, e)
+                    
+                    if (config.enableDeadLetterQueue) {
+                        // 将事件添加到死信队列
+                        deadLetterQueue.add(event, e, 0)
+                    }
                 }
             }
         }
@@ -94,10 +135,44 @@ class InMemoryEventBus(
  * 事件总线工厂
  */
 object EventBusFactory {
+    /**
+     * 创建内存事件总线
+     */
     fun createInMemoryEventBus(
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
-        bufferSize: Int = 1000
+        config: EventBusProperties = EventBusProperties(),
+        deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity)
     ): EventBus {
-        return InMemoryEventBus(dispatcher, bufferSize)
+        return InMemoryEventBus(
+            config = config,
+            deadLetterQueue = deadLetterQueue,
+            retryHandler = EventRetryHandler(config)
+        )
+    }
+    
+    /**
+     * 创建带监控的事件总线
+     */
+    fun createMonitoredEventBus(
+        delegate: EventBus = createInMemoryEventBus(),
+        metrics: EventBusMetrics = EventBusMetrics()
+    ): EventBus {
+        return MonitoredEventBus(delegate, metrics)
+    }
+    
+    /**
+     * 创建持久化事件总线
+     */
+    fun createPersistentEventBus(
+        delegate: EventBus = createInMemoryEventBus(),
+        eventStore: EventStore = FileEventStore(),
+        enablePersistence: Boolean = true,
+        persistenceScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    ): EventBus {
+        return PersistentEventBus(
+            delegate = delegate,
+            eventStore = eventStore,
+            enablePersistence = enablePersistence,
+            persistenceScope = persistenceScope
+        )
     }
 }

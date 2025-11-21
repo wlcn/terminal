@@ -12,7 +12,11 @@ data class EventBusProperties(
     val maxRetries: Int = 3,
     val retryDelayMs: Long = 1000,
     val enableMetrics: Boolean = true,
-    val enableDeadLetterQueue: Boolean = false
+    val enableDeadLetterQueue: Boolean = false,
+    val deadLetterQueueCapacity: Int = 1000,
+    val enableRetry: Boolean = true,
+    val retryBackoffMultiplier: Double = 2.0,
+    val maxRetryDelayMs: Long = 60000
 )
 
 /**

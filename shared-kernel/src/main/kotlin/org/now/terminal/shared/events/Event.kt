@@ -9,7 +9,6 @@ import java.time.Instant
  */
 @kotlinx.serialization.Serializable
 data class EventHelper(
-    @kotlinx.serialization.Contextual
     val eventId: EventId = EventId.generate(),
     @kotlinx.serialization.Contextual
     val occurredAt: Instant = Instant.now(),
