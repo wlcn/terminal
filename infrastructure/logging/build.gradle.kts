@@ -3,25 +3,23 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
-
 dependencies {
     // 项目内部依赖
     implementation(project(":shared-kernel"))
     implementation(project(":infrastructure:configuration"))
     
     // Kotlin
-    implementation(libs.findLibrary("kotlin-stdlib").get())
-    implementation(libs.findLibrary("kotlinx-serialization-json").get())
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.serialization.json)
     
     // 日志依赖
-    implementation(libs.findLibrary("slf4j-api").get())
-    implementation(libs.findLibrary("logback-classic").get())
+    implementation(libs.slf4j.api)
+    implementation(libs.logback.classic)
     
     // 测试依赖
-    testImplementation(libs.findLibrary("kotest-runner-junit5").get())
-    testImplementation(libs.findLibrary("kotest-assertions-core").get())
-    testImplementation(libs.findLibrary("mockk").get())
+    testImplementation(libs.kotest.runner.junit5)
+    testImplementation(libs.kotest.assertions.core)
+    testImplementation(libs.mockk)
 }
 
 tasks.test {
