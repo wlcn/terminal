@@ -12,7 +12,7 @@ class HandleInputUseCase(
     private val terminalSessionService: TerminalSessionService
 ) {
     
-    fun execute(sessionId: SessionId, input: String) {
+    suspend fun execute(sessionId: SessionId, input: String) {
         terminalSessionService.handleInput(sessionId, input)
     }
 }

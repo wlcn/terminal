@@ -12,9 +12,20 @@ class OutputBuffer {
      */
     fun append(content: String) {
         if (buffer.length + content.length > maxSize) {
-            // 如果超过限制，移除最旧的内容
-            val overflow = (buffer.length + content.length) - maxSize
-            buffer.delete(0, overflow)
+            // 如果超过限制，移除最旧的内容以容纳新内容
+            val requiredSpace = content.length
+            val availableSpace = maxSize - requiredSpace
+            if (availableSpace < 0) {
+                // 如果新内容本身就超过限制，只保留最后的部分
+                buffer.clear()
+                buffer.append(content.takeLast(maxSize))
+                return
+            }
+            // 删除最旧的内容，确保有足够空间
+            val overflow = buffer.length - availableSpace
+            if (overflow > 0) {
+                buffer.delete(0, overflow)
+            }
         }
         buffer.append(content)
     }

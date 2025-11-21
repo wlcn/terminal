@@ -13,7 +13,7 @@ class ListActiveSessionsUseCase(
     private val terminalSessionService: TerminalSessionService
 ) {
     
-    fun execute(userId: UserId): List<TerminalSession> {
+    suspend fun execute(userId: UserId): List<TerminalSession> {
         return terminalSessionService.listActiveSessions(userId)
     }
 }

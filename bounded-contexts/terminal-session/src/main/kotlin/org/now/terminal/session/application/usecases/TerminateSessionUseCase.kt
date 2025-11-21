@@ -13,7 +13,7 @@ class TerminateSessionUseCase(
     private val terminalSessionService: TerminalSessionService
 ) {
     
-    fun execute(sessionId: SessionId, reason: TerminationReason) {
+    suspend fun execute(sessionId: SessionId, reason: TerminationReason) {
         terminalSessionService.terminateSession(sessionId, reason)
     }
 }

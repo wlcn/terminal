@@ -14,6 +14,9 @@ data class PtyConfiguration(
     val initialTerm: String = "xterm"
 ) {
     init {
+        require(environment.isNotEmpty()) {
+            "Environment cannot be empty"
+        }
         require(environment.all { it.key.isNotBlank() && it.value.isNotBlank() }) {
             "Environment variables cannot be blank"
         }

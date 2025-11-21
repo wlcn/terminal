@@ -15,50 +15,50 @@ interface TerminalSessionService {
     /**
      * 创建新的终端会话
      */
-    fun createSession(userId: UserId, ptyConfig: PtyConfiguration): SessionId
+    suspend fun createSession(userId: UserId, ptyConfig: PtyConfiguration): SessionId
     
     /**
      * 终止会话
      */
-    fun terminateSession(sessionId: SessionId, reason: TerminationReason)
+    suspend fun terminateSession(sessionId: SessionId, reason: TerminationReason)
     
     /**
      * 处理终端输入
      */
-    fun handleInput(sessionId: SessionId, input: String)
+    suspend fun handleInput(sessionId: SessionId, input: String)
     
     /**
      * 调整终端尺寸
      */
-    fun resizeTerminal(sessionId: SessionId, size: TerminalSize)
+    suspend fun resizeTerminal(sessionId: SessionId, size: TerminalSize)
     
     /**
      * 列出活跃会话
      */
-    fun listActiveSessions(userId: UserId): List<org.now.terminal.session.domain.entities.TerminalSession>
+    suspend fun listActiveSessions(userId: UserId): List<org.now.terminal.session.domain.entities.TerminalSession>
     
     /**
      * 读取会话输出
      */
-    fun readOutput(sessionId: SessionId): String
+    suspend fun readOutput(sessionId: SessionId): String
     
     /**
      * 获取会话统计信息
      */
-    fun getSessionStatistics(sessionId: SessionId): org.now.terminal.session.domain.entities.SessionStatistics
+    suspend fun getSessionStatistics(sessionId: SessionId): org.now.terminal.session.domain.entities.SessionStatistics
     
     /**
      * 强制终止所有用户会话
      */
-    fun terminateAllUserSessions(userId: UserId, reason: TerminationReason)
+    suspend fun terminateAllUserSessions(userId: UserId, reason: TerminationReason)
     
     /**
      * 检查会话是否存在且活跃
      */
-    fun isSessionActive(sessionId: SessionId): Boolean
+    suspend fun isSessionActive(sessionId: SessionId): Boolean
     
     /**
      * 获取会话配置
      */
-    fun getSessionConfiguration(sessionId: SessionId): PtyConfiguration
+    suspend fun getSessionConfiguration(sessionId: SessionId): PtyConfiguration
 }

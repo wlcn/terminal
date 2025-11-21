@@ -28,7 +28,7 @@ class SessionLifecycleService(
     /**
      * 创建新的终端会话
      */
-    override fun createSession(
+    override suspend fun createSession(
         userId: UserId,
         ptyConfig: PtyConfiguration
     ): SessionId {
@@ -43,11 +43,9 @@ class SessionLifecycleService(
         session.start()
         sessionRepository.save(session)
         
-        // 发布领域事件
-        runBlocking {
-            session.getDomainEvents().forEach { event ->
-                eventBus.publish(event)
-            }
+        // 异步发布领域事件
+        session.getDomainEvents().forEach { event ->
+            eventBus.publish(event)
         }
         
         return sessionId
@@ -56,7 +54,7 @@ class SessionLifecycleService(
     /**
      * 终止会话
      */
-    override fun terminateSession(sessionId: SessionId, reason: TerminationReason) {
+    override suspend fun terminateSession(sessionId: SessionId, reason: TerminationReason) {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
@@ -67,18 +65,16 @@ class SessionLifecycleService(
         session.terminate(reason)
         sessionRepository.save(session)
         
-        // 发布领域事件
-        runBlocking {
-            session.getDomainEvents().forEach { event ->
-                eventBus.publish(event)
-            }
+        // 异步发布领域事件
+        session.getDomainEvents().forEach { event ->
+            eventBus.publish(event)
         }
     }
     
     /**
      * 处理终端输入
      */
-    override fun handleInput(sessionId: SessionId, input: String) {
+    override suspend fun handleInput(sessionId: SessionId, input: String) {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
@@ -89,36 +85,32 @@ class SessionLifecycleService(
         session.handleInput(input)
         sessionRepository.save(session)
         
-        // 发布领域事件
-        runBlocking {
-            session.getDomainEvents().forEach { event ->
-                eventBus.publish(event)
-            }
+        // 异步发布领域事件
+        session.getDomainEvents().forEach { event ->
+            eventBus.publish(event)
         }
     }
     
     /**
      * 调整终端尺寸
      */
-    override fun resizeTerminal(sessionId: SessionId, size: TerminalSize) {
+    override suspend fun resizeTerminal(sessionId: SessionId, size: TerminalSize) {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         session.resize(size)
         sessionRepository.save(session)
         
-        // 发布领域事件
-        runBlocking {
-            session.getDomainEvents().forEach { event ->
-                eventBus.publish(event)
-            }
+        // 异步发布领域事件
+        session.getDomainEvents().forEach { event ->
+            eventBus.publish(event)
         }
     }
     
     /**
      * 列出活跃会话
      */
-    override fun listActiveSessions(userId: UserId): List<TerminalSession> {
+    override suspend fun listActiveSessions(userId: UserId): List<TerminalSession> {
         return sessionRepository.findByUserId(userId)
             .filter { it.isAlive() }
     }
@@ -126,18 +118,16 @@ class SessionLifecycleService(
     /**
      * 读取会话输出
      */
-    override fun readOutput(sessionId: SessionId): String {
+    override suspend fun readOutput(sessionId: SessionId): String {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         val output = session.readOutput()
         sessionRepository.save(session)
         
-        // 发布领域事件
-        runBlocking {
-            session.getDomainEvents().forEach { event ->
-                eventBus.publish(event)
-            }
+        // 异步发布领域事件
+        session.getDomainEvents().forEach { event ->
+            eventBus.publish(event)
         }
         
         return output
@@ -146,7 +136,7 @@ class SessionLifecycleService(
     /**
      * 获取会话统计信息
      */
-    override fun getSessionStatistics(sessionId: SessionId): SessionStatistics {
+    override suspend fun getSessionStatistics(sessionId: SessionId): SessionStatistics {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
@@ -156,18 +146,16 @@ class SessionLifecycleService(
     /**
      * 强制终止所有用户会话
      */
-    override fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
+    override suspend fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
         val userSessions = sessionRepository.findByUserId(userId)
         userSessions.forEach { session ->
             if (session.canTerminate()) {
                 session.terminate(reason)
-                sessionRepository.save(session)
+                sessionRepository.delete(session.sessionId)
                 
-                // 发布领域事件
-                runBlocking {
-                    session.getDomainEvents().forEach { event ->
-                        eventBus.publish(event)
-                    }
+                // 异步发布领域事件
+                session.getDomainEvents().forEach { event ->
+                    eventBus.publish(event)
                 }
             }
         }
@@ -176,7 +164,7 @@ class SessionLifecycleService(
     /**
      * 检查会话是否存在且活跃
      */
-    override fun isSessionActive(sessionId: SessionId): Boolean {
+    override suspend fun isSessionActive(sessionId: SessionId): Boolean {
         val session = sessionRepository.findById(sessionId)
         return session?.isAlive() ?: false
     }
@@ -184,7 +172,7 @@ class SessionLifecycleService(
     /**
      * 获取会话配置
      */
-    override fun getSessionConfiguration(sessionId: SessionId): PtyConfiguration {
+    override suspend fun getSessionConfiguration(sessionId: SessionId): PtyConfiguration {
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         

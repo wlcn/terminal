@@ -46,7 +46,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should create session successfully`() {
+    fun `should create session successfully`() = runBlocking {
         // Given
         coEvery { mockProcessFactory.createProcess(any(), any()) } returns mockProcess
         coEvery { mockProcess.start() } returns Unit
@@ -61,11 +61,11 @@ class SessionLifecycleServiceTest {
         assertTrue(result is SessionId)
         coVerify { mockRepository.save(any()) }
         coVerify { mockProcess.start() }
-        runBlocking { coVerify { mockEventBus.publish(any()) } }
+        coVerify { mockEventBus.publish(any()) }
     }
     
     @Test
-    fun `should terminate session successfully`() {
+    fun `should terminate session successfully`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         coEvery { mockRepository.findById(sessionId!!) } returns mockSession
@@ -87,7 +87,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should throw exception when terminating non-existent session`() {
+    fun `should throw exception when terminating non-existent session`() = runBlocking {
         // Given
         every { mockRepository.findById(sessionId!!) } returns null
         
@@ -101,7 +101,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should handle input successfully`() {
+    fun `should handle input successfully`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         coEvery { mockRepository.findById(sessionId!!) } returns mockSession
@@ -123,7 +123,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should resize terminal successfully`() {
+    fun `should resize terminal successfully`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         val newSize = TerminalSize(100, 30)
@@ -144,7 +144,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should list active sessions`() {
+    fun `should list active sessions`() = runBlocking {
         // Given
         val mockSessions = listOf<TerminalSession>(mockk(), mockk())
         every { mockRepository.findByUserId(userId!!) } returns mockSessions
@@ -162,7 +162,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should read output from session`() {
+    fun `should read output from session`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         val expectedOutput = "output content"
@@ -184,7 +184,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should get session statistics`() {
+    fun `should get session statistics`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         val expectedStats = SessionStatistics(sessionId!!, userId!!, mockk(), Instant.now(), null, null, 0)
@@ -201,7 +201,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should terminate all user sessions`() {
+    fun `should terminate all user sessions`() = runBlocking {
         // Given
         val mockSessions = listOf<TerminalSession>(mockk(), mockk())
         coEvery { mockRepository.findByUserId(userId!!) } returns mockSessions
@@ -211,7 +211,9 @@ class SessionLifecycleServiceTest {
         coEvery { mockSessions[1].terminate(any()) } returns Unit
         coEvery { mockSessions[0].getDomainEvents() } returns listOf(mockk()) // 返回一个mock事件
         coEvery { mockSessions[1].getDomainEvents() } returns listOf(mockk()) // 返回一个mock事件
-        coEvery { mockRepository.save(any()) } returns mockk()
+        coEvery { mockSessions[0].sessionId } returns SessionId.generate()
+        coEvery { mockSessions[1].sessionId } returns SessionId.generate()
+        coEvery { mockRepository.delete(any()) } returns Unit
         coEvery { mockEventBus.publish(any()) } returns Unit
         
         // When
@@ -223,12 +225,12 @@ class SessionLifecycleServiceTest {
         coVerify { mockSessions[1].canTerminate() }
         coVerify { mockSessions[0].terminate(TerminationReason.USER_REQUESTED) }
         coVerify { mockSessions[1].terminate(TerminationReason.USER_REQUESTED) }
-        coVerify(exactly = 2) { mockRepository.save(any()) }
+        coVerify(exactly = 2) { mockRepository.delete(any()) }
         coVerify(exactly = 2) { mockEventBus.publish(any()) }
     }
     
     @Test
-    fun `should check if session is active`() {
+    fun `should check if session is active`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         every { mockRepository.findById(sessionId!!) } returns mockSession
@@ -244,7 +246,7 @@ class SessionLifecycleServiceTest {
     }
     
     @Test
-    fun `should get session configuration`() {
+    fun `should get session configuration`() = runBlocking {
         // Given
         val mockSession: TerminalSession = mockk()
         every { mockRepository.findById(sessionId!!) } returns mockSession

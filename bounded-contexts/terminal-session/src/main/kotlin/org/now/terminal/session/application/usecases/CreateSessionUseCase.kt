@@ -14,7 +14,7 @@ class CreateSessionUseCase(
     private val terminalSessionService: TerminalSessionService
 ) {
     
-    fun execute(
+    suspend fun execute(
         userId: UserId,
         ptyConfig: PtyConfiguration
     ): SessionId {

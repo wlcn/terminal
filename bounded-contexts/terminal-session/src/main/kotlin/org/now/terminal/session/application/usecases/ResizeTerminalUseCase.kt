@@ -13,7 +13,7 @@ class ResizeTerminalUseCase(
     private val terminalSessionService: TerminalSessionService
 ) {
     
-    fun execute(sessionId: SessionId, size: TerminalSize) {
+    suspend fun execute(sessionId: SessionId, size: TerminalSize) {
         terminalSessionService.resizeTerminal(sessionId, size)
     }
 }
