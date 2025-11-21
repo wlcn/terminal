@@ -11,6 +11,9 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     
+    // 依赖共享内核
+    implementation(project(":shared-kernel"))
+    
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.framework.engine)
     testImplementation(libs.kotest.assertions.core)

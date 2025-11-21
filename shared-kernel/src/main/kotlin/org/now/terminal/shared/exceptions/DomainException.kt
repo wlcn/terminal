@@ -85,7 +85,7 @@ object DomainExceptionFactory {
             code = ExceptionType.SESSION_NOT_FOUND.errorCode,
             message = "Session not found: $sessionId",
             cause = cause,
-            context = mapOf("sessionId" to sessionId, "resourceType" to "Session", "type" to "resource")
+            context = mapOf("sessionId" to sessionId, "resourceId" to sessionId, "resourceType" to "Session", "type" to "resource")
         )
     
     fun userNotFound(userId: String, cause: Throwable? = null): DomainException =

@@ -96,7 +96,7 @@ class SystemHeartbeatEventTest : StringSpec({
     "应该正确计算事件年龄" {
         val oldTime = Instant.now().minusSeconds(60) // 1分钟前
         val event = SystemHeartbeatEvent(
-            eventId = org.now.terminal.shared.valueobjects.EventId.generate(),
+            eventId = org.now.terminal.shared.valueobjects.EventId.generate().toString(),
             occurredAt = oldTime,
             systemId = "system1",
             component = "component1",
