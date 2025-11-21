@@ -42,7 +42,7 @@ class UserIdTest : StringSpec({
             UserId.create("invalid-format")
         }
         
-        exception.message shouldContain "User ID must be in format usr_{UUID}"
+        exception.message shouldContain "ID must be in format usr_{UUID}"
     }
     
     "创建空字符串应抛出异常" {
@@ -50,7 +50,7 @@ class UserIdTest : StringSpec({
             UserId.create("")
         }
         
-        exception.message shouldContain "User ID cannot be blank"
+        exception.message shouldContain "ID cannot be blank"
     }
     
     "验证正确的UserId格式" {
@@ -58,7 +58,11 @@ class UserIdTest : StringSpec({
     }
     
     "验证错误的UserId格式" {
-        UserId.create("usr_invalid-uuid").isValid() shouldBe false
+        val exception = shouldThrow<IllegalArgumentException> {
+            UserId.create("usr_invalid-uuid")
+        }
+        
+        exception.message shouldContain "ID must be in format usr_{UUID}"
     }
     
     "相同值的UserId应该相等" {

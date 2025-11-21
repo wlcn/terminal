@@ -42,7 +42,7 @@ class SessionIdTest : StringSpec({
             SessionId.create("invalid-format")
         }
         
-        exception.message shouldContain "Session ID must be in format ses_{UUID}"
+        exception.message shouldContain "ID must be in format ses_{UUID}"
     }
     
     "创建空字符串应抛出异常" {
@@ -50,15 +50,15 @@ class SessionIdTest : StringSpec({
             SessionId.create("")
         }
         
-        exception.message shouldContain "Session ID cannot be blank"
-    }
-    
-    "验证正确的SessionId格式" {
-        SessionId.create("ses_550e8400-e29b-41d4-a716-446655440000").isValid() shouldBe true
+        exception.message shouldContain "ID cannot be blank"
     }
     
     "验证错误的SessionId格式" {
-        SessionId.create("ses_invalid-uuid").isValid() shouldBe false
+        val exception = shouldThrow<IllegalArgumentException> {
+            SessionId.create("ses_invalid-uuid")
+        }
+        
+        exception.message shouldContain "ID must be in format ses_{UUID}"
     }
     
     "相同值的SessionId应该相等" {

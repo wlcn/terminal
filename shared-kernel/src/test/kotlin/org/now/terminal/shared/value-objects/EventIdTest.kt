@@ -42,7 +42,7 @@ class EventIdTest : StringSpec({
             EventId.create("invalid-format")
         }
         
-        exception.message shouldContain "Event ID must be in format evt_{UUID}"
+        exception.message shouldContain "ID must be in format evt_{UUID}"
     }
     
     "创建空字符串应抛出异常" {
@@ -50,7 +50,7 @@ class EventIdTest : StringSpec({
             EventId.create("")
         }
         
-        exception.message shouldContain "Event ID cannot be blank"
+        exception.message shouldContain "ID cannot be blank"
     }
     
     "验证正确的EventId格式" {
@@ -58,7 +58,11 @@ class EventIdTest : StringSpec({
     }
     
     "验证错误的EventId格式" {
-        EventId.create("evt_invalid-uuid").isValid() shouldBe false
+        val exception = shouldThrow<IllegalArgumentException> {
+            EventId.create("evt_invalid-uuid")
+        }
+        
+        exception.message shouldContain "ID must be in format evt_{UUID}"
     }
     
     "相同值的EventId应该相等" {
