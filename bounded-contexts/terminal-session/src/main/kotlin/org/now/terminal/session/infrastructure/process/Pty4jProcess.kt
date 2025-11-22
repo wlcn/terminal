@@ -100,6 +100,7 @@ class Pty4jProcess(
                 ShellType.UNIX -> arrayOf("sh", "-c", ptyConfig.command.value)
                 ShellType.WINDOWS_CMD -> arrayOf("cmd", "/c", ptyConfig.command.value)
                 ShellType.WINDOWS_POWERSHELL -> arrayOf("powershell", "-Command", ptyConfig.command.value)
+                ShellType.CUSTOM -> detectCustomShellCommand(ptyConfig.command.value)
                 ShellType.DIRECT -> parseDirectCommand(ptyConfig.command.value)
             }
             val environment = ptyConfig.environment
@@ -200,7 +201,12 @@ class Pty4jProcess(
                             command.contains("$") || command.contains("`")
         
         return if (isWindows) {
-            if (hasShellSyntax || command.trim().startsWith("echo")) {
+            // 在Windows上，优先使用配置的自定义shell路径
+            if (ptyConfig.customShellPath.isNotBlank() && File(ptyConfig.customShellPath).exists()) {
+                // 如果配置了自定义shell路径且存在，使用该shell
+                arrayOf(ptyConfig.customShellPath, "-c", command)
+            } else if (hasShellSyntax || command.trim().startsWith("echo")) {
+                // 如果没有配置自定义shell路径，使用cmd
                 arrayOf("cmd", "/c", command)
             } else {
                 // 尝试直接执行
@@ -215,6 +221,8 @@ class Pty4jProcess(
             }
         }
     }
+    
+
     
     /**
      * 解析直接执行的命令
@@ -253,5 +261,22 @@ class Pty4jProcess(
         }
         
         return if (args.isEmpty()) arrayOf(command) else args.toTypedArray()
+    }
+    
+    /**
+     * 检测自定义shell命令
+     * 使用配置的自定义shell路径
+     */
+    private fun detectCustomShellCommand(command: String): Array<String> {
+        // 使用配置的自定义shell路径
+        if (ptyConfig.customShellPath.isNotBlank()) {
+            val customShellFile = File(ptyConfig.customShellPath)
+            if (customShellFile.exists()) {
+                return arrayOf(ptyConfig.customShellPath, "-c", command)
+            }
+        }
+        
+        // 如果配置路径不存在，回退到默认的bash
+        return arrayOf("bash", "-c", command)
     }
 }

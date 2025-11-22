@@ -29,6 +29,12 @@ enum class ShellType {
     WINDOWS_POWERSHELL,
     
     /**
+     * 自定义shell - 使用配置的自定义shell路径
+     * 适用于Git Bash、Cygwin、WSL等自定义shell环境
+     */
+    CUSTOM,
+    
+    /**
      * 直接执行命令，不通过shell包装
      */
     DIRECT

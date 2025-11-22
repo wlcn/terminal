@@ -13,7 +13,8 @@ data class PtyConfiguration(
     val size: TerminalSize,
     val workingDirectory: String? = null,
     val initialTerm: String = ConfigurationManager.getTerminalConfig().defaultTerm,
-    val shellType: ShellType = ShellType.AUTO
+    val shellType: ShellType = ShellType.AUTO,
+    val customShellPath: String = ConfigurationManager.getTerminalConfig().pty.customShellPath
 ) {
     init {
         require(environment.isNotEmpty()) {

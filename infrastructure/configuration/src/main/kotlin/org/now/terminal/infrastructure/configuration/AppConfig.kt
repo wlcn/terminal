@@ -141,5 +141,6 @@ data class PtyConfig(
         "HOME" to "/home/user",
         "PATH" to "/usr/local/bin:/usr/bin:/bin"
     ),
-    val shellType: String = "AUTO"
+    val shellType: String = "AUTO",
+    val customShellPath: String = ""
 )
