@@ -85,7 +85,8 @@ object ConfigLoader {
             database = convertToDatabaseConfig(appConfig.getConfig("database")),
             eventBus = convertToEventBusConfig(appConfig.getConfig("eventBus")),
             logging = convertToLoggingConfig(appConfig.getConfig("logging")),
-            monitoring = convertToMonitoringConfig(appConfig.getConfig("monitoring"))
+            monitoring = convertToMonitoringConfig(appConfig.getConfig("monitoring")),
+            terminal = convertToTerminalConfig(appConfig.getConfig("terminal"))
         )
     }
     
@@ -158,6 +159,35 @@ object ConfigLoader {
                 checkInterval = healthConfig.getLong("checkInterval"),
                 endpoints = healthConfig.getStringList("endpoints")
             )
+        )
+    }
+    
+    private fun convertToTerminalConfig(config: com.typesafe.config.Config): TerminalConfig {
+        val ptyConfig = config.getConfig("pty")
+        
+        return TerminalConfig(
+            defaultTerm = config.getString("defaultTerm"),
+            maxSessionsPerUser = config.getInt("maxSessionsPerUser"),
+            sessionTimeout = config.getLong("sessionTimeout"),
+            bufferSize = config.getInt("bufferSize"),
+            pty = convertToPtyConfig(ptyConfig)
+        )
+    }
+    
+    private fun convertToPtyConfig(config: com.typesafe.config.Config): PtyConfig {
+        val defaultEnvironment = config.getConfig("defaultEnvironment")
+        val envMap = mutableMapOf<String, String>()
+        
+        defaultEnvironment.entrySet().forEach { entry ->
+            envMap[entry.key] = entry.value.unwrapped().toString()
+        }
+        
+        return PtyConfig(
+            defaultCommand = config.getString("defaultCommand"),
+            defaultWorkingDirectory = config.getString("defaultWorkingDirectory"),
+            defaultEnvironment = envMap,
+            shellType = config.getString("shellType"),
+            customShellPath = config.getString("customShellPath")
         )
     }
     

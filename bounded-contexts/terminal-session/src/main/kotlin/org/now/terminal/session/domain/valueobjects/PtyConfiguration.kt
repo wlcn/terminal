@@ -43,7 +43,8 @@ data class PtyConfiguration(
                 environment = env,
                 size = TerminalSize.DEFAULT,
                 workingDirectory = terminalConfig.pty.defaultWorkingDirectory,
-                shellType = shellType
+                shellType = shellType,
+                customShellPath = terminalConfig.pty.customShellPath
             )
         }
     }
