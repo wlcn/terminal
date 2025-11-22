@@ -14,7 +14,6 @@ dependencies {
     implementation(project(":infrastructure:logging"))
     implementation(project(":infrastructure:event-bus"))
     
-
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)
@@ -30,6 +29,9 @@ dependencies {
     
     // Koin依赖注入框架
     implementation(libs.koin.core)
+    
+    // SLF4J API依赖
+    implementation(libs.slf4j.api)
     
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.runner.junit5)

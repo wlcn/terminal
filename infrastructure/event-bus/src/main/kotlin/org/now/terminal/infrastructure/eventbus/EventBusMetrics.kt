@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * 事件总线指标监控（简化版本，不依赖外部监控库）
+ * 事件总线指标收集器
  */
 class EventBusMetrics {
     private val logger = TerminalLogger.getLogger(EventBusMetrics::class.java)

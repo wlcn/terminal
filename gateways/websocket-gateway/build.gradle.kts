@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":shared-kernel"))
     implementation(project(":infrastructure:configuration"))
     implementation(project(":infrastructure:event-bus"))
+    implementation(project(":infrastructure:logging"))
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)

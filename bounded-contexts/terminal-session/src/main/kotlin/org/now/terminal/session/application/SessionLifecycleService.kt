@@ -73,7 +73,7 @@ class SessionLifecycleService(
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         if (!session.canTerminate()) {
-            logger.warn("会话无法终止 - 会话ID: {}, 当前状态: {}", sessionId, session.status)
+            logger.warn("会话无法终止 - 会话ID: {}, 当前状态: {}", sessionId, session.getStatus())
             throw IllegalStateException("Session cannot be terminated: $sessionId")
         }
         
@@ -97,8 +97,8 @@ class SessionLifecycleService(
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
-        if (!session.canHandleInput()) {
-            logger.warn("会话无法处理输入 - 会话ID: {}, 当前状态: {}", sessionId, session.status)
+        if (!session.canReceiveInput()) {
+            logger.warn("会话无法处理输入 - 会话ID: {}, 当前状态: {}", sessionId, session.getStatus())
             throw IllegalStateException("Session cannot handle input: $sessionId")
         }
         

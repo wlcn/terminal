@@ -7,6 +7,7 @@ dependencies {
     // 项目内部依赖
     implementation(project(":shared-kernel"))
     implementation(project(":infrastructure:configuration"))
+    implementation(project(":infrastructure:logging"))
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)

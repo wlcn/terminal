@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.kaml)
     
     // 日志
+    implementation(libs.slf4j.api)
     implementation(libs.logback.classic)
     
     // 测试依赖

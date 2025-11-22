@@ -76,13 +76,6 @@ implementation(libs.kotlin.stdlib)
 └─────────────────────────────────────────────────────────────────────────┘
                                 ↓ (依赖)
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           防腐层 (Anti-Corruption Layers)              │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐          │
-│  │  session-acl    │ │ filetransfer-acl │ │ 其他防腐层      │          │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘          │
-└─────────────────────────────────────────────────────────────────────────┘
-                                ↓ (依赖)
-┌─────────────────────────────────────────────────────────────────────────┐
 │                           共享内核 (Shared Kernel)                      │
 │  ┌─────────────────────────────────────────────────────────────────┐    │
 │  │          共享值对象、集成事件、基础类型定义                      │    │
@@ -100,8 +93,8 @@ implementation(libs.kotlin.stdlib)
 ### 📋 依赖关系规则
 
 #### ✅ 允许的依赖方向（单向依赖）
-1. **应用层 → 端口层 → 限界上下文层 → 防腐层 → 共享内核 → 基础设施层**
-2. **限界上下文之间只能通过防腐层通信**
+1. **应用层 → 端口层 → 限界上下文层 → 共享内核 → 基础设施层**
+2. **限界上下文之间通过集成事件进行通信**
 3. **基础设施层不依赖任何业务层**
 
 #### ❌ 禁止的依赖方向
@@ -403,14 +396,10 @@ kt-terminal/
 │   │   └── build.gradle.kts
 │   ├── collaboration/                 # 协作终端上下文
 │   └── audit-logging/                 # 审计日志上下文
-├── anti-corruption-layers/           # 防腐层（跨上下文通信保护）
-│   ├── session-acl/                   # 会话上下文防腐层
-│   │   ├── src/main/kotlin/org/now/terminal/acl/session/
-│   │   │   ├── infrastructure/          # 基础设施实现（事件监听器、消息队列适配器等）
-│   │   │   ├── translators/           # 转换器（外部事件→内部领域事件）
-│   │   │   └── ports/                 # 端口接口（定义防腐层对外提供的服务）
-│   │   └── build.gradle.kts
-│   └── filetransfer-acl/              # 文件传输防腐层
+├── bounded-contexts/                 # 限界上下文（业务领域模块）
+│   ├── terminal-session/              # 终端会话上下文
+│   ├── file-transfer/                  # 文件传输上下文
+│   └── collaboration/                  # 协作上下文
 ├── ports/                             # 端口层（对外提供服务接口）
 │   ├── websocket-port/                # WebSocket端口
 │   │   ├── src/main/kotlin/org/now/terminal/ports/websocket/
@@ -661,7 +650,7 @@ class UserConnectionIntegrationEvent(
 #### 领域事件处理（限界上下文内部）
 1. **聚合根产生领域事件** → 领域服务收集 → 内部事件发布器发布 → 内部处理器消费
 
-#### 跨上下文事件处理（通过防腐层）
+#### 跨上下文事件处理（通过集成事件）
 ```kotlin
 // 用户管理上下文发布领域事件
 class UserManagementContext {
@@ -678,10 +667,10 @@ class UserManagementContext {
     }
 }
 
-// 终端会话上下文的防腐层
-class SessionACL {
+// 终端会话上下文的集成事件处理器
+class SessionIntegrationEventHandler {
     fun handleUserConnection(event: UserConnectionIntegrationEvent) {
-        // 转换为本上下文的领域事件
+        // 处理集成事件并转换为本上下文的领域事件
         val sessionEvent = SessionCreationRequestedEvent(event.userId, Instant.now())
         sessionEventPublisher.publish(sessionEvent)
     }
@@ -690,7 +679,7 @@ class SessionACL {
 
 ### 事件处理原则
 1. **限界上下文内部**：直接使用领域事件，确保强一致性
-2. **跨上下文通信**：通过集成事件和防腐层，实现最终一致性
+2. **跨上下文通信**：通过集成事件，实现最终一致性
 3. **事件转换**：不同上下文间的事件语义可能不同，需要通过适配器转换
 
 ## 📦 核心构建配置
@@ -782,7 +771,7 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-// 限界上下文依赖共享内核和防腐层
+// 限界上下文依赖共享内核和基础设施
 dependencies {
     implementation(platform(Boms.kotlin))
     implementation(platform(Boms.ktor))
@@ -795,8 +784,8 @@ dependencies {
     // 依赖共享内核
     implementation(project(":shared-kernel"))
     
-    // 依赖相关防腐层
-    implementation(project(":anti-corruption-layers:session-acl"))
+    // 依赖基础设施层
+implementation(project(":infrastructure:configuration"))
     
     // 基础设施依赖（通过接口依赖）
     implementation(project(":infrastructure:event-bus"))
@@ -823,25 +812,23 @@ configurations.all {
 }
 ```
 
-#### 3. 防腐层 (anti-corruption-layers/*/build.gradle.kts)
+#### 3. 限界上下文依赖配置 (bounded-contexts/*/build.gradle.kts)
 ```kotlin
 plugins {
     kotlin("jvm")
 }
 
-// 防腐层依赖共享内核和限界上下文
+// 限界上下文依赖共享内核和基础设施
 dependencies {
     implementation(platform(Boms.kotlin))
     
     // 依赖共享内核
     implementation(project(":shared-kernel"))
     
-    // 依赖相关限界上下文
-    implementation(project(":bounded-contexts:terminal-session"))
-    implementation(project(":bounded-contexts:file-transfer"))
-    
-    // 基础设施依赖
+    // 依赖基础设施层
     implementation(project(":infrastructure:event-bus"))
+    implementation(project(":infrastructure:configuration"))
+    implementation(project(":infrastructure:logging"))
 }
 ```
 
@@ -943,8 +930,7 @@ object DependencyValidator {
     private val allowedDependencies = mapOf(
         "applications" to setOf("ports", "infrastructure"),
         "ports" to setOf("bounded-contexts", "infrastructure"),
-        "bounded-contexts" to setOf("anti-corruption-layers", "shared-kernel", "infrastructure"),
-        "anti-corruption-layers" to setOf("shared-kernel", "infrastructure"),
+        "bounded-contexts" to setOf("shared-kernel", "infrastructure"),
         "shared-kernel" to setOf("infrastructure"),
         "infrastructure" to setOf() // 基础设施层不依赖任何业务模块
     )
@@ -986,7 +972,7 @@ object DependencyValidator {
             modulePath.startsWith("applications") -> "applications"
             modulePath.startsWith("ports") -> "ports"
             modulePath.startsWith("bounded-contexts") -> "bounded-contexts"
-            modulePath.startsWith("anti-corruption-layers") -> "anti-corruption-layers"
+            modulePath.startsWith("bounded-contexts") -> "bounded-contexts"
             modulePath.startsWith("shared-kernel") -> "shared-kernel"
             modulePath.startsWith("infrastructure") -> "infrastructure"
             else -> "external"
@@ -1134,7 +1120,7 @@ tasks.register("generateDependencyDiagram") {
         
         // 按层级分组
         val layers = listOf("applications", "ports", "bounded-contexts", 
-                          "anti-corruption-layers", "shared-kernel", "infrastructure")
+                          "shared-kernel", "infrastructure")
         
         layers.forEachIndexed { index, layer ->
             dotContent.append("  subgraph cluster_$index {\n")
@@ -1325,9 +1311,10 @@ cd frontend && npm run dev
 - 领域服务逻辑测试
 - 仓储接口契约测试
 
-**✅ 防腐层模块 (anti-corruption-layers)**
-- 事件转换适配器测试
-- 跨上下文通信测试
+**✅ 限界上下文模块 (bounded-contexts)**
+- 聚合根行为测试
+- 领域服务逻辑测试
+- 仓储接口契约测试
 
 **✅ 端口层模块 (ports)**
 - WebSocket连接测试
@@ -1371,7 +1358,7 @@ object TestQualityChecklist {
     ↓
 限界上下文测试
     ↓
-防腐层测试
+限界上下文测试
     ↓
 端口层测试
     ↓
@@ -1384,7 +1371,7 @@ object TestQualityChecklist {
 ./gradlew :infrastructure:test           # 基础设施层测试
 ./gradlew :shared-kernel:test            # 共享内核测试
 ./gradlew :bounded-contexts:test         # 限界上下文测试
-./gradlew :anti-corruption-layers:test   # 防腐层测试
+./gradlew :bounded-contexts:test   # 限界上下文测试
 ./gradlew :ports:test                    # 端口层测试
 ./gradlew :applications:test             # 应用层测试
 
@@ -1402,7 +1389,6 @@ object TestDependencyValidator {
             "infrastructure",
             "shared-kernel", 
             "bounded-contexts",
-            "anti-corruption-layers",
             "ports",
             "applications"
         )
@@ -1460,7 +1446,7 @@ object TestDependencyValidator {
 ### 架构合规性验证
 - **DDD分层架构**: ✅ 完全符合垂直切片架构和分层依赖规则
 - **依赖倒置原则**: ✅ 基础设施层不依赖业务层，通过接口实现依赖倒置
-- **模块依赖关系**: ✅ 严格遵循应用层→端口层→限界上下文层→防腐层→共享内核→基础设施层的单向依赖
+- **模块依赖关系**: ✅ 严格遵循应用层→端口层→限界上下文层→共享内核→基础设施层的单向依赖
 - **循环依赖检测**: ✅ 无循环依赖，模块间依赖关系清晰
 
 ### Kotlin最佳实践验证
@@ -1523,7 +1509,7 @@ object TestDependencyValidator {
 | 领域服务 | ⭐⭐⭐⭐ | 跨聚合的业务逻辑封装 |
 | 限界上下文 | ⭐⭐⭐⭐ | 清晰的上下文边界和通信机制 |
 | 事件驱动 | ⭐⭐⭐⭐ | 完整的领域事件流 |
-| 防腐层 | ⭐⭐⭐ | 跨上下文通信的保护机制 |
+| 集成事件 | ⭐⭐⭐ | 跨上下文通信的事件机制 |
 
 ## ✅ 依赖关系验证总结
 
@@ -1534,12 +1520,12 @@ object TestDependencyValidator {
 
 #### ✅ 已实现的依赖控制机制
 1. **分层依赖规则** - 严格遵循DDD六边形架构
-   - 应用层 → 端口层 → 限界上下文层 → 防腐层 → 共享内核 → 基础设施层
+   - 应用层 → 端口层 → 限界上下文层 → 共享内核 → 基础设施层
    - 单向依赖，无反向依赖
 
-2. **跨上下文通信保护** - 通过防腐层实现
+2. **跨上下文通信保护** - 通过集成事件实现
    - 限界上下文之间禁止直接依赖
-   - 所有跨上下文通信必须通过防腐层
+   - 所有跨上下文通信必须通过集成事件
 
 3. **基础设施层隔离** - 不依赖任何业务模块
    - 基础设施层仅提供技术能力

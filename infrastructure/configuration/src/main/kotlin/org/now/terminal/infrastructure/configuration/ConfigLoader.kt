@@ -3,14 +3,14 @@ package org.now.terminal.infrastructure.configuration
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigResolveOptions
-import org.now.terminal.infrastructure.logging.TerminalLogger
+import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
  * 配置加载器 - 负责加载和解析配置文件
  */
 object ConfigLoader {
-    private val logger = TerminalLogger.getLogger(ConfigLoader::class.java)
+    private val logger = LoggerFactory.getLogger(ConfigLoader::class.java)
     
     /**
      * 加载应用程序配置
