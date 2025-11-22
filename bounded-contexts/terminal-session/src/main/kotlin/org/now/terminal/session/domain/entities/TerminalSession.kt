@@ -48,8 +48,8 @@ class TerminalSession(
         process = createProcess()
         status = SessionStatus.RUNNING
         
-        // 启动输出监听协程
-        startOutputListener()
+        // 注意：输出监听协程将在SessionCreated事件处理器中启动
+        // 这样可以更好地分离关注点，聚合根专注于状态管理
         
         // 添加会话创建领域事件
         domainEvents.add(SessionCreatedEvent(
@@ -68,7 +68,7 @@ class TerminalSession(
     /**
      * 启动输出监听协程
      */
-    private fun startOutputListener() {
+    fun startOutputListener() {
         val currentProcess = process ?: return
         
         // 启动协程监听PTY进程输出通道（真正的异步监听）

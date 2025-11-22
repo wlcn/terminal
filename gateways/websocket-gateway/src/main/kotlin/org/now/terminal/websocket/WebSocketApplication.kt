@@ -3,11 +3,14 @@ package org.now.terminal.websocket
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.di.configurationModule
 import org.now.terminal.infrastructure.eventbus.di.eventBusModule
 import org.now.terminal.infrastructure.logging.di.loggingModule
+import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
 
 /**
@@ -33,7 +36,7 @@ object WebSocketApplication {
         // 配置Koin依赖注入
         install(Koin) {
             // 加载WebSocket模块和TerminalSession模块
-            modules(configurationModule, loggingModule, eventBusModule, webSocketModule)
+            modules(configurationModule, loggingModule, eventBusModule, terminalSessionModule, webSocketModule)
         }
         
         // 初始化基础设施
@@ -70,7 +73,11 @@ object WebSocketApplication {
         // 启动事件总线并注册事件处理器
         val eventBusService = koin.get<org.now.terminal.infrastructure.eventbus.EventBusLifecycleService>()
         eventBusService.start()
-        eventBusService.registerEventHandlers()
+        
+        // 使用协程启动事件处理器注册（异步执行）
+        kotlinx.coroutines.GlobalScope.launch {
+            eventBusService.registerEventHandlers()
+        }
     }
     
 
