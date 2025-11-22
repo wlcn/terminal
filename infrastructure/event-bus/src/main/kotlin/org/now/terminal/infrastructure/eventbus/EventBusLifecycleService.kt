@@ -1,10 +1,6 @@
 package org.now.terminal.infrastructure.eventbus
 
-import org.koin.core.Koin
-import org.koin.core.context.GlobalContext
 import org.now.terminal.infrastructure.logging.TerminalLogger
-import org.now.terminal.shared.events.Event
-import org.now.terminal.shared.events.EventHandler
 
 /**
  * 事件总线生命周期服务
@@ -14,7 +10,7 @@ class EventBusLifecycleService {
     
     private val logger = TerminalLogger.getLogger(EventBusLifecycleService::class.java)
     private val eventBus = EventBusFactory.createMonitoredEventBus()
-    private val discoveryService = EventHandlerDiscoveryService(getKoin())
+    private val discoveryService = EventHandlerDiscoveryService(eventBus)
     
     /**
      * 启动事件总线
@@ -41,57 +37,17 @@ class EventBusLifecycleService {
     }
     
     /**
-     * 注册事件处理器
+     * 初始化事件处理器注册服务
+     * 业务层应该直接调用 EventBus.registerHandlers() 方法进行手动注册
      */
-    suspend fun registerEventHandlers() {
+    suspend fun initializeEventHandlers() {
         try {
-            // 发现所有事件处理器
-            val handlers = discoveryService.discoverEventHandlers()
-            
-            if (handlers.isEmpty()) {
-                logger.warn("⚠️ 未发现任何事件处理器")
-                return
-            }
-            
-            // 注册每个事件处理器
-            var registeredCount = 0
-            handlers.forEach { handler ->
-                val eventClass = discoveryService.getEventClassForHandler(handler)
-                if (eventClass != null) {
-                    registerEventHandler(eventClass, handler)
-                    registeredCount++
-                } else {
-                    logger.warn("⚠️ 无法确定处理器 ${handler.javaClass.simpleName} 处理的事件类型")
-                }
-            }
-            
-            logger.info("✅ 成功注册 $registeredCount 个事件处理器")
-            
+            discoveryService.initialize()
+            logger.info("✅ 事件处理器注册服务已初始化")
+            logger.info("💡 建议业务层直接调用 EventBus.registerHandlers() 方法进行手动注册")
+            logger.info("💡 这样可以避免依赖注入框架的局限性，提供更好的控制性和可维护性")
         } catch (e: Exception) {
-            logger.error("❌ 注册事件处理器时发生错误: {}", e.message)
+            logger.error("❌ 初始化事件处理器注册服务时发生错误: {}", e.message)
         }
-    }
-    
-    /**
-     * 注册单个事件处理器
-     */
-    private suspend fun <T : Event> registerEventHandler(eventClass: Class<T>, handler: EventHandler<*>) {
-        try {
-            @Suppress("UNCHECKED_CAST")
-            val typedHandler = handler as EventHandler<T>
-            
-            eventBus.subscribe(eventClass, typedHandler)
-            logger.debug("✅ 注册事件处理器: ${handler.javaClass.simpleName} -> ${eventClass.simpleName}")
-            
-        } catch (e: Exception) {
-            logger.error("❌ 注册事件处理器失败: ${handler.javaClass.simpleName} -> ${eventClass.simpleName}, 错误: ${e.message}")
-        }
-    }
-    
-    /**
-     * 获取Koin实例
-     */
-    private fun getKoin(): Koin {
-        return GlobalContext.get()
     }
 }

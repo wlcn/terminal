@@ -50,6 +50,18 @@ class InMemoryEventBus(
         logger.debug("Subscribed handler for event type: {}", eventType.simpleName)
     }
     
+    /**
+     * 批量注册事件处理器
+     * 业务层可以直接调用此方法来注册所有事件处理器
+     */
+    suspend fun registerHandlers(vararg handlerPairs: Pair<Class<out Event>, EventHandler<*>>) {
+        handlerPairs.forEach { (eventClass, handler) ->
+            @Suppress("UNCHECKED_CAST")
+            subscribe(eventClass as Class<Event>, handler as EventHandler<Event>)
+        }
+        logger.info("✅ 批量注册了 ${handlerPairs.size} 个事件处理器")
+    }
+    
     override suspend fun <T : Event> unsubscribe(eventType: Class<T>, handler: EventHandler<T>) {
         handlers[eventType]?.remove(handler as EventHandler<*>)
         logger.debug("Unsubscribed handler for event type: {}", eventType.simpleName)
