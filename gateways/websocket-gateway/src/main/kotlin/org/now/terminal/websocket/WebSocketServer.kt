@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.seconds
  * 负责WebSocket连接管理和消息路由
  */
 class WebSocketServer(
-    private val outputPublisher: WebSocketOutputPublisher
+    private val outputPublisher: org.now.terminal.session.domain.services.TerminalOutputPublisher
 ) {
     
     /**
@@ -27,19 +27,25 @@ class WebSocketServer(
      */
     suspend fun handleConnection(sessionId: SessionId, session: WebSocketSession) {
         try {
-            // 注册会话
-            outputPublisher.registerSession(sessionId, session)
+            // 注册会话（需要扩展TerminalOutputPublisher接口）
+            if (outputPublisher is WebSocketOutputPublisher) {
+                outputPublisher.registerSession(sessionId, session)
+            }
             
             // 监听连接关闭
             session.incoming.consumeAsFlow().collect {
                 // 连接关闭时注销会话
                 if (it is Frame.Close) {
-                    outputPublisher.unregisterSession(sessionId)
+                    if (outputPublisher is WebSocketOutputPublisher) {
+                        outputPublisher.unregisterSession(sessionId)
+                    }
                 }
             }
         } catch (e: Exception) {
             // 异常处理
-            outputPublisher.unregisterSession(sessionId)
+            if (outputPublisher is WebSocketOutputPublisher) {
+                outputPublisher.unregisterSession(sessionId)
+            }
             throw e
         }
     }

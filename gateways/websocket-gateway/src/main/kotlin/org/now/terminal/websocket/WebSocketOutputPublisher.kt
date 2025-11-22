@@ -73,7 +73,7 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
      * @param sessionId 会话ID
      * @return 是否已连接
      */
-    suspend fun isSessionConnected(sessionId: SessionId): Boolean {
+    override suspend fun isSessionConnected(sessionId: SessionId): Boolean {
         return mutex.withLock {
             sessions.containsKey(sessionId)
         }
@@ -83,7 +83,7 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
      * 获取活跃会话数量
      * @return 活跃会话数量
      */
-    suspend fun getActiveSessionCount(): Int {
+    override suspend fun getActiveSessionCount(): Int {
         return mutex.withLock {
             sessions.size
         }
@@ -92,7 +92,7 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
     /**
      * 关闭所有WebSocket连接
      */
-    suspend fun closeAllSessions() {
+    override suspend fun closeAllSessions() {
         mutex.withLock {
             sessions.forEach { (sessionId, session) ->
                 try {
