@@ -1,202 +1,204 @@
 package org.now.terminal.session.domain.valueobjects
 
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.assertions.throwables.shouldThrow
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 
-class ValueObjectsTest {
+class ValueObjectsTest : BehaviorSpec({
     
-    @Test
-    fun `should create valid TerminalCommand`() {
-        // When
-        val command = TerminalCommand("ls -la")
-        
-        // Then
-        assertEquals("ls -la", command.value)
+    beforeTest {
+        // 初始化配置管理器（用于测试环境）
+        ConfigurationManager.initialize(environment = "test")
     }
     
-    @Test
-    fun `should throw exception for blank TerminalCommand`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalCommand("   ")
+    afterTest {
+        // 清理配置管理器
+        ConfigurationManager.reset()
+    }
+    
+    given("TerminalCommand") {
+        `when`("创建有效的命令") {
+            val command = TerminalCommand("ls -la")
+            
+            then("应该包含正确的值") {
+                command.value shouldBe "ls -la"
+            }
         }
         
-        assertEquals("Command cannot be blank", exception.message)
-    }
-    
-    @Test
-    fun `should throw exception for too long TerminalCommand`() {
-        // Given
-        val longCommand = "a".repeat(1025)
-        
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalCommand(longCommand)
+        `when`("创建空白命令") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalCommand("   ")
+                }
+                exception.message shouldBe "Command cannot be blank"
+            }
         }
         
-        assertEquals("Command too long", exception.message)
+        `when`("创建过长的命令") {
+            val longCommand = "a".repeat(1025)
+            
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalCommand(longCommand)
+                }
+                exception.message shouldBe "Command too long"
+            }
+        }
     }
     
-    @Test
-    fun `should create valid TerminalSize`() {
-        // When
-        val size = TerminalSize(80, 24)
-        
-        // Then
-        assertEquals(80, size.columns)
-        assertEquals(24, size.rows)
-    }
-    
-    @Test
-    fun `should throw exception for invalid TerminalSize columns`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalSize(0, 24)
+    given("TerminalSize") {
+        `when`("创建有效的尺寸") {
+            val size = TerminalSize(80, 24)
+            
+            then("应该包含正确的列数和行数") {
+                size.columns shouldBe 80
+                size.rows shouldBe 24
+            }
         }
         
-        assertEquals("Columns must be positive", exception.message)
-    }
-    
-    @Test
-    fun `should throw exception for invalid TerminalSize rows`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalSize(80, 0)
+        `when`("创建无效的列数") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalSize(0, 24)
+                }
+                exception.message shouldBe "Columns must be positive"
+            }
         }
         
-        assertEquals("Rows must be positive", exception.message)
-    }
-    
-    @Test
-    fun `should throw exception for too large TerminalSize columns`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalSize(501, 24)
+        `when`("创建无效的行数") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalSize(80, 0)
+                }
+                exception.message shouldBe "Rows must be positive"
+            }
         }
         
-        assertEquals("Columns too large", exception.message)
-    }
-    
-    @Test
-    fun `should throw exception for too large TerminalSize rows`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalSize(80, 201)
+        `when`("创建过大的列数") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalSize(501, 24)
+                }
+                exception.message shouldBe "Columns too large"
+            }
         }
         
-        assertEquals("Rows too large", exception.message)
-    }
-    
-    @Test
-    fun `should create TerminalSize from string`() {
-        // When
-        val size = TerminalSize.fromString("80x24")
-        
-        // Then
-        assertEquals(80, size.columns)
-        assertEquals(24, size.rows)
-    }
-    
-    @Test
-    fun `should throw exception for invalid TerminalSize string format`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            TerminalSize.fromString("80-24")
+        `when`("创建过大的行数") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalSize(80, 201)
+                }
+                exception.message shouldBe "Rows too large"
+            }
         }
         
-        assertEquals("Terminal size format should be 'columnsxrows'", exception.message)
-    }
-    
-    @Test
-    fun `should create valid PtyConfiguration`() {
-        // When
-        val config = PtyConfiguration(
-            command = TerminalCommand("/bin/bash"),
-            environment = mapOf("PATH" to "/usr/bin"),
-            size = TerminalSize.DEFAULT
-        )
+        `when`("从字符串创建尺寸") {
+            val size = TerminalSize.fromString("80x24")
+            
+            then("应该正确解析列数和行数") {
+                size.columns shouldBe 80
+                size.rows shouldBe 24
+            }
+        }
         
-        // Then
-        assertEquals("/bin/bash", config.command.value)
-        assertEquals("/usr/bin", config.environment["PATH"])
-        assertEquals(TerminalSize.DEFAULT, config.size)
+        `when`("使用无效格式的字符串") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    TerminalSize.fromString("80-24")
+                }
+                exception.message shouldBe "Terminal size format should be 'columnsxrows'"
+            }
+        }
     }
     
-    @Test
-    fun `should throw exception for empty environment in PtyConfiguration`() {
-        // When & Then
-        val exception = assertThrows<IllegalArgumentException> {
-            PtyConfiguration(
+    given("PtyConfiguration") {
+        `when`("创建有效的配置") {
+            val config = PtyConfiguration(
                 command = TerminalCommand("/bin/bash"),
-                environment = emptyMap(),
+                environment = mapOf("PATH" to "/usr/bin"),
                 size = TerminalSize.DEFAULT
             )
+            
+            then("应该包含正确的命令、环境和尺寸") {
+                config.command.value shouldBe "/bin/bash"
+                config.environment["PATH"] shouldBe "/usr/bin"
+                config.size shouldBe TerminalSize.DEFAULT
+            }
         }
         
-        assertEquals("Environment cannot be empty", exception.message)
+        `when`("创建空环境的配置") {
+            then("应该抛出异常") {
+                val exception = shouldThrow<IllegalArgumentException> {
+                    PtyConfiguration(
+                        command = TerminalCommand("/bin/bash"),
+                        environment = emptyMap(),
+                        size = TerminalSize.DEFAULT
+                    )
+                }
+                exception.message shouldBe "Environment cannot be empty"
+            }
+        }
+        
+        `when`("创建默认配置") {
+            val config = PtyConfiguration.createDefault(TerminalCommand("/bin/bash"))
+            
+            then("应该包含正确的命令和非空环境") {
+                config.command.value shouldBe "/bin/bash"
+                config.environment.isNotEmpty().shouldBeTrue()
+                config.size shouldBe TerminalSize.DEFAULT
+            }
+        }
     }
     
-    @Test
-    fun `should create default PtyConfiguration`() {
-        // When
-        val config = PtyConfiguration.createDefault(TerminalCommand("/bin/bash"))
+    given("OutputBuffer") {
+        `when`("管理缓冲区内容") {
+            val buffer = OutputBuffer()
+            buffer.append("Hello")
+            buffer.append(" World")
+            
+            then("应该包含正确的内容和大小") {
+                buffer.getContent() shouldBe "Hello World"
+                buffer.size() shouldBe 11
+            }
+        }
         
-        // Then
-        assertEquals("/bin/bash", config.command.value)
-        assertTrue(config.environment.isNotEmpty())
-        assertEquals(TerminalSize.DEFAULT, config.size)
+        `when`("清空缓冲区") {
+            val buffer = OutputBuffer()
+            buffer.append("Test content")
+            buffer.clear()
+            
+            then("应该为空且大小为0") {
+                buffer.getContent() shouldBe ""
+                buffer.size() shouldBe 0
+            }
+        }
+        
+        `when`("添加超过限制的内容") {
+            val buffer = OutputBuffer()
+            val bufferSizeLimit = ConfigurationManager.getTerminalConfig().bufferSize
+            val longContent = "a".repeat(bufferSizeLimit + 100)
+            buffer.append(longContent)
+            
+            then("应该限制在缓冲区大小限制内") {
+                buffer.size() shouldBe bufferSizeLimit
+            }
+        }
     }
     
-    @Test
-    fun `should manage OutputBuffer content`() {
-        // Given
-        val buffer = OutputBuffer()
-        
-        // When
-        buffer.append("Hello")
-        buffer.append(" World")
-        
-        // Then
-        assertEquals("Hello World", buffer.getContent())
-        assertEquals(11, buffer.size())
+    given("TerminationReason") {
+        `when`("检查枚举值") {
+            then("应该包含所有有效的终止原因") {
+                TerminationReason.values().size shouldBe 5
+                TerminationReason.values() shouldContain TerminationReason.NORMAL
+                TerminationReason.values() shouldContain TerminationReason.USER_REQUESTED
+                TerminationReason.values() shouldContain TerminationReason.PROCESS_ERROR
+                TerminationReason.values() shouldContain TerminationReason.TIMEOUT
+                TerminationReason.values() shouldContain TerminationReason.SYSTEM_ERROR
+            }
+        }
     }
-    
-    @Test
-    fun `should clear OutputBuffer`() {
-        // Given
-        val buffer = OutputBuffer()
-        buffer.append("Test content")
-        
-        // When
-        buffer.clear()
-        
-        // Then
-        assertEquals("", buffer.getContent())
-        assertEquals(0, buffer.size())
-    }
-    
-    @Test
-    fun `should respect OutputBuffer size limit`() {
-        // Given
-        val buffer = OutputBuffer()
-        val longContent = "a".repeat(100_000 + 100)
-        
-        // When
-        buffer.append(longContent)
-        
-        // Then
-        assertEquals(100_000, buffer.size())
-    }
-    
-    @Test
-    fun `should have valid TerminationReason values`() {
-        // Then
-        assertEquals(5, TerminationReason.values().size)
-        assertTrue(TerminationReason.values().contains(TerminationReason.NORMAL))
-        assertTrue(TerminationReason.values().contains(TerminationReason.USER_REQUESTED))
-        assertTrue(TerminationReason.values().contains(TerminationReason.PROCESS_ERROR))
-        assertTrue(TerminationReason.values().contains(TerminationReason.TIMEOUT))
-        assertTrue(TerminationReason.values().contains(TerminationReason.SYSTEM_ERROR))
-    }
-}
+})

@@ -1,181 +1,220 @@
 package org.now.terminal.session.infrastructure.repositories
 
+import io.kotest.core.spec.style.BehaviorSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.now.terminal.session.domain.entities.TerminalSession
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.shared.valueobjects.UserId
-import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 
-class InMemoryTerminalSessionRepositoryTest {
+class InMemoryTerminalSessionRepositoryTest : BehaviorSpec({
     
-    private lateinit var repository: InMemoryTerminalSessionRepository
-    private var sessionId: SessionId = SessionId.generate()
-    private var userId: UserId = UserId.generate()
-    private lateinit var mockSession: TerminalSession
-    
-    @BeforeEach
-    fun setUp() {
-        repository = InMemoryTerminalSessionRepository()
+    given("InMemoryTerminalSessionRepository") {
         
-        mockSession = mockk()
-        every { mockSession.sessionId } returns sessionId
-        every { mockSession.userId } returns userId
-        every { mockSession.isAlive() } returns true
-    }
-    
-    @Test
-    fun `should save session successfully`() {
-        // When
-        val result = repository.save(mockSession)
+        `when`("保存会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            val userId = UserId.generate()
+            val mockSession = mockk<TerminalSession>()
+            
+            every { mockSession.sessionId } returns sessionId
+            every { mockSession.userId } returns userId
+            every { mockSession.isAlive() } returns true
+            
+            val result = repository.save(mockSession)
+            
+            then("应该成功保存并可以找到") {
+                result shouldBe mockSession
+                repository.findById(sessionId).shouldNotBeNull()
+            }
+        }
         
-        // Then
-        assertEquals(mockSession, result)
-        assertNotNull(repository.findById(sessionId))
-    }
-    
-    @Test
-    fun `should find session by id`() {
-        // Given
-        repository.save(mockSession)
+        `when`("通过ID查找会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            val userId = UserId.generate()
+            val mockSession = mockk<TerminalSession>()
+            
+            every { mockSession.sessionId } returns sessionId
+            every { mockSession.userId } returns userId
+            every { mockSession.isAlive() } returns true
+            
+            repository.save(mockSession)
+            val result = repository.findById(sessionId)
+            
+            then("应该返回正确的会话") {
+                result shouldBe mockSession
+            }
+        }
         
-        // When
-        val result = repository.findById(sessionId)
+        `when`("查找不存在的会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            
+            val result = repository.findById(sessionId)
+            
+            then("应该返回null") {
+                result.shouldBeNull()
+            }
+        }
         
-        // Then
-        assertEquals(mockSession, result)
-    }
-    
-    @Test
-    fun `should return null when session not found by id`() {
-        // When
-        val result = repository.findById(sessionId)
+        `when`("通过用户ID查找会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            val userId = UserId.generate()
+            val mockSession = mockk<TerminalSession>()
+            
+            every { mockSession.sessionId } returns sessionId
+            every { mockSession.userId } returns userId
+            every { mockSession.isAlive() } returns true
+            
+            repository.save(mockSession)
+            val result = repository.findByUserId(userId)
+            
+            then("应该返回用户的会话列表") {
+                result.size shouldBe 1
+                result[0] shouldBe mockSession
+            }
+        }
         
-        // Then
-        assertNull(result)
-    }
-    
-    @Test
-    fun `should find sessions by user id`() {
-        // Given
-        repository.save(mockSession)
+        `when`("查找用户没有的会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val userId = UserId.generate()
+            
+            val result = repository.findByUserId(userId)
+            
+            then("应该返回空列表") {
+                result.isEmpty().shouldBeTrue()
+            }
+        }
         
-        // When
-        val result = repository.findByUserId(userId)
-        
-        // Then
-        assertEquals(1, result.size)
-        assertEquals(mockSession, result[0])
-    }
-    
-    @Test
-    fun `should return empty list when no sessions found for user`() {
-        // When
-        val result = repository.findByUserId(userId)
-        
-        // Then
-        assertTrue(result.isEmpty())
-    }
-    
-    @Test
-    fun `should delete session successfully`() {
-        // Given
-        repository.save(mockSession)
-        
-        // When
-        repository.delete(sessionId)
-        
-        // Then
-        assertNull(repository.findById(sessionId))
-    }
-    
-    @Test
-    fun `should not throw exception when deleting non-existent session`() {
-        // When & Then
-        assertDoesNotThrow {
+        `when`("删除会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            val userId = UserId.generate()
+            val mockSession = mockk<TerminalSession>()
+            
+            every { mockSession.sessionId } returns sessionId
+            every { mockSession.userId } returns userId
+            every { mockSession.isAlive() } returns true
+            
+            repository.save(mockSession)
             repository.delete(sessionId)
+            
+            then("应该成功删除会话") {
+                repository.findById(sessionId).shouldBeNull()
+            }
+        }
+        
+        `when`("删除不存在的会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val sessionId = SessionId.generate()
+            
+            then("不应该抛出异常") {
+                shouldNotThrowAny {
+                    repository.delete(sessionId)
+                }
+            }
+        }
+    
+        `when`("查找所有活跃会话") {
+            val repository = InMemoryTerminalSessionRepository()
+            val activeSession1 = mockk<TerminalSession>()
+            val activeSession2 = mockk<TerminalSession>()
+            val inactiveSession = mockk<TerminalSession>()
+            
+            every { activeSession1.sessionId } returns SessionId.generate()
+            every { activeSession1.userId } returns UserId.generate()
+            every { activeSession1.isAlive() } returns true
+            
+            every { activeSession2.sessionId } returns SessionId.generate()
+            every { activeSession2.userId } returns UserId.generate()
+            every { activeSession2.isAlive() } returns true
+            
+            every { inactiveSession.sessionId } returns SessionId.generate()
+            every { inactiveSession.userId } returns UserId.generate()
+            every { inactiveSession.isAlive() } returns false
+            
+            repository.save(activeSession1)
+            repository.save(activeSession2)
+            repository.save(inactiveSession)
+            
+            val result = repository.findAllActive()
+            
+            then("应该只返回活跃会话") {
+                result.size shouldBe 2
+                result shouldContain activeSession1
+                result shouldContain activeSession2
+                result shouldNotContain inactiveSession
+            }
+        }
+        
+        `when`("查找没有活跃会话的情况") {
+            val repository = InMemoryTerminalSessionRepository()
+            val inactiveSession = mockk<TerminalSession>()
+            every { inactiveSession.sessionId } returns SessionId.generate()
+            every { inactiveSession.userId } returns UserId.generate()
+            every { inactiveSession.isAlive() } returns false
+            
+            repository.save(inactiveSession)
+            
+            val result = repository.findAllActive()
+            
+            then("应该返回空列表") {
+                result.isEmpty().shouldBeTrue()
+            }
+        }
+        
+        `when`("处理多个操作") {
+            val repository = InMemoryTerminalSessionRepository()
+            val session1 = mockk<TerminalSession>()
+            val session2 = mockk<TerminalSession>()
+            
+            every { session1.sessionId } returns SessionId.generate()
+            every { session1.userId } returns UserId.generate()
+            every { session1.isAlive() } returns true
+            
+            every { session2.sessionId } returns SessionId.generate()
+            every { session2.userId } returns UserId.generate()
+            every { session2.isAlive() } returns true
+            
+            repository.save(session1)
+            repository.save(session2)
+            
+            then("应该包含两个活跃会话") {
+                repository.findAllActive().size shouldBe 2
+            }
+        }
+        
+        `when`("删除一个会话后") {
+            val repository = InMemoryTerminalSessionRepository()
+            val session1 = mockk<TerminalSession>()
+            val session2 = mockk<TerminalSession>()
+            
+            every { session1.sessionId } returns SessionId.generate()
+            every { session1.userId } returns UserId.generate()
+            every { session1.isAlive() } returns true
+            
+            every { session2.sessionId } returns SessionId.generate()
+            every { session2.userId } returns UserId.generate()
+            every { session2.isAlive() } returns true
+            
+            repository.save(session1)
+            repository.save(session2)
+            repository.delete(session1.sessionId)
+            
+            then("应该只剩下一个会话") {
+                repository.findAllActive().size shouldBe 1
+                repository.findAllActive()[0] shouldBe session2
+            }
         }
     }
-    
-    @Test
-    fun `should find all active sessions`() {
-        // Given
-        val activeSession1 = mockk<TerminalSession>()
-        val activeSession2 = mockk<TerminalSession>()
-        val inactiveSession = mockk<TerminalSession>()
-        
-        every { activeSession1.sessionId } returns SessionId.generate()
-        every { activeSession1.userId } returns UserId.generate()
-        every { activeSession1.isAlive() } returns true
-        
-        every { activeSession2.sessionId } returns SessionId.generate()
-        every { activeSession2.userId } returns UserId.generate()
-        every { activeSession2.isAlive() } returns true
-        
-        every { inactiveSession.sessionId } returns SessionId.generate()
-        every { inactiveSession.userId } returns UserId.generate()
-        every { inactiveSession.isAlive() } returns false
-        
-        repository.save(activeSession1)
-        repository.save(activeSession2)
-        repository.save(inactiveSession)
-        
-        // When
-        val result = repository.findAllActive()
-        
-        // Then
-        assertEquals(2, result.size)
-        assertTrue(result.contains(activeSession1))
-        assertTrue(result.contains(activeSession2))
-        assertFalse(result.contains(inactiveSession))
-    }
-    
-    @Test
-    fun `should return empty list when no active sessions`() {
-        // Given
-        val inactiveSession = mockk<TerminalSession>()
-        every { inactiveSession.sessionId } returns SessionId.generate()
-        every { inactiveSession.userId } returns UserId.generate()
-        every { inactiveSession.isAlive() } returns false
-        
-        repository.save(inactiveSession)
-        
-        // When
-        val result = repository.findAllActive()
-        
-        // Then
-        assertTrue(result.isEmpty())
-    }
-    
-    @Test
-    fun `should handle multiple operations correctly`() {
-        // Given
-        val session1 = mockk<TerminalSession>()
-        val session2 = mockk<TerminalSession>()
-        
-        every { session1.sessionId } returns SessionId.generate()
-        every { session1.userId } returns UserId.generate()
-        every { session1.isAlive() } returns true
-        
-        every { session2.sessionId } returns SessionId.generate()
-        every { session2.userId } returns UserId.generate()
-        every { session2.isAlive() } returns true
-        
-        // When
-        repository.save(session1)
-        repository.save(session2)
-        
-        // Then
-        assertEquals(2, repository.findAllActive().size)
-        
-        // When
-        repository.delete(session1.sessionId)
-        
-        // Then
-        assertEquals(1, repository.findAllActive().size)
-        assertEquals(session2, repository.findAllActive()[0])
-    }
-}
+})

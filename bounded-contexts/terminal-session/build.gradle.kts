@@ -40,9 +40,6 @@ dependencies {
     
     // Test dependencies - Mockk (Kotlin模拟框架)
     testImplementation(libs.mockk)
-    
-    // Test dependencies - Kotlin Test
-    testImplementation(libs.kotlin.test.junit5)
 }
 
 tasks.test {

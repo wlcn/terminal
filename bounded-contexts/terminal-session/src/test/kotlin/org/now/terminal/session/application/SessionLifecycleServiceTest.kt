@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.AfterEach
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.session.domain.entities.SessionStatistics
 import org.now.terminal.session.domain.entities.TerminalSession
@@ -34,6 +36,9 @@ class SessionLifecycleServiceTest {
     
     @BeforeEach
     fun setUp() {
+        // 初始化配置管理器（用于测试环境）
+        ConfigurationManager.initialize(environment = "test")
+        
         mockRepository = mockk()
         mockEventBus = mockk()
         mockProcessFactory = mockk()
@@ -45,6 +50,12 @@ class SessionLifecycleServiceTest {
         service = SessionLifecycleService(mockEventBus, mockRepository, mockProcessFactory)
     }
     
+    @AfterEach
+    fun tearDown() {
+        // 清理配置管理器
+        ConfigurationManager.reset()
+    }
+    
     @Test
     fun `should create session successfully`() = runBlocking {
         // Given
@@ -52,6 +63,7 @@ class SessionLifecycleServiceTest {
         coEvery { mockProcess.start() } returns Unit
         coEvery { mockRepository.save(any()) } answers { firstArg() } // 返回保存的session对象
         coEvery { mockEventBus.publish(any()) } returns Unit
+        coEvery { mockRepository.findByUserId(userId!!) } returns emptyList() // 用户没有活跃会话
         
         // When
         val result = service.createSession(userId!!, ptyConfig)

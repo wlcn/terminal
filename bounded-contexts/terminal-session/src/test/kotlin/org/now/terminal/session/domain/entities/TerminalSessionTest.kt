@@ -4,7 +4,9 @@ import io.mockk.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.assertThrows
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.shared.valueobjects.SessionId
 import org.now.terminal.shared.valueobjects.UserId
@@ -32,6 +34,9 @@ class TerminalSessionTest {
     
     @BeforeEach
     fun setUp() {
+        // 初始化配置管理器（用于测试环境）
+        ConfigurationManager.initialize(environment = "test")
+        
         mockEventBus = mockk()
         mockProcessFactory = mockk()
         mockProcess = mockk()
@@ -40,6 +45,12 @@ class TerminalSessionTest {
         ptyConfig = PtyConfiguration.createDefault(TerminalCommand("/bin/bash"))
         
         session = TerminalSession(sessionId!!, userId!!, ptyConfig, mockProcessFactory)
+    }
+    
+    @AfterEach
+    fun tearDown() {
+        // 清理配置管理器
+        ConfigurationManager.reset()
     }
     
     @Test
