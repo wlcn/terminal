@@ -19,6 +19,9 @@ dependencies {
     // 日志
     implementation(libs.logback.classic)
     
+    // Koin依赖注入
+    implementation(libs.koin.core)
+    
     // 测试依赖
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)
