@@ -5,6 +5,7 @@ plugins {
 dependencies {
     // 项目内部依赖
     implementation(project(":shared-kernel"))
+    implementation(project(":infrastructure:configuration"))
     implementation(project(":infrastructure:event-bus"))
     
     // Kotlin标准库

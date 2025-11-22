@@ -1,11 +1,13 @@
 package org.now.terminal.session.domain.valueobjects
 
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
+
 /**
  * 输出缓冲区值对象
  */
 class OutputBuffer {
     private val buffer = StringBuilder()
-    private val maxSize = 100_000 // 100KB限制
+    private val maxSize = ConfigurationManager.getTerminalConfig().bufferSize
     
     /**
      * 追加内容到缓冲区

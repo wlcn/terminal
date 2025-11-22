@@ -14,7 +14,8 @@ data class AppConfig(
     val database: DatabaseConfig = DatabaseConfig(),
     val eventBus: EventBusConfig = EventBusConfig(),
     val logging: LoggingConfig = LoggingConfig(),
-    val monitoring: MonitoringConfig = MonitoringConfig()
+    val monitoring: MonitoringConfig = MonitoringConfig(),
+    val terminal: TerminalConfig = TerminalConfig()
 )
 
 /**
@@ -114,4 +115,30 @@ data class HealthConfig(
     val enabled: Boolean = true,
     val checkInterval: Long = 30000,
     val endpoints: List<String> = listOf("disk", "database", "memory")
+)
+
+/**
+ * 终端会话配置
+ */
+@Serializable
+data class TerminalConfig(
+    val defaultTerm: String = "xterm",
+    val maxSessionsPerUser: Int = 10,
+    val sessionTimeout: Long = 3600000, // 1小时
+    val bufferSize: Int = 8192,
+    val pty: PtyConfig = PtyConfig()
+)
+
+/**
+ * PTY配置
+ */
+@Serializable
+data class PtyConfig(
+    val defaultCommand: String = "/bin/bash",
+    val defaultWorkingDirectory: String = "/home/user",
+    val defaultEnvironment: Map<String, String> = mapOf(
+        "TERM" to "xterm",
+        "HOME" to "/home/user",
+        "PATH" to "/usr/local/bin:/usr/bin:/bin"
+    )
 )

@@ -34,6 +34,15 @@ class SessionLifecycleService(
     ): SessionId {
         logger.info("开始创建终端会话 - 用户ID: {}, PTY配置: {}", userId, ptyConfig)
         
+        // 检查用户会话数限制
+        val maxSessionsPerUser = org.now.terminal.infrastructure.configuration.ConfigurationManager.getTerminalConfig().maxSessionsPerUser
+        val activeSessions = listActiveSessions(userId)
+        if (activeSessions.size >= maxSessionsPerUser) {
+            logger.warn("用户已达到最大会话数限制 - 用户ID: {}, 当前会话数: {}, 最大限制: {}", 
+                userId, activeSessions.size, maxSessionsPerUser)
+            throw IllegalStateException("User has reached maximum session limit: $maxSessionsPerUser")
+        }
+        
         val sessionId = SessionId.generate()
         val session = TerminalSession(
             sessionId = sessionId,

@@ -13,6 +13,7 @@ dependencies {
     
     // 依赖共享内核
     implementation(project(":shared-kernel"))
+    implementation(project(":infrastructure:configuration"))
     
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.framework.engine)

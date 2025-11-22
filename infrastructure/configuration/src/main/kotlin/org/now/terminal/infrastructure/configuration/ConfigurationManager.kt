@@ -118,6 +118,11 @@ object ConfigurationManager {
     fun getMonitoringConfig(): MonitoringConfig = getConfig().monitoring
     
     /**
+     * 便捷方法：获取终端配置
+     */
+    fun getTerminalConfig(): TerminalConfig = getConfig().terminal
+    
+    /**
      * 便捷方法：获取应用程序名称
      */
     fun getAppName(): String = getConfig().name
