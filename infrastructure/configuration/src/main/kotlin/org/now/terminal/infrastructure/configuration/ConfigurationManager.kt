@@ -15,8 +15,9 @@ object ConfigurationManager {
      * 初始化配置管理器
      * @param configPath 配置文件路径（可选）
      * @param environment 环境名称（可选）
+     * @param osType 操作系统类型（可选，如"windows"、"linux"）
      */
-    fun initialize(configPath: String? = null, environment: String? = null) {
+    fun initialize(configPath: String? = null, environment: String? = null, osType: String? = null) {
         if (isInitialized) {
             logger.warn("ConfigurationManager is already initialized")
             return
@@ -24,7 +25,7 @@ object ConfigurationManager {
         
         try {
             // 加载配置
-            val config = ConfigLoader.loadAppConfig(configPath, environment)
+            val config = ConfigLoader.loadAppConfig(configPath, environment, osType)
             
             // 验证配置
             ConfigLoader.validateConfig(config)

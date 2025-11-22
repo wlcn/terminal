@@ -45,35 +45,37 @@ function App() {
       <header className="bg-black/20 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                <h1 className="text-xl font-bold text-white">Web Terminal</h1>
+                <div className={`w-3 h-3 rounded-full animate-pulse ${
+                  isConnected ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <h1 className="text-xl font-bold text-white">kt-terminal</h1>
               </div>
-              <span className="text-sm text-gray-300">Modern Terminal Application Platform</span>
             </div>
             
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleConnect}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`p-3 rounded-lg transition-all duration-300 ${
                   isConnected 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30' 
+                    : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
                 }`}
+                title={isConnected ? '断开连接' : '建立连接'}
               >
-                <Power size={16} />
-                <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+                <Power size={18} />
               </button>
               
               <button
                 onClick={toggleFullscreen}
-                className="p-2 text-gray-400 hover:text-white transition-colors"
+                className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg"
+                title={isFullscreen ? '退出全屏' : '全屏'}
               >
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-white transition-colors">
+              <button className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" title="设置">
                 <Settings size={20} />
               </button>
             </div>
@@ -84,9 +86,9 @@ function App() {
       {/* Main content area */}
       <main className="container mx-auto px-4 py-6">
         <div className="bg-black/20 backdrop-blur-lg rounded-xl border border-white/10 overflow-hidden">
-          <div className="p-4 border-b border-white/10">
+          <div className="p-3 border-b border-white/10">
             <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <span>Terminal Session</span>
+              <span>终端会话</span>
               <span>•</span>
               <span>bash</span>
               <span>•</span>
@@ -94,7 +96,7 @@ function App() {
             </div>
           </div>
           
-          <div className="h-[calc(100vh-200px)]">
+          <div className="h-[calc(100vh-180px)]">
             <TerminalComponent 
               ref={terminalRef}
               className="h-full" 
@@ -109,12 +111,12 @@ function App() {
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <div className="flex items-center space-x-4">
-              <span>WebSocket: {isConnected ? 'Connected' : 'Disconnected'}</span>
+              <span>状态: {isConnected ? '已连接' : '未连接'}</span>
               <span>•</span>
-              <span>Backend: localhost:8080</span>
+              <span>后端: localhost:8080</span>
             </div>
             <div>
-              <span>Web Terminal v1.0.0</span>
+              <span>kt-terminal v1.0</span>
             </div>
           </div>
         </div>

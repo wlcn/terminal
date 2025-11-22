@@ -163,10 +163,6 @@ fun Application.configureWebSocket() {
             try {
                 logger.info("🔌 新的WebSocket连接请求")
                 
-                // 生成新的Session ID
-                val sessionId = SessionId.generate()
-                logger.info("✅ 生成新会话ID: {}", sessionId.value)
-                
                 // 创建会话
                 val userId = org.now.terminal.shared.valueobjects.UserId.generate()
                 val ptyConfig = org.now.terminal.session.domain.valueobjects.PtyConfiguration.createDefault(
@@ -174,7 +170,7 @@ fun Application.configureWebSocket() {
                 )
                 
                 val terminalSessionService by inject<TerminalSessionService>()
-                terminalSessionService.createSession(userId, ptyConfig)
+                val sessionId = terminalSessionService.createSession(userId, ptyConfig)
                 logger.info("✅ 会话创建成功 - 会话ID: {}, 用户ID: {}", sessionId.value, userId.value)
                 
                 // 立即发送Session ID给前端

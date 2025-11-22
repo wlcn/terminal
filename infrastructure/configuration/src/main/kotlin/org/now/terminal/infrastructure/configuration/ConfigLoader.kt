@@ -16,14 +16,16 @@ object ConfigLoader {
      * 加载应用程序配置
      * @param configPath 配置文件路径（可选，默认为类路径下的application.conf）
      * @param environment 环境名称（可选，用于加载环境特定配置）
+     * @param osType 操作系统类型（可选，用于加载操作系统特定配置，如"windows"、"linux"）
      */
-    fun loadAppConfig(configPath: String? = null, environment: String? = null): AppConfig {
+    fun loadAppConfig(configPath: String? = null, environment: String? = null, osType: String? = null): AppConfig {
         try {
             val baseConfig = loadBaseConfig(configPath)
             val envConfig = loadEnvironmentConfig(environment)
+            val osConfig = loadOperatingSystemConfig(osType)
             
-            // 合并配置（环境配置覆盖基础配置）
-            val finalConfig = envConfig.withFallback(baseConfig)
+            // 合并配置（优先级：环境配置 > 操作系统配置 > 基础配置）
+            val finalConfig = envConfig.withFallback(osConfig).withFallback(baseConfig)
             
             // 转换为AppConfig对象
             return convertToAppConfig(finalConfig)
@@ -68,6 +70,42 @@ object ConfigLoader {
         } catch (e: Exception) {
             logger.debug("Environment specific config not found: {}", envConfigName)
             return ConfigFactory.empty()
+        }
+    }
+    
+    /**
+     * 加载操作系统特定配置
+     * @param osType 操作系统类型（可选，如"windows"、"linux"，如果为null则自动检测）
+     */
+    private fun loadOperatingSystemConfig(osType: String? = null): com.typesafe.config.Config {
+        val targetOsType = osType ?: detectOperatingSystem()
+        
+        if (targetOsType == null) {
+            logger.debug("Unable to detect operating system, skipping OS-specific configuration")
+            return ConfigFactory.empty()
+        }
+        
+        val osConfigName = "application-$targetOsType.conf"
+        try {
+            val config = ConfigFactory.parseResources(osConfigName)
+                .resolve(ConfigResolveOptions.defaults())
+            logger.info("Loaded OS-specific configuration for: {}", targetOsType)
+            return config
+        } catch (e: Exception) {
+            logger.debug("OS-specific config not found: {}", osConfigName)
+            return ConfigFactory.empty()
+        }
+    }
+    
+    /**
+     * 检测当前操作系统类型
+     */
+    private fun detectOperatingSystem(): String? {
+        return when {
+            System.getProperty("os.name").lowercase().contains("windows") -> "windows"
+            System.getProperty("os.name").lowercase().contains("linux") -> "linux"
+            System.getProperty("os.name").lowercase().contains("mac") -> "mac"
+            else -> null
         }
     }
     

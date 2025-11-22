@@ -5,6 +5,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.koin.ktor.plugin.Koin
 import org.now.terminal.infrastructure.configuration.ConfigurationManager
+import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.websocket.di.webSocketModule
 
@@ -41,11 +42,33 @@ object WebSocketApplication {
             modules(webSocketModule)
         }
         
+        // 启动事件总线
+        startEventBus()
+        
         // 配置WebSocket功能
         configureWebSocket()
         
         // 配置日志
         configureLogging()
+    }
+    
+    /**
+     * 启动事件总线
+     */
+    private fun Application.startEventBus() {
+        val logger = TerminalLogger.getLogger(WebSocketApplication::class.java)
+        try {
+            // 获取事件总线实例并启动
+            val eventBus = Koin.getKoin().get<EventBus>()
+            if (!eventBus.isRunning()) {
+                eventBus.start()
+                logger.info("✅ Event bus started successfully")
+            } else {
+                logger.info("ℹ️ Event bus is already running")
+            }
+        } catch (e: Exception) {
+            logger.error("❌ Failed to start event bus: {}", e.message)
+        }
     }
     
     /**
@@ -61,10 +84,11 @@ object WebSocketApplication {
      */
     @JvmStatic
     fun main(args: Array<String>) {
-        val port = if (args.isNotEmpty()) args[0].toIntOrNull() else null
+        // 解析命令行参数
+        val (port, environment, osType) = parseCommandLineArgs(args)
         
-        // 初始化配置管理器
-        ConfigurationManager.initialize()
+        // 初始化配置管理器（支持环境配置和操作系统配置）
+        ConfigurationManager.initialize(environment = environment, osType = osType)
         
         // 初始化日志系统
         TerminalLogger.initialize()
@@ -73,6 +97,39 @@ object WebSocketApplication {
         val actualPort = port ?: ConfigurationManager.getServerPort()
         
         logger.info("🚀 Starting WebSocket Gateway on port {}", actualPort)
+        logger.info("📋 Configuration: environment={}, osType={}", environment ?: "default", osType ?: "auto")
         start(actualPort)
+    }
+    
+    /**
+     * 解析命令行参数
+     * 支持格式：--port=8080 --env=prod --os=windows
+     */
+    private fun parseCommandLineArgs(args: Array<String>): Triple<Int?, String?, String?> {
+        var port: Int? = null
+        var environment: String? = null
+        var osType: String? = null
+        
+        args.forEach { arg ->
+            when {
+                arg.startsWith("--port=") -> {
+                    port = arg.substring(7).toIntOrNull()
+                }
+                arg.startsWith("--env=") -> {
+                    environment = arg.substring(6)
+                }
+                arg.startsWith("--os=") -> {
+                    osType = arg.substring(5)
+                }
+                arg.toIntOrNull() != null -> {
+                    // 向后兼容：第一个参数如果是数字，认为是端口
+                    if (port == null) {
+                        port = arg.toIntOrNull()
+                    }
+                }
+            }
+        }
+        
+        return Triple(port, environment, osType)
     }
 }
