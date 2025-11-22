@@ -1,12 +1,12 @@
 package org.now.terminal.infrastructure.configuration
 
-import org.slf4j.LoggerFactory
+import org.now.terminal.infrastructure.logging.TerminalLogger
 
 /**
  * 配置管理器 - 提供全局配置访问和生命周期管理
  */
 object ConfigurationManager {
-    private val logger = LoggerFactory.getLogger(ConfigurationManager::class.java)
+    private val logger = TerminalLogger.getLogger(ConfigurationManager::class.java)
     
     private var currentConfig: AppConfig? = null
     private var isInitialized = false

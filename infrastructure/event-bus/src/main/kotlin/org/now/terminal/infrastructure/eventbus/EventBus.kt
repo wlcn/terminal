@@ -3,9 +3,9 @@ package org.now.terminal.infrastructure.eventbus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHandler
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -35,7 +35,7 @@ class InMemoryEventBus(
     private val deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
     private val retryHandler: EventRetryHandler = EventRetryHandler(config)
 ) : EventBus {
-    private val logger = LoggerFactory.getLogger(InMemoryEventBus::class.java)
+    private val logger = TerminalLogger.getLogger(InMemoryEventBus::class.java)
     private val handlers = ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventHandler<*>>>()
     private val eventChannel = Channel<Event>(bufferSize)
     private var processingJob: Job? = null

@@ -106,7 +106,7 @@ class OrderPlacedEvent(val orderId: String, val amount: Double) : Event
 class UserEventHandler {
     init {
         eventBus.subscribe(UserCreatedEvent::class) { event ->
-            println("用户创建事件处理: ${event.userId}, ${event.username}")
+            logger.info("用户创建事件处理: ${event.userId}, ${event.username}")
             // 处理用户创建逻辑
         }
     }
@@ -115,7 +115,7 @@ class UserEventHandler {
 class OrderEventHandler {
     init {
         eventBus.subscribe(OrderPlacedEvent::class) { event ->
-            println("订单创建事件处理: ${event.orderId}, ${event.amount}")
+            logger.info("订单创建事件处理: ${event.orderId}, ${event.amount}")
             // 处理订单逻辑
         }
     }
@@ -160,7 +160,7 @@ class NotificationService {
     
     private fun sendWelcomeEmail(userId: String, username: String) {
         // 发送邮件逻辑
-        println("发送欢迎邮件给用户: $username")
+        logger.info("发送欢迎邮件给用户: $username")
     }
 }
 
@@ -194,9 +194,9 @@ class PaymentEventHandler {
             try {
                 // 可能失败的外部API调用
                 processPayment(event.paymentId)
-                println("支付处理成功: ${event.paymentId}")
+                logger.info("支付处理成功: ${event.paymentId}")
             } catch (e: Exception) {
-                println("支付处理失败，将进行重试: ${e.message}")
+                logger.warn("支付处理失败，将进行重试: ${e.message}")
                 throw e // 抛出异常触发重试机制
             }
         }
@@ -234,10 +234,10 @@ class AnalyticsService {
 // 获取事件总线指标
 suspend fun printEventBusMetrics() {
     val metrics = // 从监控系统获取指标
-    println("事件发布总数: ${metrics.totalEventsPublished}")
-    println("事件处理总数: ${metrics.totalEventsProcessed}")
-    println("失败事件数: ${metrics.failedEvents}")
-    println("平均处理时间: ${metrics.averageProcessingTime}ms")
+    logger.info("事件发布总数: ${metrics.totalEventsPublished}")
+    logger.info("事件处理总数: ${metrics.totalEventsProcessed}")
+    logger.info("失败事件数: ${metrics.failedEvents}")
+    logger.info("平均处理时间: ${metrics.averageProcessingTime}ms")
 }
 ```
 
@@ -315,7 +315,7 @@ class DeadLetterHandler {
     init {
         // 处理死信队列中的事件
         deadLetterQueue.observe().collect { deadLetter ->
-            println("处理死信事件: ${deadLetter.event}, 失败原因: ${deadLetter.failureReason}")
+            logger.warn("处理死信事件: ${deadLetter.event}, 失败原因: ${deadLetter.failureReason}")
             
             // 记录到错误日志或发送警报
             logDeadLetterEvent(deadLetter)
@@ -378,13 +378,13 @@ class EventBusMonitor {
     private val metrics = EventBusMetrics()
     
     fun printMetrics() {
-        println("=== 事件总线指标 ===")
-        println("总发布事件数: ${metrics.totalEventsPublished}")
-        println("总处理事件数: ${metrics.totalEventsProcessed}")
-        println("失败事件数: ${metrics.failedEvents}")
-        println("当前活跃处理器: ${metrics.activeHandlers}")
-        println("平均处理时间: ${metrics.averageProcessingTime}ms")
-        println("最大处理时间: ${metrics.maxProcessingTime}ms")
+        logger.info("=== 事件总线指标 ===")
+        logger.info("总发布事件数: ${metrics.totalEventsPublished}")
+        logger.info("总处理事件数: ${metrics.totalEventsProcessed}")
+        logger.info("失败事件数: ${metrics.failedEvents}")
+        logger.info("当前活跃处理器: ${metrics.activeHandlers}")
+        logger.info("平均处理时间: ${metrics.averageProcessingTime}ms")
+        logger.info("最大处理时间: ${metrics.maxProcessingTime}ms")
     }
     
     fun resetMetrics() {
@@ -540,12 +540,12 @@ class OptimizedEventHandler {
 // 启用详细日志
 class DebugEventBus(config: EventBusConfig) : InMemoryEventBus(config) {
     override suspend fun <T : Event> publish(event: T) {
-        println("发布事件: ${event::class.simpleName}")
+        logger.debug("发布事件: ${event::class.simpleName}")
         super.publish(event)
     }
     
     override fun <T : Event> subscribe(eventType: KClass<T>, handler: suspend (T) -> Unit) {
-        println("订阅事件: ${eventType.simpleName}")
+        logger.debug("订阅事件: ${eventType.simpleName}")
         super.subscribe(eventType, handler)
     }
 }

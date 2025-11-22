@@ -1,7 +1,7 @@
 package org.now.terminal.infrastructure.eventbus
 
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.shared.events.Event
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class DeadLetterQueue(
     private val capacity: Int = 1000
 ) {
-    private val logger = LoggerFactory.getLogger(DeadLetterQueue::class.java)
+    private val logger = TerminalLogger.getLogger(DeadLetterQueue::class.java)
     private val queue = ConcurrentLinkedQueue<DeadLetterEvent>()
     private val size = AtomicInteger(0)
     

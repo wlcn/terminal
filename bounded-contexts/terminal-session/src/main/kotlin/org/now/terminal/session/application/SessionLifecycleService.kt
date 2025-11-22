@@ -2,6 +2,7 @@ package org.now.terminal.session.application
 
 import kotlinx.coroutines.runBlocking
 import org.now.terminal.infrastructure.eventbus.EventBus
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.session.domain.entities.SessionStatistics
 import org.now.terminal.session.domain.entities.TerminalSession
 import org.now.terminal.session.domain.repositories.TerminalSessionRepository
@@ -22,6 +23,8 @@ class SessionLifecycleService(
     private val processFactory: ProcessFactory
 ) : TerminalSessionService {
     
+    private val logger = TerminalLogger.getLogger(SessionLifecycleService::class.java)
+    
     /**
      * 创建新的终端会话
      */
@@ -29,6 +32,8 @@ class SessionLifecycleService(
         userId: UserId,
         ptyConfig: PtyConfiguration
     ): SessionId {
+        logger.info("开始创建终端会话 - 用户ID: {}, PTY配置: {}", userId, ptyConfig)
+        
         val sessionId = SessionId.generate()
         val session = TerminalSession(
             sessionId = sessionId,
@@ -45,6 +50,7 @@ class SessionLifecycleService(
             eventBus.publish(event)
         }
         
+        logger.info("终端会话创建成功 - 会话ID: {}, 用户ID: {}", sessionId, userId)
         return sessionId
     }
     
@@ -52,10 +58,13 @@ class SessionLifecycleService(
      * 终止会话
      */
     override suspend fun terminateSession(sessionId: SessionId, reason: TerminationReason) {
+        logger.info("开始终止会话 - 会话ID: {}, 原因: {}", sessionId, reason)
+        
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         if (!session.canTerminate()) {
+            logger.warn("会话无法终止 - 会话ID: {}, 当前状态: {}", sessionId, session.status)
             throw IllegalStateException("Session cannot be terminated: $sessionId")
         }
         
@@ -66,17 +75,22 @@ class SessionLifecycleService(
         session.getDomainEvents().forEach { event ->
             eventBus.publish(event)
         }
+        
+        logger.info("会话终止成功 - 会话ID: {}, 原因: {}", sessionId, reason)
     }
     
     /**
      * 处理终端输入
      */
     override suspend fun handleInput(sessionId: SessionId, input: String) {
+        logger.info("开始处理用户输入 - 会话ID: {}, 输入长度: {}", sessionId, input.length)
+        
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
-        if (!session.canReceiveInput()) {
-            throw IllegalStateException("Session cannot receive input: $sessionId")
+        if (!session.canHandleInput()) {
+            logger.warn("会话无法处理输入 - 会话ID: {}, 当前状态: {}", sessionId, session.status)
+            throw IllegalStateException("Session cannot handle input: $sessionId")
         }
         
         session.handleInput(input)
@@ -86,6 +100,8 @@ class SessionLifecycleService(
         session.getDomainEvents().forEach { event ->
             eventBus.publish(event)
         }
+        
+        logger.info("用户输入处理完成 - 会话ID: {}, 输入长度: {}", sessionId, input.length)
     }
     
     /**

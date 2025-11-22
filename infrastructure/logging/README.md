@@ -406,11 +406,11 @@ class RequestProcessor {
 ```kotlin
 // 检查日志系统状态
 val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
-println("根日志级别: ${rootLogger.level}")
+logger.debug("根日志级别: ${rootLogger.level}")
 
 // 检查所有输出器
 rootLogger.iteratorForAppenders().forEach { appender ->
-    println("输出器: ${appender.name}, 类: ${appender.javaClass.simpleName}")
+    logger.debug("输出器: ${appender.name}, 类: ${appender.javaClass.simpleName}")
 }
 
 // 临时启用调试日志

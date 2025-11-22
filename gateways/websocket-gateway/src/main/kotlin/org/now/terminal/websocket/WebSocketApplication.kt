@@ -4,6 +4,8 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.koin.ktor.plugin.Koin
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.websocket.di.webSocketModule
 
 /**
@@ -14,10 +16,17 @@ object WebSocketApplication {
     
     /**
      * 启动WebSocket服务器
-     * @param port 服务器端口，默认8080
+     * @param port 服务器端口，默认从配置管理器获取
      */
-    fun start(port: Int = 8080) {
-        embeddedServer(Netty, port = port) {
+    fun start(port: Int? = null) {
+        // 初始化配置管理器
+        ConfigurationManager.initialize()
+        
+        // 初始化日志系统
+        TerminalLogger.initialize()
+        
+        val actualPort = port ?: ConfigurationManager.getServerPort()
+        embeddedServer(Netty, port = actualPort) {
             configureApplication()
         }.start(wait = true)
     }
@@ -52,8 +61,18 @@ object WebSocketApplication {
      */
     @JvmStatic
     fun main(args: Array<String>) {
-        val port = if (args.isNotEmpty()) args[0].toIntOrNull() ?: 8080 else 8080
-        println("🚀 Starting WebSocket Gateway on port $port...")
-        start(port)
+        val port = if (args.isNotEmpty()) args[0].toIntOrNull() else null
+        
+        // 初始化配置管理器
+        ConfigurationManager.initialize()
+        
+        // 初始化日志系统
+        TerminalLogger.initialize()
+        
+        val logger = TerminalLogger.getLogger(WebSocketApplication::class.java)
+        val actualPort = port ?: ConfigurationManager.getServerPort()
+        
+        logger.info("🚀 Starting WebSocket Gateway on port {}", actualPort)
+        start(actualPort)
     }
 }

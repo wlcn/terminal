@@ -1,8 +1,8 @@
 package org.now.terminal.infrastructure.eventbus
 
 import kotlinx.coroutines.delay
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.shared.events.Event
-import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class EventRetryHandler(
     private val config: EventBusProperties
 ) {
-    private val logger = LoggerFactory.getLogger(EventRetryHandler::class.java)
+    private val logger = TerminalLogger.getLogger(EventRetryHandler::class.java)
     
     /**
      * 执行重试逻辑

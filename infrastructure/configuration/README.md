@@ -85,9 +85,9 @@ ConfigurationManager.initialize()
 val config = ConfigurationManager.getConfig()
 
 // 3. 使用配置
-println("应用名称: ${config.name}")
-println("服务器端口: ${config.server.port}")
-println("数据库URL: ${config.database.url}")
+logger.info("应用名称: ${config.name}")
+logger.info("服务器端口: ${config.server.port}")
+logger.info("数据库URL: ${config.database.url}")
 ```
 
 ### 使用便捷方法
@@ -100,11 +100,11 @@ val logLevel = ConfigurationManager.getLogLevel()
 
 // 环境检查
 if (ConfigurationManager.isDevelopment()) {
-    println("运行在开发环境")
+    logger.info("运行在开发环境")
 }
 
 if (ConfigurationManager.isProduction()) {
-    println("运行在生产环境")
+    logger.info("运行在生产环境")
 }
 ```
 
@@ -378,8 +378,8 @@ ConfigurationManager.initialize()
 
 // 检查当前生效的配置
 val config = ConfigurationManager.getConfig()
-println("当前环境: ${config.environment}")
-println("服务器端口: ${config.server.port}")
+logger.info("当前环境: ${config.environment}")
+        logger.info("服务器端口: ${config.server.port}")
 
 // 重新加载配置（适用于配置更新）
 ConfigurationManager.reload()

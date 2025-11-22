@@ -1,9 +1,9 @@
 package org.now.terminal.infrastructure.eventbus
 
 import kotlinx.coroutines.*
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHandler
-import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -18,7 +18,7 @@ class MonitoredEventBus(
      * 获取底层事件总线（用于访问特定功能）
      */
     fun getDelegate(): EventBus = delegate
-    private val logger = LoggerFactory.getLogger(MonitoredEventBus::class.java)
+    private val logger = TerminalLogger.getLogger(MonitoredEventBus::class.java)
     
     override suspend fun <T : Event> publish(event: T) {
         val startTime = System.nanoTime()

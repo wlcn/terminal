@@ -214,9 +214,9 @@ fun checkApplicationHealth(): Boolean {
     
     results.forEach { (name, result) ->
         if (result.isHealthy) {
-            println("✅ $name: ${result.message}")
+            logger.info("✅ $name: ${result.message}")
         } else {
-            println("❌ $name: ${result.message}")
+            logger.error("❌ $name: ${result.message}")
         }
     }
     
@@ -280,11 +280,11 @@ class PerformanceAwareService {
 fun printPerformanceMetrics() {
     val metrics = PerformanceMonitor().getPerformanceMetrics()
     
-    println("=== 性能指标 ===")
-    println("平均响应时间: ${metrics.averageResponseTime}ms")
-    println("最大响应时间: ${metrics.maxResponseTime}ms")
-    println("请求总数: ${metrics.totalRequests}")
-    println("错误率: ${metrics.errorRate}%")
+    logger.info("=== 性能指标 ===")
+        logger.info("平均响应时间: ${metrics.averageResponseTime}ms")
+        logger.info("最大响应时间: ${metrics.maxResponseTime}ms")
+        logger.info("请求总数: ${metrics.totalRequests}")
+        logger.info("错误率: ${metrics.errorRate}%")
 }
 ```
 
@@ -710,7 +710,7 @@ class PerformanceOptimizedService {
 // 启用详细监控日志
 class DebugMonitoringManager {
     fun initializeWithDebug() {
-        println("初始化监控系统...")
+        logger.info("初始化监控系统...")
         
         MonitoringManager.initialize()
         
@@ -718,21 +718,21 @@ class DebugMonitoringManager {
         val healthRegistry = MonitoringManager.getHealthCheckRegistry()
         healthRegistry.register("debug", DebugHealthCheck())
         
-        println("监控系统初始化完成")
+        logger.info("监控系统初始化完成")
     }
     
     fun printDebugMetrics() {
         val metrics = MonitoringManager.getMetricsCollector().getMetrics()
-        println("当前指标: $metrics")
+        logger.debug("当前指标: $metrics")
         
         val healthStatus = MonitoringManager.getHealthCheckRegistry().runHealthChecks()
-        println("健康状态: $healthStatus")
+        logger.info("健康状态: $healthStatus")
     }
 }
 
 class DebugHealthCheck : HealthCheck {
     override fun check(): HealthCheckResult {
-        println("执行调试健康检查...")
+        logger.debug("执行调试健康检查...")
         return HealthCheckResult.healthy("调试检查正常")
     }
 }

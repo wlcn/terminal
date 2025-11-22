@@ -556,13 +556,13 @@ sealed class TerminalSessionEvent(
 // 使用when表达式进行模式匹配，编译器会检查是否覆盖所有情况
 fun handleTerminalEvent(event: TerminalSessionEvent) = when (event) {
     is TerminalSessionEvent.SessionCreated -> {
-        println("Session created: ${event.sessionId}")
+        logger.info("Session created: ${event.sessionId}")
     }
     is TerminalSessionEvent.TerminalOutput -> {
-        println("Output received: ${event.output}")
+        logger.info("Output received: ${event.output}")
     }
     is TerminalSessionEvent.SessionTerminated -> {
-        println("Session terminated: ${event.reason}")
+        logger.info("Session terminated: ${event.reason}")
     }
     // 不需要else分支，编译器确保所有情况都已覆盖
 }
@@ -1025,7 +1025,7 @@ class DependencyCheckPlugin : Plugin<Project> {
                         
                         try {
                             DependencyValidator.validateDependency(fromModule, toModule)
-                            println("✅ 依赖验证通过: $fromModule → $toModule")
+                            logger.info("✅ 依赖验证通过: $fromModule → $toModule")
                         } catch (e: GradleException) {
                             project.logger.error("❌ 依赖验证失败: ${e.message}")
                             throw e
@@ -1075,13 +1075,13 @@ tasks.register("checkCircularDependencies") {
         val cycles = findCycles(dependencyGraph)
         
         if (cycles.isNotEmpty()) {
-            println("❌ 发现循环依赖:")
+            logger.error("❌ 发现循环依赖:")
             cycles.forEach { cycle ->
-                println("  - ${cycle.joinToString(" → ")}")
+                logger.error("  - ${cycle.joinToString(" → ")}")
             }
             throw GradleException("项目中存在循环依赖，请修复")
         } else {
-            println("✅ 未发现循环依赖")
+            logger.info("✅ 未发现循环依赖")
         }
     }
 }
@@ -1172,8 +1172,8 @@ tasks.register("generateDependencyDiagram") {
         dotFile.parentFile.mkdirs()
         dotFile.writeText(dotContent.toString())
         
-        println("✅ 依赖关系图已生成: ${dotFile.absolutePath}")
-        println("💡 使用命令生成图片: dot -Tpng ${dotFile.absolutePath} -o dependencies.png")
+        logger.info("✅ 依赖关系图已生成: ${dotFile.absolutePath}")
+        logger.info("💡 使用命令生成图片: dot -Tpng ${dotFile.absolutePath} -o dependencies.png")
     }
 }
 ```
