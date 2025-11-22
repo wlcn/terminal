@@ -12,6 +12,11 @@ import kotlinx.serialization.json.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.string.shouldContain
 
 /**
  * WebSocket测试工具类
@@ -39,7 +44,7 @@ object WebSocketTestUtils {
             install(WebSockets)
         }
         
-        private var session: DefaultClientWebSocketSession? = null
+        private var session: WebSocketSession? = null
         private val messageQueue = Channel<String>(config.messageBufferSize)
         private val receivedMessages = mutableListOf<String>()
         private val connectionId = "mock_client_${System.currentTimeMillis()}"
@@ -47,17 +52,19 @@ object WebSocketTestUtils {
         /**
          * 连接到WebSocket服务器
          */
-        suspend fun connect(testApplication: TestApplication): Boolean = withTimeout(config.timeout) {
+        suspend fun connect(
+            host: String = "localhost",
+            port: Int = 8080,
+            path: String = "/ws"
+        ): Boolean = withTimeout(config.timeout) {
             try {
-                testApplication.application {
-                    session = client.webSocketSession {
-                        url { 
-                            protocol = URLProtocol.WS
-                            host = "localhost"
-                            port = 8080
-                            path(config.baseUrl)
-                        }
-                    }
+                client.webSocket(
+                    method = HttpMethod.Get,
+                    host = host,
+                    port = port,
+                    path = path
+                ) {
+                    session = this
                 }
                 true
             } catch (e: Exception) {
@@ -69,7 +76,7 @@ object WebSocketTestUtils {
          * 认证客户端
          */
         suspend fun authenticate(token: String = "test_token"): Boolean = withTimeout(config.timeout) {
-            val session = session ?: return false
+            val currentSession = session ?: return@withTimeout false
             
             val authMessage = buildJsonObject {
                 put("type", "authenticate")
@@ -78,10 +85,10 @@ object WebSocketTestUtils {
                 put("clientType", "mock")
             }.toString()
             
-            session.send(authMessage)
+            currentSession.send(authMessage)
             
-            val response = session.incoming.receive() as? Frame.Text
-            return response?.let { frame ->
+            val response = currentSession.incoming.receive() as? Frame.Text
+            response?.let { frame ->
                 val json = Json.parseToJsonElement(frame.readText())
                 json.jsonObject["authenticated"]?.jsonPrimitive?.booleanOrNull ?: false
             } ?: false
@@ -98,7 +105,7 @@ object WebSocketTestUtils {
                 put("cols", 80)
             }
         ): String? = withTimeout(config.timeout) {
-            val session = this.session ?: return null
+            val currentSession = session ?: return@withTimeout null
             
             val sessionRequest = buildJsonObject {
                 put("type", "create_session")
@@ -107,10 +114,10 @@ object WebSocketTestUtils {
                 put("initialSize", initialSize)
             }.toString()
             
-            session.send(sessionRequest)
+            currentSession.send(Frame.Text(sessionRequest))
             
-            val response = session.incoming.receive() as? Frame.Text
-            return response?.let { frame ->
+            val response = currentSession.incoming.receive() as? Frame.Text
+            response?.let { frame ->
                 val json = Json.parseToJsonElement(frame.readText())
                 json.jsonObject["sessionId"]?.jsonPrimitive?.content
             }
@@ -124,19 +131,19 @@ object WebSocketTestUtils {
             command: String,
             args: List<String> = emptyList()
         ): JsonObject? = withTimeout(config.timeout) {
-            val session = this.session ?: return null
+            val currentSession = session ?: return@withTimeout null
             
             val commandRequest = buildJsonObject {
                 put("type", "execute_command")
                 put("sessionId", sessionId)
                 put("command", command)
-                put("args", Json.encodeToJsonElement(args))
+                put("args", JsonArray(args.map { JsonPrimitive(it) }))
             }.toString()
             
-            session.send(commandRequest)
+            currentSession.send(Frame.Text(commandRequest))
             
-            val response = session.incoming.receive() as? Frame.Text
-            return response?.let { frame ->
+            val response = currentSession.incoming.receive() as? Frame.Text
+            response?.let { frame ->
                 Json.parseToJsonElement(frame.readText()).jsonObject
             }
         }
@@ -149,7 +156,7 @@ object WebSocketTestUtils {
             rows: Int,
             cols: Int
         ): Boolean = withTimeout(config.timeout) {
-            val session = this.session ?: return false
+            val currentSession = session ?: return@withTimeout false
             
             val resizeRequest = buildJsonObject {
                 put("type", "resize_terminal")
@@ -160,10 +167,10 @@ object WebSocketTestUtils {
                 })
             }.toString()
             
-            session.send(resizeRequest)
+            currentSession.send(Frame.Text(resizeRequest))
             
-            val response = session.incoming.receive() as? Frame.Text
-            return response?.let { frame ->
+            val response = currentSession.incoming.receive() as? Frame.Text
+            response?.let { frame ->
                 val json = Json.parseToJsonElement(frame.readText())
                 json.jsonObject["success"]?.jsonPrimitive?.booleanOrNull ?: false
             } ?: false
@@ -173,10 +180,10 @@ object WebSocketTestUtils {
          * 发送自定义消息
          */
         suspend fun sendMessage(message: JsonObject): Boolean = withTimeout(config.timeout) {
-            val session = session ?: return false
+            val currentSession = session ?: return@withTimeout false
             
             try {
-                session.send(message.toString())
+                currentSession.send(Frame.Text(message.toString()))
                 true
             } catch (e: Exception) {
                 false
@@ -187,10 +194,10 @@ object WebSocketTestUtils {
          * 接收消息
          */
         suspend fun receiveMessage(): String? = withTimeout(config.timeout) {
-            val session = session ?: return null
+            val currentSession = session ?: return@withTimeout null
             
-            return try {
-                val frame = session.incoming.receive()
+            try {
+                val frame = currentSession.incoming.receive()
                 when (frame) {
                     is Frame.Text -> frame.readText()
                     is Frame.Binary -> "binary_data"
@@ -205,7 +212,7 @@ object WebSocketTestUtils {
          * 启动消息监听器
          */
         fun startMessageListener() = GlobalScope.launch {
-            val session = session ?: return@launch
+            val currentSession = session ?: return@launch
             
             while (isActive) {
                 try {
@@ -235,7 +242,7 @@ object WebSocketTestUtils {
             while (isActive) {
                 val message = messageQueue.receive()
                 if (predicate(message)) {
-                    return message
+                    return@withTimeout message
                 }
             }
             null
@@ -246,7 +253,7 @@ object WebSocketTestUtils {
          */
         suspend fun close(reason: String = "test_complete") {
             try {
-                session?.close(CloseReason(CloseReason.Codes.NORMAL, reason))
+                session?.close()
                 client.close()
             } catch (e: Exception) {
                 // 忽略关闭异常
@@ -399,11 +406,11 @@ object WebSocketTestUtils {
          */
         fun assertValidMessageFormat(message: String) {
             val json = Json.parseToJsonElement(message)
-            assertTrue(json is JsonObject, "消息必须是JSON对象")
+            (json is JsonObject) shouldBe true
             
             val obj = json.jsonObject
-            assertTrue(obj.containsKey("type"), "消息必须包含type字段")
-            assertTrue(obj["type"] is JsonPrimitive, "type字段必须是字符串")
+            obj.containsKey("type") shouldBe true
+            (obj["type"] is JsonPrimitive) shouldBe true
         }
         
         /**
@@ -413,13 +420,13 @@ object WebSocketTestUtils {
             val json = Json.parseToJsonElement(message)
             val obj = json.jsonObject
             
-            assertEquals("authentication_response", obj["type"]?.jsonPrimitive?.content)
-            assertEquals(expected, obj["authenticated"]?.jsonPrimitive?.booleanOrNull)
+            obj["type"]?.jsonPrimitive?.content shouldBe "authentication_response"
+            obj["authenticated"]?.jsonPrimitive?.booleanOrNull shouldBe expected
             
             if (expected) {
-                assertTrue(obj.containsKey("connectionId"), "认证成功响应必须包含connectionId")
+                obj.containsKey("connectionId") shouldBe true
             } else {
-                assertTrue(obj.containsKey("error"), "认证失败响应必须包含error")
+                obj.containsKey("error") shouldBe true
             }
         }
         
@@ -430,10 +437,10 @@ object WebSocketTestUtils {
             val json = Json.parseToJsonElement(message)
             val obj = json.jsonObject
             
-            assertEquals("session_created", obj["type"]?.jsonPrimitive?.content)
-            assertTrue(obj.containsKey("sessionId"), "会话创建响应必须包含sessionId")
-            assertTrue(obj.containsKey("status"), "会话创建响应必须包含status")
-            assertEquals("active", obj["status"]?.jsonPrimitive?.content)
+            obj["type"]?.jsonPrimitive?.content shouldBe "session_created"
+            obj.containsKey("sessionId") shouldBe true
+            obj.containsKey("status") shouldBe true
+            obj["status"]?.jsonPrimitive?.content shouldBe "active"
         }
         
         /**
@@ -443,9 +450,9 @@ object WebSocketTestUtils {
             val json = Json.parseToJsonElement(message)
             val obj = json.jsonObject
             
-            assertEquals("command_executed", obj["type"]?.jsonPrimitive?.content)
-            assertTrue(obj.containsKey("exitCode"), "命令执行响应必须包含exitCode")
-            assertTrue(obj.containsKey("output"), "命令执行响应必须包含output")
+            obj["type"]?.jsonPrimitive?.content shouldBe "command_executed"
+            obj.containsKey("exitCode") shouldBe true
+            obj.containsKey("output") shouldBe true
         }
         
         /**
@@ -455,14 +462,11 @@ object WebSocketTestUtils {
             val json = Json.parseToJsonElement(message)
             val obj = json.jsonObject
             
-            assertEquals("error", obj["type"]?.jsonPrimitive?.content)
-            assertTrue(obj.containsKey("error"), "错误响应必须包含error字段")
+            obj["type"]?.jsonPrimitive?.content shouldBe "error"
+            obj.containsKey("error") shouldBe true
             
             expectedErrorType?.let { errorType ->
-                assertTrue(
-                    obj["error"]?.jsonPrimitive?.content?.contains(errorType) == true,
-                    "错误消息应该包含: $errorType"
-                )
+                (obj["error"]?.jsonPrimitive?.content?.contains(errorType) == true) shouldBe true
             }
         }
         
@@ -475,7 +479,7 @@ object WebSocketTestUtils {
                 json.jsonObject[sequenceField]?.jsonPrimitive?.intOrNull
             }
             
-            assertEquals(sequences.sorted(), sequences, "消息顺序应该保持有序")
+            sequences shouldBe sequences.sorted()
         }
         
         /**
@@ -490,7 +494,7 @@ object WebSocketTestUtils {
             val result = runBlocking { operation() }
             val endTime = System.currentTimeMillis()
             
-            assertTrue(endTime - startTime <= maxTimeMs, "$message: ${endTime - startTime}ms > ${maxTimeMs}ms")
+            (endTime - startTime <= maxTimeMs) shouldBe true
             return result
         }
     }
