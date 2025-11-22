@@ -1,7 +1,10 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.application) apply false
 }
+
+apply plugin: 'application'
 
 dependencies {
     // 项目内部依赖
@@ -41,4 +44,8 @@ tasks.test {
     testLogging {
         events("passed", "skipped", "failed")
     }
+}
+
+application {
+    mainClass = "org.now.terminal.websocket.WebSocketApplication"
 }
