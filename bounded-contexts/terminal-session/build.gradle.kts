@@ -1,6 +1,7 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
     kotlin("plugin.serialization") version "2.2.21"
+    id("jacoco")
 }
 
 repositories {
@@ -33,6 +34,9 @@ dependencies {
     // SLF4J API依赖
     implementation(libs.slf4j.api)
     
+    // Koin测试依赖
+    testImplementation(libs.koin.test)
+    
     // Test dependencies - Kotest (现代化测试框架)
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)
@@ -46,5 +50,25 @@ tasks.test {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+    }
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.95".toBigDecimal() // 要求95%的覆盖率
+            }
+        }
     }
 }

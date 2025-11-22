@@ -5,6 +5,8 @@ import org.koin.dsl.module
 import org.now.terminal.session.application.SessionLifecycleService
 import org.now.terminal.session.application.handlers.TerminalOutputEventHandler
 import org.now.terminal.session.application.usecases.*
+import org.now.terminal.session.domain.repositories.TerminalSessionRepository
+import org.now.terminal.session.domain.services.ProcessFactory
 import org.now.terminal.session.domain.services.TerminalSessionService
 import org.now.terminal.session.infrastructure.process.Pty4jProcessFactory
 import org.now.terminal.session.infrastructure.repositories.InMemoryTerminalSessionRepository
@@ -16,8 +18,8 @@ import org.now.terminal.session.infrastructure.repositories.InMemoryTerminalSess
 val terminalSessionModule: Module = module {
     
     // 基础设施层
-    single { InMemoryTerminalSessionRepository() }
-    single { Pty4jProcessFactory() }
+    single<TerminalSessionRepository> { InMemoryTerminalSessionRepository() }
+    single<ProcessFactory> { Pty4jProcessFactory() }
     
     // 应用层 - 用例
     single { CreateSessionUseCase(get()) }
