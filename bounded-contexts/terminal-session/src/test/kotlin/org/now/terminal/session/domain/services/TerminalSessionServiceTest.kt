@@ -7,6 +7,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.session.domain.entities.SessionStatistics
 import org.now.terminal.session.domain.entities.TerminalSession
 import org.now.terminal.session.domain.entities.SessionStatus
@@ -19,6 +20,16 @@ import org.now.terminal.shared.valueobjects.UserId
 import java.time.Instant
 
 class TerminalSessionServiceTest : BehaviorSpec({
+    
+    beforeSpec {
+        // 初始化配置管理器
+        ConfigurationManager.initialize(environment = "test")
+    }
+    
+    afterSpec {
+        // 清理配置管理器
+        ConfigurationManager.reset()
+    }
     
     given("TerminalSessionService接口测试") {
         
@@ -70,9 +81,11 @@ class TerminalSessionServiceTest : BehaviorSpec({
                 }
                 
                 override suspend fun getSessionStatistics(sessionId: SessionId): SessionStatistics {
+                    // 查找对应的userId
+                    val userId = userSessions.entries.find { it.value.contains(sessionId) }?.key ?: UserId.generate()
                     return SessionStatistics(
                         sessionId = sessionId,
-                        userId = UserId.generate(), // 模拟用户ID
+                        userId = userId,
                         status = SessionStatus.RUNNING,
                         createdAt = Instant.now(),
                         terminatedAt = null,

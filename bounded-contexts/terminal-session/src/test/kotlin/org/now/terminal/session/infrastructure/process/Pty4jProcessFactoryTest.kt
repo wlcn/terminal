@@ -1,15 +1,26 @@
 package org.now.terminal.session.infrastructure.process
 
 import io.kotest.core.spec.style.BehaviorSpec
-import io.kotest.matchers.types.shouldBeInstanceOf
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.mockk
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalCommand
 import org.now.terminal.shared.valueobjects.SessionId
 
 class Pty4jProcessFactoryTest : BehaviorSpec({
+    
+    beforeSpec {
+        // 初始化配置管理器
+        ConfigurationManager.initialize(environment = "test")
+    }
+    
+    afterSpec {
+        // 清理配置管理器
+        ConfigurationManager.reset()
+    }
     
     given("Pty4jProcessFactory测试") {
         
@@ -17,7 +28,7 @@ class Pty4jProcessFactoryTest : BehaviorSpec({
             then("应该返回Pty4jProcess实例") {
                 // Given
                 val factory = Pty4jProcessFactory()
-                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("bash"))
+                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("echo test"))
                 val sessionId = SessionId.generate()
                 
                 // When
@@ -45,7 +56,7 @@ class Pty4jProcessFactoryTest : BehaviorSpec({
             then("应该处理不同的会话ID") {
                 // Given
                 val factory = Pty4jProcessFactory()
-                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("bash"))
+                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("echo test"))
                 val sessionId1 = SessionId.generate()
                 val sessionId2 = SessionId.generate()
                 
@@ -66,8 +77,8 @@ class Pty4jProcessFactoryTest : BehaviorSpec({
                 val sessionId = SessionId.generate()
                 
                 // 创建不同的Pty配置
-                val config1 = PtyConfiguration.createDefault(TerminalCommand("bash"))
-                val config2 = PtyConfiguration.createDefault(TerminalCommand("zsh"))
+                val config1 = PtyConfiguration.createDefault(TerminalCommand("echo test"))
+                val config2 = PtyConfiguration.createDefault(TerminalCommand("echo test"))
                 
                 // When
                 val process1 = factory.createProcess(config1, sessionId)
@@ -83,7 +94,7 @@ class Pty4jProcessFactoryTest : BehaviorSpec({
             then("应该支持多次调用") {
                 // Given
                 val factory = Pty4jProcessFactory()
-                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("bash"))
+                val ptyConfig = PtyConfiguration.createDefault(TerminalCommand("echo test"))
                 
                 // When - 多次调用工厂方法
                 val processes = (1..5).map { 
