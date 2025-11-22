@@ -5,10 +5,12 @@ import com.pty4j.PtyProcessBuilder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import org.now.terminal.session.domain.valueobjects.ShellType
 import org.now.terminal.session.domain.services.Process
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 import org.now.terminal.shared.valueobjects.SessionId
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
@@ -92,8 +94,14 @@ class Pty4jProcess(
      */
     override fun start() {
         try {
-            // 构建命令和环境变量
-            val command = arrayOf("sh", "-c", ptyConfig.command.value)
+            // 构建命令和环境变量 - 根据ShellType配置选择不同的命令
+            val command = when (ptyConfig.shellType) {
+                ShellType.AUTO -> detectShellCommand(ptyConfig.command.value)
+                ShellType.UNIX -> arrayOf("sh", "-c", ptyConfig.command.value)
+                ShellType.WINDOWS_CMD -> arrayOf("cmd", "/c", ptyConfig.command.value)
+                ShellType.WINDOWS_POWERSHELL -> arrayOf("powershell", "-Command", ptyConfig.command.value)
+                ShellType.DIRECT -> parseDirectCommand(ptyConfig.command.value)
+            }
             val environment = ptyConfig.environment
             
             // 创建PTY进程
@@ -173,5 +181,77 @@ class Pty4jProcess(
         return withContext(Dispatchers.IO) {
             ptyProcess.waitFor()
         }
+    }
+    
+    /**
+     * 自动检测shell命令
+     */
+    private fun detectShellCommand(command: String): Array<String> {
+        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+        
+        // 检查命令是否已经是完整的可执行文件路径
+        if (command.contains(File.separator) || (isWindows && command.contains("\\"))) {
+            return parseDirectCommand(command)
+        }
+        
+        // 检查命令是否包含shell特定的语法
+        val hasShellSyntax = command.contains("&&") || command.contains("||") || 
+                            command.contains("|") || command.contains(";") ||
+                            command.contains("$") || command.contains("`")
+        
+        return if (isWindows) {
+            if (hasShellSyntax || command.trim().startsWith("echo")) {
+                arrayOf("cmd", "/c", command)
+            } else {
+                // 尝试直接执行
+                parseDirectCommand(command)
+            }
+        } else {
+            if (hasShellSyntax) {
+                arrayOf("sh", "-c", command)
+            } else {
+                // 尝试直接执行
+                parseDirectCommand(command)
+            }
+        }
+    }
+    
+    /**
+     * 解析直接执行的命令
+     */
+    private fun parseDirectCommand(command: String): Array<String> {
+        // 简单的命令分割，支持带引号的参数
+        val args = mutableListOf<String>()
+        var currentArg = StringBuilder()
+        var inQuotes = false
+        var quoteChar: Char? = null
+        
+        for (char in command) {
+            when {
+                (char == '"' || char == '\'') && !inQuotes -> {
+                    inQuotes = true
+                    quoteChar = char
+                }
+                char == quoteChar && inQuotes -> {
+                    inQuotes = false
+                    quoteChar = null
+                }
+                char.isWhitespace() && !inQuotes -> {
+                    if (currentArg.isNotEmpty()) {
+                        args.add(currentArg.toString())
+                        currentArg = StringBuilder()
+                    }
+                }
+                else -> {
+                    currentArg.append(char)
+                }
+            }
+        }
+        
+        if (currentArg.isNotEmpty()) {
+            args.add(currentArg.toString())
+        }
+        
+        return if (args.isEmpty()) arrayOf(command) else args.toTypedArray()
     }
 }

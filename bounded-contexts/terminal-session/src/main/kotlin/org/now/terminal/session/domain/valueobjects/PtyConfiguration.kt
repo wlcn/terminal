@@ -12,7 +12,8 @@ data class PtyConfiguration(
     val environment: Map<String, String>,
     val size: TerminalSize,
     val workingDirectory: String? = null,
-    val initialTerm: String = ConfigurationManager.getTerminalConfig().defaultTerm
+    val initialTerm: String = ConfigurationManager.getTerminalConfig().defaultTerm,
+    val shellType: ShellType = ShellType.AUTO
 ) {
     init {
         require(environment.isNotEmpty()) {
@@ -29,11 +30,19 @@ data class PtyConfiguration(
             val env = mutableMapOf<String, String>()
             env.putAll(terminalConfig.pty.defaultEnvironment)
             
+            // 从配置中解析shellType，默认为AUTO
+            val shellType = try {
+                ShellType.valueOf(terminalConfig.pty.shellType.uppercase())
+            } catch (e: IllegalArgumentException) {
+                ShellType.AUTO
+            }
+            
             return PtyConfiguration(
                 command = command,
                 environment = env,
                 size = TerminalSize.DEFAULT,
-                workingDirectory = terminalConfig.pty.defaultWorkingDirectory
+                workingDirectory = terminalConfig.pty.defaultWorkingDirectory,
+                shellType = shellType
             )
         }
     }

@@ -140,5 +140,6 @@ data class PtyConfig(
         "TERM" to "xterm",
         "HOME" to "/home/user",
         "PATH" to "/usr/local/bin:/usr/bin:/bin"
-    )
+    ),
+    val shellType: String = "AUTO"
 )

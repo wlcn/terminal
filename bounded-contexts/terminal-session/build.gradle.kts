@@ -4,6 +4,8 @@ plugins {
     id("jacoco")
 }
 
+// 集成测试使用test源集，但通过目录区分
+
 repositories {
     mavenCentral()
 }
@@ -47,6 +49,8 @@ dependencies {
     
     // Test dependencies - Kotlin Coroutines Test
     testImplementation(libs.kotlinx.coroutines.test)
+    
+    // 集成测试使用test依赖，无需额外声明
 }
 
 tasks.test {
@@ -75,3 +79,5 @@ tasks.jacocoTestCoverageVerification {
         }
     }
 }
+
+// 集成测试通过test任务运行，使用test源集
