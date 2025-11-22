@@ -6,11 +6,13 @@ plugins {
 
 dependencies {
     // 项目内部依赖
-    implementation(project(":bounded-contexts:terminal-session"))
     implementation(project(":shared-kernel"))
     implementation(project(":infrastructure:configuration"))
     implementation(project(":infrastructure:event-bus"))
     implementation(project(":infrastructure:logging"))
+    
+    // 业务接口依赖（仅依赖接口，不依赖业务逻辑）
+    implementation(project(":bounded-contexts:terminal-session"))
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)

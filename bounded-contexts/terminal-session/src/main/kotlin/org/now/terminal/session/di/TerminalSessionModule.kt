@@ -39,12 +39,7 @@ val terminalSessionModule: Module = module {
     single<TerminalSessionService> { SessionLifecycleService(get(), get(), get()) }
     
     // 事件处理器注册服务
-    single {
-        EventHandlerRegistrationService(get()).apply {
-            // 在服务创建时自动注册事件处理器
-            GlobalScope.launch { registerAllHandlers() }
-        }
-    }
+    // 注意：事件处理器注册现在由EventBusLifecycleService负责
     
     // TerminalOutputPublisher接口实现由Koin在运行时注入
     // 具体实现由websocket-gateway模块提供

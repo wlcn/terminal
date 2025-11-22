@@ -10,8 +10,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.consumeAsFlow
 import org.now.terminal.shared.valueobjects.SessionId
-import org.now.terminal.shared.valueobjects.UserId
-import org.now.terminal.session.domain.services.TerminalSessionService
+import org.now.terminal.session.domain.services.TerminalOutputPublisher
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.ext.get
 import org.koin.ktor.ext.inject
@@ -23,8 +22,7 @@ import org.slf4j.LoggerFactory
  * 负责WebSocket连接管理和消息路由
  */
 class WebSocketServer(
-    private val outputPublisher: org.now.terminal.session.domain.services.TerminalOutputPublisher,
-    private val terminalSessionService: TerminalSessionService
+    private val outputPublisher: TerminalOutputPublisher
 ) {
     
     private val logger = LoggerFactory.getLogger(WebSocketServer::class.java)
@@ -33,8 +31,15 @@ class WebSocketServer(
      * 处理WebSocket连接
      * @param sessionId 会话ID
      * @param session WebSocket会话
+     * @param onMessage 消息处理回调函数（业务无关）
+     * @param onClose 连接关闭回调函数（业务无关）
      */
-    suspend fun handleConnection(sessionId: SessionId, session: WebSocketSession) {
+    suspend fun handleConnection(
+        sessionId: SessionId, 
+        session: WebSocketSession,
+        onMessage: suspend (SessionId, String) -> Unit = { _, _ -> },
+        onClose: suspend (SessionId) -> Unit = { _ -> }
+    ) {
         logger.info("🔌 WebSocket connection established for session: {}", sessionId.value)
         
         try {
@@ -50,10 +55,10 @@ class WebSocketServer(
             session.incoming.consumeAsFlow().collect { frame ->
                 when (frame) {
                     is Frame.Text -> {
-                        // 处理文本消息（终端输入）
+                        // 处理文本消息（业务无关，只负责消息转发）
                         val input = frame.readText()
                         logger.info("📨 Received input from session {}: {}", sessionId.value, input.trim())
-                        handleTerminalInput(sessionId, input)
+                        onMessage(sessionId, input)
                     }
                     is Frame.Close -> {
                         logger.info("🔌 WebSocket connection closed for session: {}", sessionId.value)
@@ -62,6 +67,7 @@ class WebSocketServer(
                             outputPublisher.unregisterSession(sessionId)
                             logger.info("✅ Session unregistered: {}", sessionId.value)
                         }
+                        onClose(sessionId)
                     }
                     else -> {
                         logger.debug("📡 Received frame type: {}", frame::class.simpleName)
@@ -77,56 +83,6 @@ class WebSocketServer(
                 logger.info("✅ Session unregistered due to error: {}", sessionId.value)
             }
             throw e
-        }
-    }
-    
-    /**
-     * 处理终端输入
-     * @param sessionId 会话ID
-     * @param input 输入内容
-     */
-    private suspend fun handleTerminalInput(sessionId: SessionId, input: String) {
-        logger.info("🔄 Processing terminal input for session {}: {}", sessionId.value, input.trim())
-        
-        try {
-            // 检查会话是否活跃
-            val isActive = terminalSessionService.isSessionActive(sessionId)
-            logger.info("📊 Session {} active status: {}", sessionId.value, isActive)
-            
-            if (isActive) {
-                // 会话已存在，直接处理输入
-                logger.info("✅ Session exists, handling input")
-                terminalSessionService.handleInput(sessionId, input)
-                logger.info("✅ Input handled successfully")
-            } else {
-                // 会话不存在，创建新会话
-                logger.info("🆕 Session does not exist, creating new session")
-                val userId = org.now.terminal.shared.valueobjects.UserId.generate()
-                val ptyConfig = org.now.terminal.session.domain.valueobjects.PtyConfiguration.createDefault(
-                    org.now.terminal.session.domain.valueobjects.TerminalCommand("bash")
-                )
-                logger.info("🔧 Creating session with userId: {}, ptyConfig: {}", userId.value, ptyConfig)
-                terminalSessionService.createSession(userId, ptyConfig)
-                logger.info("✅ Session created successfully")
-                terminalSessionService.handleInput(sessionId, input)
-                logger.info("✅ Input handled for new session")
-                
-                // 业务层通过领域事件自动处理初始输出，无需在此读取
-                logger.info("📤 Initial output will be published via domain events")
-            }
-        } catch (e: Exception) {
-            logger.error("❌ Error processing terminal input for session {}: {}", sessionId.value, e.message, e)
-            // 发送错误消息到前端
-            if (outputPublisher is WebSocketOutputPublisher) {
-                try {
-                    val errorMessage = "\r\n❌ Error processing command: ${e.message}\r\n$ "
-                    logger.info("📤 Sending error message to frontend: {}", errorMessage.trim())
-                    outputPublisher.publishOutput(sessionId, errorMessage)
-                    logger.info("✅ Error message sent successfully")
-                } catch (sendError: Exception) {
-                    logger.error("❌ Failed to send error message: {}", sendError.message, sendError)
-                }
-            }
         }
     }
     
@@ -147,10 +103,17 @@ class WebSocketServer(
 }
 
 /**
- * Ktor应用扩展函数
- * 配置WebSocket路由和功能
+ * Ktor应用扩展函数（业务无关）
+ * 配置WebSocket路由和功能，业务逻辑通过回调函数处理
  */
-fun Application.configureWebSocket() {
+fun Application.configureWebSocket(
+    onNewConnection: suspend (WebSocketSession) -> SessionId = { 
+        throw UnsupportedOperationException("New connection handler not implemented") 
+    },
+    onReconnect: suspend (SessionId, WebSocketSession) -> Boolean = { _, _ -> 
+        throw UnsupportedOperationException("Reconnect handler not implemented") 
+    }
+) {
     val logger = LoggerFactory.getLogger("WebSocketServer")
     
     install(WebSockets) {
@@ -161,20 +124,14 @@ fun Application.configureWebSocket() {
     }
     
     routing {
-        // 简化的WebSocket连接端点 - 直接创建新会话
+        // 新连接端点 - 业务无关，通过回调处理
         webSocket("/ws") {
             try {
                 logger.info("🔌 新的WebSocket连接请求")
                 
-                // 创建会话
-                val userId = org.now.terminal.shared.valueobjects.UserId.generate()
-                val ptyConfig = org.now.terminal.session.domain.valueobjects.PtyConfiguration.createDefault(
-                    org.now.terminal.session.domain.valueobjects.TerminalCommand("bash")
-                )
-                
-                val terminalSessionService by inject<TerminalSessionService>()
-                val sessionId = terminalSessionService.createSession(userId, ptyConfig)
-                logger.info("✅ 会话创建成功 - 会话ID: {}, 用户ID: {}", sessionId.value, userId.value)
+                // 通过回调函数处理新连接业务逻辑
+                val sessionId = onNewConnection(this)
+                logger.info("✅ 会话创建成功 - 会话ID: {}", sessionId.value)
                 
                 // 立即发送Session ID给前端
                 send("SESSION_ID:${sessionId.value}")
@@ -190,7 +147,7 @@ fun Application.configureWebSocket() {
             }
         }
         
-        // 保留原有的会话连接端点（用于重连等场景）
+        // 重连端点 - 业务无关，通过回调处理
         webSocket("/ws/{sessionId}") {
             val sessionIdParam = call.parameters["sessionId"] ?: ""
             logger.info("🔌 WebSocket连接请求 - 会话ID: {}", sessionIdParam)
@@ -199,9 +156,8 @@ fun Application.configureWebSocket() {
                 val sessionId = SessionId.create(sessionIdParam)
                 logger.info("✅ 会话ID验证成功: {}", sessionId.value)
                 
-                // 检查会话是否存在
-                val terminalSessionService by inject<TerminalSessionService>()
-                val isActive = terminalSessionService.isSessionActive(sessionId)
+                // 通过回调函数处理重连业务逻辑
+                val isActive = onReconnect(sessionId, this)
                 if (!isActive) {
                     logger.warn("⚠️ 会话不存在或已终止: {}", sessionId.value)
                     close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Session not found or terminated"))

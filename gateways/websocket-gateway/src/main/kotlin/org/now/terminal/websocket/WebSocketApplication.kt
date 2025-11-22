@@ -39,8 +39,17 @@ object WebSocketApplication {
         // 初始化基础设施
         initializeInfrastructure()
         
-        // 配置WebSocket功能
-        configureWebSocket()
+        // 配置WebSocket功能（业务无关）
+        configureWebSocket(
+            onNewConnection = { session ->
+                // 业务逻辑由上层应用提供
+                throw UnsupportedOperationException("New connection handler must be implemented by the application")
+            },
+            onReconnect = { sessionId, session ->
+                // 业务逻辑由上层应用提供
+                throw UnsupportedOperationException("Reconnect handler must be implemented by the application")
+            }
+        )
     }
     
     /**
