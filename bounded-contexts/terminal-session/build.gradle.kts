@@ -44,6 +44,9 @@ dependencies {
     
     // Test dependencies - Mockk (Kotlin模拟框架)
     testImplementation(libs.mockk)
+    
+    // Test dependencies - Kotlin Coroutines Test
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 tasks.test {
