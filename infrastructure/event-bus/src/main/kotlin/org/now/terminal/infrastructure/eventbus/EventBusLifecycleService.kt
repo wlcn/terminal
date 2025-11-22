@@ -1,53 +1,69 @@
 package org.now.terminal.infrastructure.eventbus
 
 import org.now.terminal.infrastructure.logging.TerminalLogger
+import org.now.terminal.shared.events.Event
+import org.now.terminal.shared.events.EventHandler
 
 /**
  * 事件总线生命周期服务
- * 负责事件总线的启动、停止和事件处理器注册
+ * 负责事件总线的启动、停止和事件处理器的自动注册
+ * 
+ * 通过构造参数注入的事件处理器集合，在启动时自动注册到事件总线
  */
-class EventBusLifecycleService {
-    
+class EventBusLifecycleService(
+    private val eventBus: EventBus,
+    private val eventHandlers: List<EventHandler<*>>
+) {
     private val logger = TerminalLogger.getLogger(EventBusLifecycleService::class.java)
-    private val eventBus = EventBusFactory.createMonitoredEventBus()
-    private val discoveryService = EventHandlerDiscoveryService(eventBus)
-    
+
     /**
-     * 启动事件总线
+     * 启动事件总线并自动注册所有事件处理器
      */
     fun start() {
-        try {
-            eventBus.start()
-            logger.info("✅ Event bus started successfully")
-        } catch (e: Exception) {
-            logger.error("❌ Failed to start event bus: {}", e.message)
-        }
+        eventBus.start()
+        logger.info("事件总线已启动")
+        
+        // 自动注册所有事件处理器
+        registerAllEventHandlers()
     }
-    
+
     /**
      * 停止事件总线
      */
     fun stop() {
-        try {
-            eventBus.stop()
-            logger.info("✅ Event bus stopped successfully")
-        } catch (e: Exception) {
-            logger.error("❌ Failed to stop event bus: {}", e.message)
-        }
+        eventBus.stop()
+        logger.info("事件总线已停止")
     }
-    
+
     /**
-     * 初始化事件处理器注册服务
-     * 业务层应该直接调用 EventBus.registerHandlers() 方法进行手动注册
+     * 自动注册所有事件处理器
+     * 由于事件处理器已经通过DI框架收集并注入，这里直接注册即可
      */
-    suspend fun initializeEventHandlers() {
-        try {
-            discoveryService.initialize()
-            logger.info("✅ 事件处理器注册服务已初始化")
-            logger.info("💡 建议业务层直接调用 EventBus.registerHandlers() 方法进行手动注册")
-            logger.info("💡 这样可以避免依赖注入框架的局限性，提供更好的控制性和可维护性")
-        } catch (e: Exception) {
-            logger.error("❌ 初始化事件处理器注册服务时发生错误: {}", e.message)
+    private fun registerAllEventHandlers() {
+        if (eventHandlers.isEmpty()) {
+            logger.warn("未发现任何事件处理器")
+            return
         }
+        
+        logger.info("开始注册 ${eventHandlers.size} 个事件处理器...")
+        
+        // 每个事件处理器都应该知道它能处理什么事件
+        // 这里直接注册所有处理器，由事件总线在运行时根据事件类型进行分发
+        eventHandlers.forEach { handler ->
+            try {
+                // 事件处理器已经通过泛型参数声明了它能处理的事件类型
+                // 这里直接注册，事件总线会在运行时根据事件类型进行匹配
+                @Suppress("UNCHECKED_CAST")
+                val typedHandler = handler as EventHandler<Event>
+                
+                // 注册到事件总线，事件总线会处理类型匹配
+                eventBus.subscribe(Event::class.java, typedHandler)
+                logger.debug("成功注册事件处理器: ${handler::class.simpleName}")
+            } catch (e: Exception) {
+                logger.error("注册事件处理器 ${handler::class.simpleName} 时发生错误", e)
+            }
+        }
+        
+        logger.info("✅ 成功注册了 ${eventHandlers.size} 个事件处理器")
     }
 }

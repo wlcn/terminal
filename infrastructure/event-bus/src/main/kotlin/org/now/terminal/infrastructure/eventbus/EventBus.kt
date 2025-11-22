@@ -116,6 +116,16 @@ class InMemoryEventBus(
         
         logger.debug("Processing event: {} with {} handlers", event.eventType, eventHandlers.size)
         
+        // 首先调用默认的事件日志处理器
+        try {
+            val defaultLogger = EventLoggingHandler()
+            if (defaultLogger.canHandle(event.eventType)) {
+                defaultLogger.handle(event)
+            }
+        } catch (e: Exception) {
+            logger.warn("Default event logging handler failed: {}", e.message)
+        }
+        
         eventHandlers.forEach { handler ->
             if (handler.canHandle(event.eventType)) {
                 try {
@@ -179,4 +189,34 @@ object EventBusFactory {
     }
     
 
+}
+
+/**
+ * 默认事件日志处理器
+ * 用于记录所有事件的接收和处理情况，提供事件总线的运行监控
+ */
+class EventLoggingHandler : EventHandler<Event> {
+    private val logger = TerminalLogger.getLogger(EventLoggingHandler::class.java)
+    
+    override suspend fun handle(event: Event) {
+        logger.info("📢 事件接收成功 - 类型: {}, ID: {}, 时间: {}, 聚合根: {}/{}",
+            event.eventType,
+            event.eventId.value,
+            event.occurredAt,
+            event.aggregateType ?: "N/A",
+            event.aggregateId ?: "N/A"
+        )
+        
+        // 记录事件的详细信息（调试级别）
+        logger.debug("事件详细信息 - 类型: {}, 版本: {}, 完整数据: {}",
+            event.eventType,
+            event.version,
+            event
+        )
+    }
+    
+    override fun canHandle(eventType: String): Boolean {
+        // 默认日志处理器处理所有类型的事件
+        return true
+    }
 }
