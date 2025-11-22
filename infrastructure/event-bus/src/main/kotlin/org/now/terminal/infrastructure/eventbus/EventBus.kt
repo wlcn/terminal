@@ -23,6 +23,11 @@ interface EventBus {
      * 检查事件总线是否正在运行
      */
     fun isRunning(): Boolean
+    
+    /**
+     * 获取已注册的事件处理器数量
+     */
+    fun getRegisteredHandlerCount(): Int
 }
 
 /**
@@ -33,7 +38,8 @@ class InMemoryEventBus(
     private val bufferSize: Int = 1000,
     private val config: EventBusProperties = EventBusProperties(),
     private val deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
-    private val retryHandler: EventRetryHandler = EventRetryHandler(config)
+    private val retryHandler: EventRetryHandler = EventRetryHandler(config),
+    private val eventHandlers: Set<EventHandler<*>> = emptySet()
 ) : EventBus {
     private val logger = TerminalLogger.getLogger(InMemoryEventBus::class.java)
     private val handlers = ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventHandler<*>>>()
@@ -73,6 +79,15 @@ class InMemoryEventBus(
             return
         }
         
+        // 自动注册所有事件处理器
+        if (eventHandlers.isNotEmpty()) {
+            runBlocking {
+                registerHandlers(*eventHandlers.map { handler ->
+                    Event::class.java to handler
+                }.toTypedArray())
+            }
+        }
+        
         processingJob = CoroutineScope(dispatcher).launch {
             eventChannel.consumeEach { event ->
                 try {
@@ -82,7 +97,7 @@ class InMemoryEventBus(
                 }
             }
         }
-        logger.info("In-memory event bus started")
+        logger.info("In-memory event bus started with ${eventHandlers.size} event handlers")
     }
     
     override fun stop() {
@@ -169,12 +184,14 @@ object EventBusFactory {
      */
     fun createInMemoryEventBus(
         config: EventBusProperties = EventBusProperties(),
-        deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity)
+        deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
+        eventHandlers: Set<EventHandler<*>> = emptySet()
     ): EventBus {
         return InMemoryEventBus(
             config = config,
             deadLetterQueue = deadLetterQueue,
-            retryHandler = EventRetryHandler(config)
+            retryHandler = EventRetryHandler(config),
+            eventHandlers = eventHandlers
         )
     }
     

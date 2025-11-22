@@ -2,6 +2,7 @@ package org.now.terminal.infrastructure.eventbus
 
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.now.terminal.shared.events.EventHandler
 
 /**
  * EventBus模块的Koin依赖注入配置
@@ -11,10 +12,11 @@ val eventBusModule: Module = module {
     
     /**
      * 事件总线单例
-     * 使用默认配置创建内存事件总线
      */
     single<EventBus> { 
-        EventBusFactory.createInMemoryEventBus()
+        EventBusFactory.createInMemoryEventBus(
+            eventHandlers = getAll<EventHandler<*>>().toSet()
+        )
     }
     
     /**
@@ -26,4 +28,13 @@ val eventBusModule: Module = module {
      * 事件总线工厂单例
      */
     single { EventBusFactory }
+
+    /**
+     * 事件总线生命周期服务单例
+     */
+    single {
+        EventBusLifecycleService(
+            eventBus = get()
+        )
+    }
 }
