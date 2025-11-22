@@ -110,6 +110,9 @@ class WebSocketServer(
                 logger.info("✅ Session created successfully")
                 terminalSessionService.handleInput(sessionId, input)
                 logger.info("✅ Input handled for new session")
+                
+                // 业务层通过领域事件自动处理初始输出，无需在此读取
+                logger.info("📤 Initial output will be published via domain events")
             }
         } catch (e: Exception) {
             logger.error("❌ Error processing terminal input for session {}: {}", sessionId.value, e.message, e)

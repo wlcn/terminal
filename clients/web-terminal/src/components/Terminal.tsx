@@ -161,8 +161,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           ws.current.send(data);
         }
         
-        // 本地回显（可选，根据后端实现决定）
-        terminal.current?.write(data);
+        // 智能本地回显：只回显普通字符，不处理特殊控制字符
+        // 这样可以避免重复显示，同时让用户看到自己的输入
+        if (data.length === 1 && data.charCodeAt(0) >= 32 && data.charCodeAt(0) <= 126) {
+          terminal.current?.write(data);
+        }
       });
 
       return () => {

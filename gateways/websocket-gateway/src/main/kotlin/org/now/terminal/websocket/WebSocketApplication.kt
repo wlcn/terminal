@@ -4,6 +4,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.koin.ktor.plugin.Koin
+import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.infrastructure.eventbus.EventBus
 import org.now.terminal.infrastructure.logging.TerminalLogger
@@ -59,7 +60,7 @@ object WebSocketApplication {
         val logger = TerminalLogger.getLogger(WebSocketApplication::class.java)
         try {
             // 获取事件总线实例并启动
-            val eventBus = Koin.getKoin().get<EventBus>()
+            val eventBus = koin().get<EventBus>()
             if (!eventBus.isRunning()) {
                 eventBus.start()
                 logger.info("✅ Event bus started successfully")

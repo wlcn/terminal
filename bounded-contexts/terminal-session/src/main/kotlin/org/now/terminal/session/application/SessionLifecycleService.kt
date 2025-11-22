@@ -54,7 +54,7 @@ class SessionLifecycleService(
         session.start()
         sessionRepository.save(session)
         
-        // 异步发布领域事件
+        // 异步发布领域事件（包括初始输出事件）
         session.getDomainEvents().forEach { event ->
             eventBus.publish(event)
         }
