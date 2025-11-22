@@ -94,3 +94,6 @@ pty4j = { module = "org.jetbrains.pty4j:pty4j", version.ref = "pty4j" }
 # Kotlin Plugins
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
+# Application Plugin
+application = { id = "application", version.ref = "kotlin" }

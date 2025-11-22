@@ -1,10 +1,8 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.application) apply false
+    application
 }
-
-apply plugin: 'application'
 
 dependencies {
     // 项目内部依赖

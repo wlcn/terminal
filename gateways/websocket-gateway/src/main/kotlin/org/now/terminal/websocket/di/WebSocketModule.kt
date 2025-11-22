@@ -2,6 +2,7 @@ package org.now.terminal.websocket.di
 
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.WebSocketOutputPublisher
 import org.now.terminal.websocket.WebSocketServer
 
@@ -10,6 +11,9 @@ import org.now.terminal.websocket.WebSocketServer
  * 配置WebSocket相关的服务和组件
  */
 val webSocketModule: Module = module {
+    
+    // 包含terminal-session模块的依赖
+    includes(terminalSessionModule)
     
     /**
      * WebSocket输出发布器单例
@@ -21,5 +25,5 @@ val webSocketModule: Module = module {
      * WebSocket服务器单例
      * 负责WebSocket连接管理和消息路由
      */
-    single { WebSocketServer(get()) }
+    single { WebSocketServer(get(), get()) }
 }

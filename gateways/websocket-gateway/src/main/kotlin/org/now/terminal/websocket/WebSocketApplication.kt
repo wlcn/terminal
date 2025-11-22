@@ -37,8 +37,8 @@ object WebSocketApplication {
     private fun Application.configureApplication() {
         // 配置Koin依赖注入
         install(Koin) {
-            // Koin 4.x版本使用不同的日志配置方式
-            // 直接使用默认配置，项目已经配置了logback
+            // 加载WebSocket模块和TerminalSession模块
+            modules(webSocketModule)
         }
         
         // 配置WebSocket功能
