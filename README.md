@@ -324,53 +324,46 @@ kt-terminal/
 ├── bounded-contexts/                   # 限界上下文
 │   ├── terminal-session/              # 终端会话上下文
 │   │   ├── src/main/kotlin/org/now/terminal/session/
+│   │   │   ├── application/           # 应用层
+│   │   │   │   ├── SessionLifecycleService.kt
+│   │   │   │   ├── handlers/          # 事件处理器
+│   │   │   │   │   └── TerminalOutputEventHandler.kt
+│   │   │   │   └── usecases/          # 用例
+│   │   │   │       ├── CreateSessionUseCase.kt
+│   │   │   │       ├── HandleInputUseCase.kt
+│   │   │   │       ├── ListActiveSessionsUseCase.kt
+│   │   │   │       ├── ResizeTerminalUseCase.kt
+│   │   │   │       └── TerminateSessionUseCase.kt
+│   │   │   ├── di/                    # 依赖注入
+│   │   │   │   └── TerminalSessionModule.kt
 │   │   │   ├── domain/                 # 领域层
-│   │   │   │   ├── aggregates/         # 聚合根
-│   │   │   │   │   ├── TerminalSession.kt
-│   │   │   │   │   └── SessionAggregate.kt
 │   │   │   │   ├── entities/          # 实体
-│   │   │   │   │   ├── TerminalProcess.kt
-│   │   │   │   │   └── ProcessConfiguration.kt
-│   │   │   │   ├── value-objects/     # 值对象
-│   │   │   │   │   ├── TerminalCommand.kt
-│   │   │   │   │   ├── OutputBuffer.kt
-│   │   │   │   │   └── EnvironmentVariables.kt
-│   │   │   │   ├── services/          # 领域服务
-│   │   │   │   │   ├── SessionLifecycleService.kt
-│   │   │   │   │   └── TerminalOutputProcessor.kt
+│   │   │   │   │   └── TerminalSession.kt
 │   │   │   │   ├── events/            # 领域事件
 │   │   │   │   │   ├── SessionCreatedEvent.kt
+│   │   │   │   │   ├── SessionTerminatedEvent.kt
+│   │   │   │   │   ├── TerminalInputProcessedEvent.kt
 │   │   │   │   │   ├── TerminalOutputEvent.kt
-│   │   │   │   │   └── SessionTerminatedEvent.kt
+│   │   │   │   │   └── TerminalResizedEvent.kt
 │   │   │   │   ├── repositories/     # 领域仓储接口
 │   │   │   │   │   └── TerminalSessionRepository.kt
-│   │   │   │   └── ports/            # 端口接口（依赖倒置）
-│   │   │   │       ├── ProcessManagerPort.kt
-│   │   │   │       └── OutputChannelPort.kt
-│   │   │   ├── application/           # 应用层
-│   │   │   │   ├── commands/         # 命令
-│   │   │   │   │   ├── CreateSessionCommand.kt
-│   │   │   │   │   ├── SendInputCommand.kt
-│   │   │   │   │   └── ResizeTerminalCommand.kt
-│   │   │   │   ├── queries/          # 查询
-│   │   │   │   │   ├── GetSessionQuery.kt
-│   │   │   │   │   └── ListSessionsQuery.kt
-│   │   │   │   ├── usecases/         # 用例
-│   │   │   │   │   ├── CreateSessionUseCase.kt
-│   │   │   │   │   ├── HandleTerminalInputUseCase.kt
-│   │   │   │   │   └── ManageSessionLifecycleUseCase.kt
-│   │   │   │   └── services/         # 应用服务
-│   │   │   │       └── SessionApplicationService.kt
+│   │   │   │   ├── services/          # 领域服务
+│   │   │   │   │   ├── Process.kt
+│   │   │   │   │   ├── ProcessFactory.kt
+│   │   │   │   │   ├── TerminalOutputPublisher.kt
+│   │   │   │   │   └── TerminalSessionService.kt
+│   │   │   │   └── valueobjects/     # 值对象
+│   │   │   │       ├── OutputBuffer.kt
+│   │   │   │       ├── PtyConfiguration.kt
+│   │   │   │       ├── TerminalCommand.kt
+│   │   │   │       ├── TerminalSize.kt
+│   │   │   │       └── TerminationReason.kt
 │   │   │   └── infrastructure/       # 基础设施层（具体实现）
-│   │   │       ├── persistence/      # 持久化实现
-│   │   │       │   ├── JpaTerminalSessionRepository.kt
-│   │   │       │   └── entities/     # 持久化实体
 │   │   │       ├── process/          # 进程管理实现
-│   │   │       │   ├── PtyProcessAdapter.kt      # pty4j实现
-│   │   │       │   ├── NativeProcessAdapter.kt   # 原生进程实现
-│   │   │       │   └── ProcessManagerAdapter.kt   # 进程管理适配器
-│   │   │       └── messaging/        # 消息实现
-│   │   │           └── DomainEventPublisherImpl.kt
+│   │   │       │   ├── Pty4jProcess.kt
+│   │   │       │   └── Pty4jProcessFactory.kt
+│   │   │       └── repositories/     # 仓储实现
+│   │   │           └── InMemoryTerminalSessionRepository.kt
 │   │   ├── src/test/kotlin/org/now/terminal/session/  # 单元测试
 │   │   │   ├── domain/
 │   │   │   │   ├── aggregates/TerminalSessionTest.kt
@@ -444,48 +437,36 @@ kt-terminal/
 
 ## 🎯 DDD核心概念实现
 
-### 聚合根设计示例
+### 实体设计示例
 ```kotlin
-// TerminalSession.kt - 终端会话聚合根
-@AggregateRoot
-class TerminalSession(
+// TerminalSession.kt - 终端会话实体
+data class TerminalSession(
     val sessionId: SessionId,
     val userId: UserId,
-    private var configuration: PtyConfiguration,
-    private var process: TerminalProcess? = null
+    val configuration: PtyConfiguration,
+    val process: Process? = null,
+    val status: SessionStatus = SessionStatus.CREATED,
+    val createdAt: Instant = Instant.now(),
+    val terminatedAt: Instant? = null,
+    val exitCode: Int? = null
 ) {
-    private val outputBuffer = OutputBuffer()
-    private val domainEvents = mutableListOf<DomainEvent>()
+    fun isActive(): Boolean = status == SessionStatus.ACTIVE
     
-    fun createProcess(): TerminalProcess {
-        require(process == null) { "Process already exists" }
-        
-        val newProcess = TerminalProcess.create(configuration)
-        process = newProcess
-        
-        registerEvent(SessionCreatedEvent(sessionId, userId, Instant.now()))
-        return newProcess
+    fun terminate(reason: TerminationReason): TerminalSession {
+        return copy(
+            status = SessionStatus.TERMINATED,
+            terminatedAt = Instant.now(),
+            exitCode = when (reason) {
+                TerminationReason.USER_REQUESTED -> 0
+                TerminationReason.SYSTEM_ERROR -> 1
+                TerminationReason.PROCESS_EXITED -> process?.exitCode ?: 1
+            }
+        )
     }
     
-    fun handleInput(command: TerminalCommand) {
-        val currentProcess = process ?: throw IllegalStateException("No active process")
-        currentProcess.execute(command)
-        
-        registerEvent(TerminalInputProcessedEvent(sessionId, command, Instant.now()))
+    fun withProcess(process: Process): TerminalSession {
+        return copy(process = process, status = SessionStatus.ACTIVE)
     }
-    
-    fun resize(newSize: TerminalSize) {
-        configuration = configuration.copy(size = newSize)
-        process?.resize(newSize)
-        
-        registerEvent(TerminalResizedEvent(sessionId, newSize, Instant.now()))
-    }
-    
-    private fun registerEvent(event: DomainEvent) {
-        domainEvents.add(event)
-    }
-    
-    fun getDomainEvents(): List<DomainEvent> = domainEvents.toList().also { domainEvents.clear() }
 }
 ```
 
@@ -493,16 +474,16 @@ class TerminalSession(
 ```kotlin
 // TerminalCommand.kt - 命令值对象
 @JvmInline
-value class TerminalCommand private constructor(val value: String) {
-    companion object {
-        fun create(command: String): TerminalCommand {
-            require(command.isNotBlank()) { "Command cannot be blank" }
-            require(command.length <= 1024) { "Command too long" }
-            return TerminalCommand(command.trim())
-        }
+@Serializable
+value class TerminalCommand(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Command cannot be blank" }
+        require(value.length <= 1024) { "Command too long" }
     }
     
-    fun isValid(): Boolean = value.isNotBlank() && value.length <= 1024
+    companion object {
+        fun fromString(value: String): TerminalCommand = TerminalCommand(value.trim())
+    }
 }
 
 // TerminalSize.kt - 终端尺寸值对象
@@ -510,11 +491,7 @@ data class TerminalSize(val rows: Int, val columns: Int) {
     init {
         require(rows > 0) { "Rows must be positive" }
         require(columns > 0) { "Columns must be positive" }
-        require(rows <= 1000) { "Rows too large" }
-        require(columns <= 1000) { "Columns too large" }
     }
-    
-    fun area(): Int = rows * columns
 }
 ```
 

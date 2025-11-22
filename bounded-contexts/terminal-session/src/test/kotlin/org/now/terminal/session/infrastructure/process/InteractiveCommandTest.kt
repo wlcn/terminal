@@ -3,20 +3,31 @@ package org.now.terminal.session.infrastructure.process
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import org.now.terminal.infrastructure.configuration.ConfigurationManager
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
+import org.now.terminal.session.domain.valueobjects.TerminalCommand
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 import org.now.terminal.shared.valueobjects.SessionId
 
 class InteractiveCommandTest : BehaviorSpec({
     
-    val sessionId = SessionId("test-session")
+    beforeTest {
+        ConfigurationManager.initialize("test")
+    }
+    
+    afterTest {
+        ConfigurationManager.reset()
+    }
+    
+    val sessionId = SessionId.generate()
     
     given("交互式命令测试") {
         
         `when`("启动top命令") {
             then("应该成功启动并可以退出") {
                 val config = PtyConfiguration(
-                    command = "top -n 1", // 只运行一次
+                    command = TerminalCommand("top -n 1"), // 只运行一次
+                    environment = mapOf("TERM" to "xterm-256color"),
                     size = TerminalSize(80, 24),
                     workingDirectory = System.getProperty("user.dir")
                 )
@@ -45,7 +56,8 @@ class InteractiveCommandTest : BehaviorSpec({
         `when`("启动vim命令") {
             then("应该成功启动并可以强制退出") {
                 val config = PtyConfiguration(
-                    command = "vim --version", // 显示版本信息后退出
+                    command = TerminalCommand("vim --version"), // 显示版本信息后退出
+                    environment = mapOf("TERM" to "xterm-256color"),
                     size = TerminalSize(80, 24),
                     workingDirectory = System.getProperty("user.dir")
                 )
@@ -74,7 +86,8 @@ class InteractiveCommandTest : BehaviorSpec({
         `when`("启动交互式Python") {
             then("应该可以执行Python命令") {
                 val config = PtyConfiguration(
-                    command = "python -c \"print('Hello World'); exit()\"",
+                    command = TerminalCommand("python -c \"print('Hello World'); exit()\""),
+                    environment = mapOf("TERM" to "xterm-256color"),
                     size = TerminalSize(80, 24),
                     workingDirectory = System.getProperty("user.dir")
                 )
