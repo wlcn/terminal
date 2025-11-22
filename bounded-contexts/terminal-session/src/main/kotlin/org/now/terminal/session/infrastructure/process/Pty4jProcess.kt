@@ -4,6 +4,7 @@ import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
 import org.now.terminal.session.domain.valueobjects.ShellType
 import org.now.terminal.session.domain.services.Process
@@ -174,6 +175,11 @@ class Pty4jProcess(
             block(output)
         }
     }
+    
+    /**
+     * 获取进程输出通道（异步监听）
+     */
+    override fun getOutputChannel(): ReceiveChannel<String> = outputChannel
     
     /**
      * 等待进程结束

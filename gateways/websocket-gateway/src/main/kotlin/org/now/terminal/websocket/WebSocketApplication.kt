@@ -5,9 +5,9 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
-import org.now.terminal.infrastructure.configuration.ConfigurationManager
-import org.now.terminal.infrastructure.eventbus.EventBus
-import org.now.terminal.infrastructure.logging.TerminalLogger
+import org.now.terminal.infrastructure.configuration.di.configurationModule
+import org.now.terminal.infrastructure.eventbus.di.eventBusModule
+import org.now.terminal.infrastructure.logging.di.loggingModule
 import org.now.terminal.websocket.di.webSocketModule
 
 /**
@@ -21,14 +21,7 @@ object WebSocketApplication {
      * @param port 服务器端口，默认从配置管理器获取
      */
     fun start(port: Int? = null) {
-        // 初始化配置管理器
-        ConfigurationManager.initialize()
-        
-        // 初始化日志系统
-        TerminalLogger.initialize()
-        
-        val actualPort = port ?: ConfigurationManager.getServerPort()
-        embeddedServer(Netty, port = actualPort) {
+        embeddedServer(Netty, port = port ?: 8080) {
             configureApplication()
         }.start(wait = true)
     }
@@ -40,45 +33,38 @@ object WebSocketApplication {
         // 配置Koin依赖注入
         install(Koin) {
             // 加载WebSocket模块和TerminalSession模块
-            modules(webSocketModule)
+            modules(configurationModule, loggingModule, eventBusModule, webSocketModule)
         }
         
-        // 启动事件总线
-        startEventBus()
+        // 初始化基础设施
+        initializeInfrastructure()
         
         // 配置WebSocket功能
         configureWebSocket()
+    }
+    
+    /**
+     * 初始化基础设施
+     */
+    private fun Application.initializeInfrastructure() {
+        // 通过Koin获取基础设施服务并初始化
+        val koin = koin()
         
-        // 配置日志
-        configureLogging()
+        // 初始化配置系统
+        val configurationService = koin.get<org.now.terminal.infrastructure.configuration.ConfigurationLifecycleService>()
+        configurationService.initialize()
+        
+        // 初始化日志系统
+        val loggingService = koin.get<org.now.terminal.infrastructure.logging.LoggingLifecycleService>()
+        loggingService.initialize()
+        
+        // 启动事件总线并注册事件处理器
+        val eventBusService = koin.get<org.now.terminal.infrastructure.eventbus.EventBusLifecycleService>()
+        eventBusService.start()
+        eventBusService.registerEventHandlers()
     }
     
-    /**
-     * 启动事件总线
-     */
-    private fun Application.startEventBus() {
-        val logger = TerminalLogger.getLogger(WebSocketApplication::class.java)
-        try {
-            // 获取事件总线实例并启动
-            val eventBus = koin().get<EventBus>()
-            if (!eventBus.isRunning()) {
-                eventBus.start()
-                logger.info("✅ Event bus started successfully")
-            } else {
-                logger.info("ℹ️ Event bus is already running")
-            }
-        } catch (e: Exception) {
-            logger.error("❌ Failed to start event bus: {}", e.message)
-        }
-    }
-    
-    /**
-     * 配置日志
-     */
-    private fun Application.configureLogging() {
-        // 这里可以配置日志，但Ktor默认会使用logback
-        // 项目已经配置了logback，所以这里不需要额外配置
-    }
+
     
     /**
      * 主函数，用于独立运行WebSocket Gateway
@@ -88,18 +74,13 @@ object WebSocketApplication {
         // 解析命令行参数
         val (port, environment, osType) = parseCommandLineArgs(args)
         
-        // 初始化配置管理器（支持环境配置和操作系统配置）
-        ConfigurationManager.initialize(environment = environment, osType = osType)
+        // 设置环境变量，供配置系统使用
+        environment?.let { System.setProperty("APP_ENV", it) }
+        osType?.let { System.setProperty("OS_TYPE", it) }
         
-        // 初始化日志系统
-        TerminalLogger.initialize()
-        
-        val logger = TerminalLogger.getLogger(WebSocketApplication::class.java)
-        val actualPort = port ?: ConfigurationManager.getServerPort()
-        
-        logger.info("🚀 Starting WebSocket Gateway on port {}", actualPort)
-        logger.info("📋 Configuration: environment={}, osType={}", environment ?: "default", osType ?: "auto")
-        start(actualPort)
+        println("🚀 Starting WebSocket Gateway on port ${port ?: 8080}")
+        println("📋 Configuration: environment=${environment ?: "default"}, osType=${osType ?: "auto"}")
+        start(port)
     }
     
     /**

@@ -1,5 +1,8 @@
 package org.now.terminal.session.domain.entities
 
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.consumeEach
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHelper
 import org.now.terminal.shared.valueobjects.SessionId
@@ -45,6 +48,9 @@ class TerminalSession(
         process = createProcess()
         status = SessionStatus.RUNNING
         
+        // 启动输出监听协程
+        startOutputListener()
+        
         // 添加会话创建领域事件
         domainEvents.add(SessionCreatedEvent(
             eventHelper = EventHelper(
@@ -57,6 +63,52 @@ class TerminalSession(
             configuration = ptyConfig,
             createdAt = createdAt
         ))
+    }
+    
+    /**
+     * 启动输出监听协程
+     */
+    private fun startOutputListener() {
+        val currentProcess = process ?: return
+        
+        // 启动协程监听PTY进程输出通道（真正的异步监听）
+        GlobalScope.launch {
+            try {
+                currentProcess.getOutputChannel().consumeEach { output ->
+                    // 检查会话是否仍在运行状态
+                    if (status != SessionStatus.RUNNING) return@consumeEach
+                    
+                    // 将输出添加到缓冲区
+                    outputBuffer.append(output)
+                    
+                    // 发布输出领域事件
+                    domainEvents.add(TerminalOutputEvent(
+                        eventHelper = EventHelper(
+                            eventType = "TerminalOutput",
+                            aggregateId = sessionId.value,
+                            aggregateType = "TerminalSession"
+                        ),
+                        sessionId = sessionId,
+                        output = output,
+                        outputAt = Instant.now()
+                    ))
+                }
+            } catch (e: Exception) {
+                // 输出监听异常处理
+                domainEvents.add(SessionTerminatedEvent(
+                    eventHelper = EventHelper(
+                        eventType = "SessionTerminated",
+                        aggregateId = sessionId.value,
+                        aggregateType = "TerminalSession"
+                    ),
+                    sessionId = sessionId,
+                    reason = TerminationReason.SYSTEM_ERROR,
+                    exitCode = null,
+                    terminatedAt = Instant.now()
+                ))
+                status = SessionStatus.TERMINATED
+            }
+        }
     }
     
     /**

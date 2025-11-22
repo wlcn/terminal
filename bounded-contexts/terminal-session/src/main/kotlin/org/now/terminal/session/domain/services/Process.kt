@@ -1,5 +1,6 @@
 package org.now.terminal.session.domain.services
 
+import kotlinx.coroutines.channels.ReceiveChannel
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 
 /**
@@ -21,6 +22,11 @@ interface Process {
      * 读取进程输出
      */
     fun readOutput(): String
+    
+    /**
+     * 获取进程输出通道（异步监听）
+     */
+    fun getOutputChannel(): ReceiveChannel<String>
     
     /**
      * 调整终端尺寸
