@@ -5,9 +5,12 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.consumeAsFlow
 import org.now.terminal.shared.valueobjects.SessionId
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.ktor.plugin.Koin
+import org.koin.ktor.ext.get
+import org.koin.ktor.ext.inject
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * WebSocket服务器
@@ -63,8 +66,8 @@ class WebSocketServer(
  */
 fun Application.configureWebSocket() {
     install(WebSockets) {
-        pingPeriod = java.time.Duration.ofSeconds(15)
-        timeout = java.time.Duration.ofSeconds(15)
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
@@ -74,8 +77,8 @@ fun Application.configureWebSocket() {
             val sessionIdParam = call.parameters["sessionId"]
             if (sessionIdParam != null) {
                 try {
-                    val sessionId = SessionId(sessionIdParam)
-                    val webSocketServer: WebSocketServer by inject()
+                    val sessionId = SessionId.create(sessionIdParam)
+                    val webSocketServer by inject<WebSocketServer>()
                     webSocketServer.handleConnection(sessionId, this)
                 } catch (e: IllegalArgumentException) {
                     close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Invalid session ID"))

@@ -27,6 +27,7 @@ dependencies {
     
     // 依赖注入
     implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
     
     // 测试依赖
     testImplementation(libs.kotest.runner.junit5)

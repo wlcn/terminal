@@ -13,5 +13,5 @@ interface TerminalOutputPublisher {
      * @param sessionId 会话ID
      * @param output 输出内容
      */
-    fun publishOutput(sessionId: SessionId, output: String)
+    suspend fun publishOutput(sessionId: SessionId, output: String)
 }

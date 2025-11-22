@@ -29,6 +29,7 @@ ktor-test = "3.3.0"
 
 # Dependency Injection
 koin-core = "4.1.1"
+koin-ktor = "4.1.1"
 
 # Configuration
 typesafe-config = "1.4.3"
@@ -76,6 +77,7 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 
 # Dependency Injection
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin-core" }
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin-ktor" }
 
 # Configuration
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }

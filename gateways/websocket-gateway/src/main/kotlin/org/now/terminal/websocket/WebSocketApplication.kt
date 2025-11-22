@@ -4,7 +4,6 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.koin.ktor.plugin.Koin
-import org.koin.logger.slf4jLogger
 import org.now.terminal.websocket.di.webSocketModule
 
 /**
@@ -18,18 +17,19 @@ object WebSocketApplication {
      * @param port 服务器端口，默认8080
      */
     fun start(port: Int = 8080) {
-        embeddedServer(Netty, port = port, module = Application::module)
-            .start(wait = true)
+        embeddedServer(Netty, port = port) {
+            configureApplication()
+        }.start(wait = true)
     }
     
     /**
      * Ktor应用模块配置
      */
-    private fun Application.module() {
+    private fun Application.configureApplication() {
         // 配置Koin依赖注入
         install(Koin) {
-            slf4jLogger()
-            modules(webSocketModule)
+            // Koin 4.x版本使用不同的日志配置方式
+            // 直接使用默认配置，项目已经配置了logback
         }
         
         // 配置WebSocket功能
