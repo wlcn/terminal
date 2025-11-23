@@ -4,7 +4,11 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
-import { createSession, resizeTerminal, terminateSession, checkSessionActive } from '../services/terminalApi';
+import { createSession, resizeTerminal, terminateSession } from '../services/terminalApi';
+import { APP_CONFIG } from '../config/appConfig';
+
+// WebSocket服务器配置
+const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
 
 interface TerminalComponentProps {
   className?: string;
@@ -79,7 +83,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       terminal.current?.writeln('🌐 Establishing WebSocket connection...');
       
       // Use sessionId to establish WebSocket connection
-      ws.current = new WebSocket(`ws://localhost:8080/ws/${newSessionId}`);
+      ws.current = new WebSocket(`${WS_SERVER_URL}/terminal/${newSessionId}`);
       
       ws.current.onopen = () => {
         console.log('✅ WebSocket connection established successfully');
@@ -248,10 +252,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     terminal.current.refresh(0, terminal.current.rows - 1);
   };
 
-  // Generate random session ID
-  const generateSessionId = () => {
-    return 'session-' + Math.random().toString(36).substr(2, 9);
-  };
 
   // Initialize terminal - using xterm.js official best practice configuration
   useEffect(() => {

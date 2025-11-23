@@ -2,70 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Modern tech terminal styles */
-@layer base {
-  :root {
-    --tech-primary: 174 100% 50%;    /* #00ffcc */
-    --tech-secondary: 204 100% 50%;  /* #0099ff */
-    --tech-accent: 270 100% 50%;     /* #6600ff */
-    --tech-danger: 340 100% 61%;     /* #ff3366 */
-    --tech-success: 158 95% 49%;    /* #0ef0a3 */
-    --tech-warning: 45 100% 51%;     /* #ffb224 */
-    
-    --tech-bg-dark: 222 84% 5%;      /* #020617 */
-    --tech-bg-darker: 222 84% 3%;    /* #01040b */
-    --tech-bg-light: 222 84% 8%;     /* #030712 */
-    
-    --tech-glow: 174 100% 50%;
-    --tech-border: 217 33% 17%;
-  }
-}
+:root {
+  /* Modern tech terminal colors */
+  --tech-primary: 217 91% 60%;
+  --tech-secondary: 215 25% 27%;
+  --tech-accent: 142 76% 36%;
+  --tech-danger: 0 84% 60%;
+  --tech-success: 142 76% 36%;
+  --tech-warning: 38 92% 50%;
+  --tech-bg-dark: 222 47% 11%;
+  --tech-bg-darker: 222 47% 8%;
+  --tech-bg-light: 210 40% 98%;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+  /* Shadcn/ui colors */
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 215 25% 27%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  --radius: 0.5rem;
 }
 
 @layer base {
@@ -74,7 +43,49 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
+}
+
+/* Custom scrollbar for terminal */
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: hsl(222 47% 8%);
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(217.2 32.6% 17.5%);
+  border-radius: 4px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(217.2 32.6% 25%);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Terminal focus styles */
+.terminal-focus {
+  box-shadow: 0 0 0 2px hsl(217 91% 60% / 0.2);
+}
+
+/* Status indicators */
+.status-connected {
+  background: linear-gradient(45deg, hsl(142 76% 36%), hsl(142 76% 46%));
+  box-shadow: 0 0 10px hsl(142 76% 36% / 0.3);
+}
+
+.status-disconnected {
+  background: linear-gradient(45deg, hsl(0 84% 60%), hsl(0 84% 70%));
+  box-shadow: 0 0 10px hsl(0 84% 60% / 0.3);
 }
 
 /* xterm.js style overrides */

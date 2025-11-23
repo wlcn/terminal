@@ -3,7 +3,9 @@
  * Handles session management, size adjustment operations, separated from WebSocket
  */
 
-const API_BASE_URL = '/api';
+import { APP_CONFIG } from '../config/appConfig';
+
+const API_BASE_URL = APP_CONFIG.API_SERVER.BASE_PATH;
 
 /**
  * Create new session
