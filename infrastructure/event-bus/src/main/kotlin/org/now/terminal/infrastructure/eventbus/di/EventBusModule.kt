@@ -22,6 +22,7 @@ val eventBusModule: Module = module {
     /**
      * EventBus生命周期管理服务
      * 负责EventBus的启动、停止和事件处理器注册
+     * 注意：ConfigurationManager是object单例，直接使用而非通过Koin注入
      */
-    single { EventBusLifecycleService(get(), get()) }
+    single { EventBusLifecycleService(get(), ConfigurationManager) }
 }

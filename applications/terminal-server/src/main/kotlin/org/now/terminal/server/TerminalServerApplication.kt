@@ -14,6 +14,7 @@ import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
 import org.now.terminal.websocket.configureWebSocket
 import org.now.terminal.shared.valueobjects.SessionId
+import org.now.terminal.shared.valueobjects.UserId
 
 /**
  * 终端服务器应用容器
@@ -53,12 +54,12 @@ object TerminalServerApplication {
         // 配置WebSocket网关功能
         configureWebSocketGateway(
             onNewConnection = { session ->
-                // 业务逻辑由上层应用提供
-                throw UnsupportedOperationException("New connection handler must be implemented by the application")
+                // 使用实现的连接处理器
+                this.handleNewConnection(session)
             },
             onReconnect = { sessionId, session ->
-                // 业务逻辑由上层应用提供
-                throw UnsupportedOperationException("Reconnect handler must be implemented by the application")
+                // 使用实现的重连处理器
+                this.handleReconnect(sessionId, session)
             }
         )
     }
@@ -92,6 +93,46 @@ object TerminalServerApplication {
     ) {
         // 委托给WebSocket模块配置
         configureWebSocket(onNewConnection, onReconnect)
+    }
+    
+    /**
+     * 处理新的WebSocket连接
+     * 创建默认用户和会话配置
+     */
+    private suspend fun Application.handleNewConnection(session: WebSocketSession): SessionId {
+        // 获取Koin实例
+        val koin = koin()
+        
+        // 获取终端会话服务
+        val terminalSessionService = koin.get<org.now.terminal.session.domain.services.TerminalSessionService>()
+        
+        // 创建默认用户ID
+        val defaultUserId = org.now.terminal.shared.valueobjects.UserId.generate()
+        
+        // 从配置获取默认命令并创建TerminalCommand
+        val defaultCommand = org.now.terminal.infrastructure.configuration.ConfigurationManager
+            .getTerminalConfig().pty.defaultCommand
+        val terminalCommand = org.now.terminal.session.domain.valueobjects.TerminalCommand(defaultCommand)
+        
+        // 创建默认的Pty配置
+        val ptyConfig = org.now.terminal.session.domain.valueobjects.PtyConfiguration.createDefault(terminalCommand)
+        
+        // 创建会话并返回会话ID
+        return terminalSessionService.createSession(defaultUserId, ptyConfig)
+    }
+    
+    /**
+     * 处理WebSocket重连
+     */
+    private suspend fun Application.handleReconnect(sessionId: SessionId, session: WebSocketSession): Boolean {
+        // 获取Koin实例
+        val koin = koin()
+        
+        // 获取终端会话服务
+        val terminalSessionService = koin.get<org.now.terminal.session.domain.services.TerminalSessionService>()
+        
+        // 检查会话是否仍然活跃
+        return terminalSessionService.isSessionActive(sessionId)
     }
     
     /**

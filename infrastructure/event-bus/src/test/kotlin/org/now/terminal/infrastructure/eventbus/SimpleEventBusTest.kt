@@ -5,6 +5,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.runBlocking
 import org.now.terminal.shared.events.EventHandler
+import org.now.terminal.infrastructure.eventbus.SimpleEventBus
+import org.now.terminal.infrastructure.eventbus.EventBusFactory
+import org.now.terminal.infrastructure.eventbus.TestEvent
 
 class SimpleEventBusTest : BehaviorSpec({
     
