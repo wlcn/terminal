@@ -21,6 +21,8 @@ import org.now.terminal.session.application.handlers.TerminalInputProcessedEvent
 import org.now.terminal.session.domain.events.SessionCreatedEvent
 import org.now.terminal.session.domain.events.TerminalOutputEvent
 import org.now.terminal.session.domain.events.TerminalInputProcessedEvent
+import org.now.terminal.shared.events.EventHandler
+import java.util.concurrent.ConcurrentHashMap
 /**
  * 会话生命周期管理服务
  * 实现TerminalSessionService接口
@@ -36,6 +38,9 @@ class SessionLifecycleService(
     
     // 动态事件处理器注册服务，供业务层使用
     private val dynamicHandlerRegistry = DynamicEventHandlerRegistryFactory.create(eventBus)
+    
+    // 会话处理器映射，用于管理每个会话的独立处理器实例
+    private val sessionHandlerMap = ConcurrentHashMap<SessionId, SessionHandlerMapping>()
     
     private val logger = TerminalLogger.getLogger(SessionLifecycleService::class.java)
     
@@ -195,6 +200,15 @@ class SessionLifecycleService(
         return session.getStatistics()
     }
     
+    /**
+     * 会话处理器映射数据结构
+     */
+    private data class SessionHandlerMapping(
+        val outputHandler: EventHandler<TerminalOutputEvent>,
+        val inputProcessedHandler: EventHandler<TerminalInputProcessedEvent>,
+        val createdHandler: EventHandler<SessionCreatedEvent>
+    )
+    
 
     
     /**
@@ -248,19 +262,28 @@ class SessionLifecycleService(
      * 注册会话相关的事件处理器
      */
     private suspend fun registerSessionEventHandlers(sessionId: SessionId) {
-        logger.debug("注册会话事件处理器 - 会话ID: {}", sessionId)
+        logger.info("注册会话事件处理器 - 会话ID: {}", sessionId)
         
-        // 注册SessionCreated事件处理器（必须）
+        // 为每个会话创建独立的事件处理器实例
+        val sessionOutputEventHandler = TerminalOutputEventHandler(terminalOutputPublisher)
+        val sessionInputProcessedEventHandler = TerminalInputProcessedEventHandler()
+        val sessionCreatedEventHandler = SessionCreatedEventHandler()
+        
+        // 注册终端输出事件处理器
+        dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, sessionOutputEventHandler)
+        
+        // 注册终端输入处理完成事件处理器
+        dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, sessionInputProcessedEventHandler)
+        
+        // 注册会话创建事件处理器
         dynamicHandlerRegistry.registerHandler(SessionCreatedEvent::class.java, sessionCreatedEventHandler)
         
-        // 注册TerminalOutput事件处理器（必须）
-        dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, terminalOutputEventHandler)
-        
-        // 注册TerminalInputProcessed事件处理器（可选，用于统计）
-        dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, terminalInputProcessedEventHandler)
-        
-        // 添加短暂延迟，确保事件处理器已完全注册并准备就绪
-        kotlinx.coroutines.delay(50)
+        // 存储会话处理器映射，用于后续取消注册
+        sessionHandlerMap[sessionId] = SessionHandlerMapping(
+            outputHandler = sessionOutputEventHandler,
+            inputProcessedHandler = sessionInputProcessedEventHandler,
+            createdHandler = sessionCreatedEventHandler
+        )
         
         logger.info("会话事件处理器注册完成 - 会话ID: {}", sessionId)
     }
@@ -269,13 +292,25 @@ class SessionLifecycleService(
      * 取消注册会话相关的事件处理器
      */
     private suspend fun unregisterSessionEventHandlers(sessionId: SessionId) {
-        logger.debug("取消注册会话事件处理器 - 会话ID: {}", sessionId)
+        logger.info("取消注册会话事件处理器 - 会话ID: {}", sessionId)
         
-        // 取消注册所有会话相关的事件处理器
-        dynamicHandlerRegistry.unregisterHandler(SessionCreatedEvent::class.java, sessionCreatedEventHandler)
-        dynamicHandlerRegistry.unregisterHandler(TerminalOutputEvent::class.java, terminalOutputEventHandler)
-        dynamicHandlerRegistry.unregisterHandler(TerminalInputProcessedEvent::class.java, terminalInputProcessedEventHandler)
-        
-        logger.info("会话事件处理器取消注册完成 - 会话ID: {}", sessionId)
+        val handlerMapping = sessionHandlerMap[sessionId]
+        if (handlerMapping != null) {
+            // 取消注册终端输出事件处理器
+            dynamicHandlerRegistry.unregisterHandler(TerminalOutputEvent::class.java, handlerMapping.outputHandler)
+            
+            // 取消注册终端输入处理完成事件处理器
+            dynamicHandlerRegistry.unregisterHandler(TerminalInputProcessedEvent::class.java, handlerMapping.inputProcessedHandler)
+            
+            // 取消注册会话创建事件处理器
+            dynamicHandlerRegistry.unregisterHandler(SessionCreatedEvent::class.java, handlerMapping.createdHandler)
+            
+            // 从映射中移除
+            sessionHandlerMap.remove(sessionId)
+            
+            logger.info("会话事件处理器取消注册完成 - 会话ID: {}", sessionId)
+        } else {
+            logger.warn("未找到会话处理器映射 - 会话ID: {}", sessionId)
+        }
     }
 }
