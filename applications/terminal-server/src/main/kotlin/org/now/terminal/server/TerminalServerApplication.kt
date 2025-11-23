@@ -5,14 +5,17 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.plugins.contentnegotiation.*
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.di.configurationModule
 import org.now.terminal.infrastructure.eventbus.di.eventBusModule
+import org.now.terminal.infrastructure.eventbus.LogEventHandler
 import org.now.terminal.infrastructure.logging.di.loggingModule
 import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
+import org.now.terminal.shared.events.Event
 import org.slf4j.LoggerFactory
 
 // 导入配置方法
@@ -102,6 +105,15 @@ object TerminalServerApplication {
         // 启动事件总线
         val eventBus = koin.get<org.now.terminal.infrastructure.eventbus.EventBus>()
         eventBus.start()
+        
+        // 注册默认事件处理器（使用协程执行挂起函数）
+        val logEventHandler = koin.get<LogEventHandler>()
+        runBlocking {
+            eventBus.subscribe(Event::class.java, logEventHandler)
+        }
+        
+        val logger = LoggerFactory.getLogger("TerminalServerApplication")
+        logger.info("✅ 默认事件处理器注册完成")
     }
     
 

@@ -39,7 +39,7 @@ val terminalSessionModule: Module = module {
     single { TerminalInputProcessedEventHandler(get()) }
     
     // 应用层 - 服务
-    single<TerminalSessionService> { SessionLifecycleService(get(), get(), get()) }
+    single<TerminalSessionService> { SessionLifecycleService(get(), get(), get(), get(), get(), get()) }
     
    
 }

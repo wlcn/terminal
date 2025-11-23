@@ -32,7 +32,8 @@ val eventBusModule: Module = module {
         
         // 注册日志事件处理器（处理所有事件类型）
         // 使用Event::class.java作为事件类型，这样LogEventHandler会处理所有Event的子类
-        eventBus.subscribe(Event::class.java, logEventHandler)
+        // 注意：在Koin模块初始化中不能直接调用挂起函数，需要在应用启动后注册
+        // 这里只创建EventBus实例，注册将在应用启动流程中完成
         
         eventBus
     }

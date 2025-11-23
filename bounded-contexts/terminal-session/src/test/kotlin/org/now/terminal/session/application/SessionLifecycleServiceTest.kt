@@ -45,7 +45,14 @@ class SessionLifecycleServiceTest : BehaviorSpec({
         userId = UserId.generate()
         ptyConfig = PtyConfiguration.createDefault(TerminalCommand("/bin/bash"))
         
-        service = SessionLifecycleService(mockEventBus, mockRepository, mockProcessFactory)
+        service = SessionLifecycleService(
+            mockEventBus, 
+            mockRepository, 
+            mockProcessFactory,
+            mockk(), // sessionCreatedEventHandler
+            mockk(), // terminalOutputEventHandler
+            mockk()  // terminalInputProcessedEventHandler
+        )
     }
     
     afterTest {

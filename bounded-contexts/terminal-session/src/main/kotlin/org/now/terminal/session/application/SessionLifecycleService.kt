@@ -15,6 +15,12 @@ import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalSize
 import org.now.terminal.infrastructure.eventbus.DynamicEventHandlerRegistry
 import org.now.terminal.infrastructure.eventbus.DynamicEventHandlerRegistryFactory
+import org.now.terminal.session.application.handlers.SessionCreatedEventHandler
+import org.now.terminal.session.application.handlers.TerminalOutputEventHandler
+import org.now.terminal.session.application.handlers.TerminalInputProcessedEventHandler
+import org.now.terminal.session.domain.events.SessionCreatedEvent
+import org.now.terminal.session.domain.events.TerminalOutputEvent
+import org.now.terminal.session.domain.events.TerminalInputProcessedEvent
 /**
  * 会话生命周期管理服务
  * 实现TerminalSessionService接口
@@ -22,7 +28,10 @@ import org.now.terminal.infrastructure.eventbus.DynamicEventHandlerRegistryFacto
 class SessionLifecycleService(
     private val eventBus: EventBus,
     private val sessionRepository: TerminalSessionRepository,
-    private val processFactory: ProcessFactory
+    private val processFactory: ProcessFactory,
+    private val sessionCreatedEventHandler: SessionCreatedEventHandler,
+    private val terminalOutputEventHandler: TerminalOutputEventHandler,
+    private val terminalInputProcessedEventHandler: TerminalInputProcessedEventHandler
 ) : TerminalSessionService {
     
     // 动态事件处理器注册服务，供业务层使用
@@ -59,6 +68,9 @@ class SessionLifecycleService(
         session.start()
         sessionRepository.save(session)
         
+        // 注册会话相关的事件处理器
+        registerSessionEventHandlers(sessionId)
+        
         // 异步发布领域事件（包括初始输出事件）
         session.getDomainEvents().forEach { event ->
             eventBus.publish(event)
@@ -84,6 +96,9 @@ class SessionLifecycleService(
         
         session.terminate(reason)
         sessionRepository.save(session)
+        
+        // 取消注册会话相关的事件处理器
+        unregisterSessionEventHandlers(sessionId)
         
         // 异步发布领域事件
         session.getDomainEvents().forEach { event ->
@@ -180,23 +195,7 @@ class SessionLifecycleService(
         return session.getStatistics()
     }
     
-    /**
-     * 强制终止所有用户会话
-     */
-    override suspend fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
-        val userSessions = sessionRepository.findByUserId(userId)
-        userSessions.forEach { session ->
-            if (session.canTerminate()) {
-                session.terminate(reason)
-                sessionRepository.delete(session.sessionId)
-                
-                // 异步发布领域事件
-                session.getDomainEvents().forEach { event ->
-                    eventBus.publish(event)
-                }
-            }
-        }
-    }
+
     
     /**
      * 检查会话是否存在且活跃
@@ -234,11 +233,46 @@ class SessionLifecycleService(
                 session.terminate(reason)
                 sessionRepository.delete(session.sessionId)
                 
+                // 取消注册会话相关的事件处理器
+                unregisterSessionEventHandlers(session.sessionId)
+                
                 // 异步发布领域事件
                 session.getDomainEvents().forEach { event ->
                     eventBus.publish(event)
                 }
             }
         }
+    }
+    
+    /**
+     * 注册会话相关的事件处理器
+     */
+    private suspend fun registerSessionEventHandlers(sessionId: SessionId) {
+        logger.debug("注册会话事件处理器 - 会话ID: {}", sessionId)
+        
+        // 注册SessionCreated事件处理器（必须）
+        dynamicHandlerRegistry.registerHandler(SessionCreatedEvent::class.java, sessionCreatedEventHandler)
+        
+        // 注册TerminalOutput事件处理器（必须）
+        dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, terminalOutputEventHandler)
+        
+        // 注册TerminalInputProcessed事件处理器（可选，用于统计）
+        dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, terminalInputProcessedEventHandler)
+        
+        logger.info("会话事件处理器注册完成 - 会话ID: {}", sessionId)
+    }
+    
+    /**
+     * 取消注册会话相关的事件处理器
+     */
+    private suspend fun unregisterSessionEventHandlers(sessionId: SessionId) {
+        logger.debug("取消注册会话事件处理器 - 会话ID: {}", sessionId)
+        
+        // 取消注册所有会话相关的事件处理器
+        dynamicHandlerRegistry.unregisterHandler(SessionCreatedEvent::class.java, sessionCreatedEventHandler)
+        dynamicHandlerRegistry.unregisterHandler(TerminalOutputEvent::class.java, terminalOutputEventHandler)
+        dynamicHandlerRegistry.unregisterHandler(TerminalInputProcessedEvent::class.java, terminalInputProcessedEventHandler)
+        
+        logger.info("会话事件处理器取消注册完成 - 会话ID: {}", sessionId)
     }
 }
