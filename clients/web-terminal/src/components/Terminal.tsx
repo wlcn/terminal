@@ -13,7 +13,7 @@ const WS_SERVER_PATH = APP_CONFIG.WS_SERVER.PATH;
 
 interface TerminalComponentProps {
   className?: string;
-  onConnectionStatusChange?: (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: string }) => void;
+  onConnectionStatusChange?: (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: { columns: number; rows: number } }) => void;
   ref?: React.Ref<any>;
 }
 
@@ -74,9 +74,13 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const newSessionId = sessionResponse.sessionId;
       const shellType = sessionResponse.shellType;
       
-      console.log('✅ Session created:', newSessionId, 'Shell type:', shellType);
+      // 直接使用后端返回的结构化尺寸数据
+      const terminalSize = sessionResponse.terminalSize;
+      
+      console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
       terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
       terminal.current?.writeln(`🐚 Shell type: ${shellType}`);
+      terminal.current?.writeln(`📏 Terminal size: ${terminalSize.columns}×${terminalSize.rows}`);
       setSessionId(newSessionId);
       
       // 2. Immediately establish WebSocket connection (one-to-one binding)
@@ -93,6 +97,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         // Configure terminal parameters after WebSocket connection is successful
         configureTerminalForShell(shellType);
         
+        // 直接使用尺寸对象调整xterm.js
+        if (terminalSize.columns && terminalSize.rows) {
+          terminal.current?.resize(terminalSize.columns, terminalSize.rows);
+        }
+        
         terminal.current?.writeln('🚀 Terminal ready for command line interaction');
         terminal.current?.writeln('');
         terminal.current?.write('$ ');
@@ -103,7 +112,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         onConnectionStatusChange?.(true, {
           sessionId: newSessionId,
           shellType: shellType,
-          terminalSize: '80×24' // 默认尺寸，后续可以根据实际调整
+          terminalSize: terminalSize // 使用尺寸对象
         });
         
         // After successful connection, session and WebSocket have established one-to-one relationship
@@ -159,6 +168,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     }
   };
   
+
+
   // Resize terminal
   const handleResize = async (columns: number, rows: number) => {
     if (!sessionId) {
@@ -169,6 +180,19 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     try {
       console.log(`📐 Resizing terminal to ${columns}x${rows}`);
       await resizeTerminal(sessionId, columns, rows);
+      
+      // 更新xterm.js尺寸
+      if (terminal.current) {
+        terminal.current.resize(columns, rows);
+      }
+      
+      // 更新父组件状态
+      onConnectionStatusChange?.(true, {
+        sessionId: sessionId,
+        shellType: shellType || 'bash',
+        terminalSize: { columns, rows }
+      });
+      
       console.log('✅ Terminal resized successfully');
     } catch (error) {
       console.error('❌ Failed to resize terminal:', error);

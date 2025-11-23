@@ -22,7 +22,7 @@ function App() {
   const [currentSessionInfo, setCurrentSessionInfo] = useState({
     sessionId: '',
     shellType: 'bash',
-    terminalSize: '120×30'
+    terminalSize: { columns: 120, rows: 30 }
   });
 
   const toggleFullscreen = () => {
@@ -53,7 +53,7 @@ function App() {
     }
   };
 
-  const handleConnectionStatusChange = (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: string }) => {
+  const handleConnectionStatusChange = (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: { columns: number; rows: number } }) => {
     setIsConnected(connected);
     
     if (connected && sessionInfo) {
@@ -63,12 +63,18 @@ function App() {
         shellType: sessionInfo.shellType,
         terminalSize: sessionInfo.terminalSize
       });
+      
+      // 根据终端尺寸动态调整布局
+      if (sessionInfo.terminalSize) {
+        console.log('📏 Terminal size updated:', `${sessionInfo.terminalSize.columns}×${sessionInfo.terminalSize.rows}`);
+        // 这里可以根据实际尺寸调整布局，比如设置合适的容器高度
+      }
     } else {
       // 断开连接时重置会话信息
       setCurrentSessionInfo({
         sessionId: '',
         shellType: 'bash',
-        terminalSize: '120×30'
+        terminalSize: { columns: 120, rows: 30 }
       });
     }
   };
@@ -161,7 +167,7 @@ function App() {
                   <span className="text-xs text-muted-foreground">SHELL: {currentSessionInfo.shellType}</span>
                 </div>
                 <div className="flex flex-col text-sm">
-                  <span className="text-primary font-mono">SIZE: {currentSessionInfo.terminalSize}</span>
+                  <span className="text-primary font-mono">SIZE: {currentSessionInfo.terminalSize.columns}×{currentSessionInfo.terminalSize.rows}</span>
                   <span className="text-green-400 text-xs">ACTIVE</span>
                 </div>
               </div>

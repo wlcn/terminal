@@ -77,8 +77,7 @@ object TerminalManagementApi {
                     logger.info("📐 通过API调整会话 {} 尺寸: {}x{}", sessionIdParam, request.columns, request.rows)
                     call.respond(ResizeTerminalResponse(
                         sessionId = sessionIdParam,
-                        columns = request.columns,
-                        rows = request.rows,
+                        terminalSize = size,
                         status = "resized"
                     ))
                 } catch (e: IllegalArgumentException) {

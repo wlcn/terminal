@@ -1,6 +1,7 @@
 package org.now.terminal.server.api.models
 
 import kotlinx.serialization.Serializable
+import org.now.terminal.session.domain.valueobjects.TerminalSize
 
 /**
  * 调整终端尺寸API响应模型
@@ -8,7 +9,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ResizeTerminalResponse(
     val sessionId: String,
-    val columns: Int,
-    val rows: Int,
+    val terminalSize: TerminalSize,
     val status: String
 )

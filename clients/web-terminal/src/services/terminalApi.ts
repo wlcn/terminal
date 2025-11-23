@@ -10,7 +10,7 @@ const API_BASE_URL = APP_CONFIG.API_SERVER.BASE_PATH;
 /**
  * Create new session
  */
-export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string; shellType: string }> => {
+export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string; shellType: string; terminalSize: { columns: number; rows: number } }> => {
   try {
     let url = `${API_BASE_URL}/sessions`;
     if (userId) {
@@ -45,7 +45,7 @@ export const resizeTerminal = async (
   sessionId: string, 
   columns: number, 
   rows: number
-): Promise<{ sessionId: string; columns: number; rows: number; status: string }> => {
+): Promise<{ sessionId: string; terminalSize: { columns: number; rows: number }; status: string }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/resize`, {
       method: 'PUT',
