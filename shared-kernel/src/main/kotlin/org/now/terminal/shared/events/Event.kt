@@ -1,6 +1,7 @@
 package org.now.terminal.shared.events
 
 import org.now.terminal.shared.valueobjects.EventId
+import org.now.terminal.shared.valueobjects.SessionId
 import java.time.Instant
 
 /**
@@ -32,6 +33,9 @@ interface Event {
     val aggregateId: String? get() = eventHelper.aggregateId
     val aggregateType: String? get() = eventHelper.aggregateType
     val version: Int get() = eventHelper.version
+    
+    // 可选sessionId，用于基于session的事件路由
+    val sessionId: SessionId? get() = null
 }
 
 /**

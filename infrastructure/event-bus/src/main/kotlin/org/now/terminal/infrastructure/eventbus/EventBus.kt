@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.consumeEach
 import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHandler
+import org.now.terminal.shared.valueobjects.SessionId
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -283,14 +284,10 @@ class SimpleEventBus(
     
     /**
      * 从事件中提取sessionId
+     * 直接使用Event接口的sessionId属性，无需反射
      */
     private fun extractSessionIdFromEvent(event: Event): String? {
-        return when (event) {
-            is org.now.terminal.session.domain.events.TerminalOutputEvent -> event.sessionId.value
-            is org.now.terminal.session.domain.events.TerminalInputProcessedEvent -> event.sessionId.value
-            is org.now.terminal.session.domain.events.SessionCreatedEvent -> event.sessionId.value
-            else -> null
-        }
+        return event.sessionId?.value
     }
     
     /**
