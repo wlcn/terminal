@@ -16,7 +16,7 @@ class DynamicEventHandlerRegistry(private val eventBus: EventBus) {
     private val registeredHandlers = ConcurrentHashMap<String, MutableSet<EventHandler<*>>>()
     
     /**
-     * 注册事件处理器
+     * 注册全局事件处理器（处理所有session的事件）
      * @param eventType 事件类型
      * @param handler 事件处理器
      * @param handlerId 处理器标识（可选，用于后续取消注册）
@@ -31,7 +31,28 @@ class DynamicEventHandlerRegistry(private val eventBus: EventBus) {
         val id = handlerId ?: handler.javaClass.simpleName
         registeredHandlers.getOrPut(id) { mutableSetOf() }.add(handler)
         
-        logger.debug("动态注册事件处理器: {} -> {}", eventType.simpleName, id)
+        logger.debug("动态注册全局事件处理器: {} -> {}", eventType.simpleName, id)
+    }
+    
+    /**
+     * 注册基于session的事件处理器（只处理指定session的事件）
+     * @param eventType 事件类型
+     * @param sessionId 会话ID
+     * @param handler 事件处理器
+     * @param handlerId 处理器标识（可选，用于后续取消注册）
+     */
+    suspend fun <T : Event> registerHandler(
+        eventType: Class<T>,
+        sessionId: String,
+        handler: EventHandler<T>,
+        handlerId: String? = null
+    ) {
+        eventBus.subscribe(eventType, sessionId, handler)
+        
+        val id = handlerId ?: "${handler.javaClass.simpleName}_$sessionId"
+        registeredHandlers.getOrPut(id) { mutableSetOf() }.add(handler)
+        
+        logger.debug("动态注册会话事件处理器: {} -> {} (session: {})", eventType.simpleName, id, sessionId)
     }
     
     /**
@@ -95,7 +116,7 @@ class DynamicEventHandlerRegistry(private val eventBus: EventBus) {
     }
     
     /**
-     * 取消注册单个处理器
+     * 取消注册全局事件处理器
      * @param eventType 事件类型
      * @param handler 事件处理器
      */
@@ -111,7 +132,38 @@ class DynamicEventHandlerRegistry(private val eventBus: EventBus) {
             }
         }
         
-        logger.debug("取消注册事件处理器: {} -> {}", eventType.simpleName, handler.javaClass.simpleName)
+        logger.debug("取消注册全局事件处理器: {} -> {}", eventType.simpleName, handler.javaClass.simpleName)
+    }
+    
+    /**
+     * 取消注册基于session的事件处理器
+     * @param eventType 事件类型
+     * @param sessionId 会话ID
+     */
+    suspend fun <T : Event> unregisterHandler(eventType: Class<T>, sessionId: String) {
+        eventBus.unsubscribe(eventType, sessionId)
+        
+        // 从注册表中移除该session相关的处理器
+        val sessionHandlerId = "${eventType.simpleName}_$sessionId"
+        registeredHandlers.remove(sessionHandlerId)
+        
+        logger.debug("取消注册会话事件处理器: {} (session: {})", eventType.simpleName, sessionId)
+    }
+    
+    /**
+     * 取消注册指定session的所有事件处理器
+     * @param sessionId 会话ID
+     */
+    suspend fun unregisterAllForSession(sessionId: String) {
+        eventBus.unsubscribeAllForSession(sessionId)
+        
+        // 从注册表中移除该session相关的所有处理器
+        val keysToRemove = registeredHandlers.keys.filter { it.endsWith("_$sessionId") }
+        keysToRemove.forEach { key ->
+            registeredHandlers.remove(key)
+        }
+        
+        logger.debug("取消注册会话所有事件处理器 (session: {})", sessionId)
     }
     
     /**

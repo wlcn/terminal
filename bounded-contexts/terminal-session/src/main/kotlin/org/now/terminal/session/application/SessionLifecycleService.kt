@@ -269,14 +269,14 @@ class SessionLifecycleService(
         val sessionInputProcessedEventHandler = TerminalInputProcessedEventHandler()
         val sessionCreatedEventHandler = SessionCreatedEventHandler()
         
-        // 注册终端输出事件处理器
-        dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, sessionOutputEventHandler)
+        // 注册终端输出事件处理器（基于session）
+        dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, sessionId.value, sessionOutputEventHandler)
         
-        // 注册终端输入处理完成事件处理器
-        dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, sessionInputProcessedEventHandler)
+        // 注册终端输入处理完成事件处理器（基于session）
+        dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, sessionId.value, sessionInputProcessedEventHandler)
         
-        // 注册会话创建事件处理器
-        dynamicHandlerRegistry.registerHandler(SessionCreatedEvent::class.java, sessionCreatedEventHandler)
+        // 注册会话创建事件处理器（基于session）
+        dynamicHandlerRegistry.registerHandler(SessionCreatedEvent::class.java, sessionId.value, sessionCreatedEventHandler)
         
         // 存储会话处理器映射，用于后续取消注册
         sessionHandlerMap[sessionId] = SessionHandlerMapping(
@@ -296,14 +296,8 @@ class SessionLifecycleService(
         
         val handlerMapping = sessionHandlerMap[sessionId]
         if (handlerMapping != null) {
-            // 取消注册终端输出事件处理器
-            dynamicHandlerRegistry.unregisterHandler(TerminalOutputEvent::class.java, handlerMapping.outputHandler)
-            
-            // 取消注册终端输入处理完成事件处理器
-            dynamicHandlerRegistry.unregisterHandler(TerminalInputProcessedEvent::class.java, handlerMapping.inputProcessedHandler)
-            
-            // 取消注册会话创建事件处理器
-            dynamicHandlerRegistry.unregisterHandler(SessionCreatedEvent::class.java, handlerMapping.createdHandler)
+            // 使用基于session的取消注册方法，一次性取消注册该session的所有处理器
+            dynamicHandlerRegistry.unregisterAllForSession(sessionId.value)
             
             // 从映射中移除
             sessionHandlerMap.remove(sessionId)
