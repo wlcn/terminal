@@ -59,6 +59,16 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
     }
     
     /**
+     * 注册WebSocket会话（字符串sessionId版本）
+     * @param sessionId 会话ID字符串
+     * @param webSocketSession Ktor WebSocket会话
+     */
+    suspend fun registerSession(sessionId: String, webSocketSession: WebSocketSession) {
+        val sessionIdObj = SessionId.create(sessionId)
+        registerSession(sessionIdObj, webSocketSession)
+    }
+    
+    /**
      * 注销WebSocket会话
      * @param sessionId 会话ID
      */
@@ -66,6 +76,15 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
         mutex.withLock {
             sessions.remove(sessionId)
         }
+    }
+    
+    /**
+     * 注销WebSocket会话（字符串sessionId版本）
+     * @param sessionId 会话ID字符串
+     */
+    suspend fun unregisterSession(sessionId: String) {
+        val sessionIdObj = SessionId.create(sessionId)
+        unregisterSession(sessionIdObj)
     }
     
     /**

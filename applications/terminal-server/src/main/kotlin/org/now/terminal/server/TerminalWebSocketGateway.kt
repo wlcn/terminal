@@ -28,21 +28,18 @@ object TerminalWebSocketGateway {
                 val handleInputUseCase by inject<HandleInputUseCase>()
                 val sessionIdParam = call.parameters["sessionId"] ?: ""
                 
-                // 将字符串参数转换为SessionId
-                val sessionId = SessionId.create(sessionIdParam)
-                
                 // 使用用例检查会话状态
-                val isActive = checkSessionActiveUseCase.execute(sessionId)
+                val isActive = checkSessionActiveUseCase.execute(sessionIdParam)
                 
                 // 使用WebSocketServer处理连接
                 webSocketServer.handleConnection(
-                    sessionId = sessionId,
+                    sessionId = sessionIdParam,
                     session = this,
-                    onMessage = { sessionId: SessionId, input: String ->
+                    onMessage = { sessionId: String, input: String ->
                         // 使用用例处理命令行输入
                         handleInputUseCase.execute(sessionId, input)
                     },
-                    onClose = { sessionId: SessionId ->
+                    onClose = { sessionId: String ->
                         // 连接关闭，无需业务逻辑
                     }
                 )

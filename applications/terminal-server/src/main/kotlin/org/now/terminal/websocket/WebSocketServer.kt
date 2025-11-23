@@ -87,6 +87,31 @@ class WebSocketServer(
     }
     
     /**
+     * 处理WebSocket连接（字符串sessionId版本）
+     * @param sessionId 会话ID字符串
+     * @param session WebSocket会话
+     * @param onMessage 消息处理回调函数（业务无关）
+     * @param onClose 连接关闭回调函数（业务无关）
+     */
+    suspend fun handleConnection(
+        sessionId: String, 
+        session: WebSocketSession,
+        onMessage: suspend (String, String) -> Unit = { _, _ -> },
+        onClose: suspend (String) -> Unit = { _ -> }
+    ) {
+        // 验证sessionId格式
+        val sessionIdObj = SessionId.create(sessionId)
+        
+        // 调用对象版本的方法，并在回调中进行类型转换
+        handleConnection(
+            sessionId = sessionIdObj,
+            session = session,
+            onMessage = { id, input -> onMessage(id.value, input) },
+            onClose = { id -> onClose(id.value) }
+        )
+    }
+    
+    /**
      * 关闭所有WebSocket连接
      */
     suspend fun shutdown() {
