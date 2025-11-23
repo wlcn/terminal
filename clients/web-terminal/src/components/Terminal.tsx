@@ -8,7 +8,7 @@ import { createSession, resizeTerminal, terminateSession, checkSessionActive } f
 
 interface TerminalComponentProps {
   className?: string;
-  onConnectionStatusChange?: (connected: boolean) => void;
+  onConnectionStatusChange?: (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: string }) => void;
   ref?: React.Ref<any>;
 }
 
@@ -93,7 +93,13 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         terminal.current?.write('$ ');
         
         setIsConnected(true);
-        onConnectionStatusChange?.(true);
+        
+        // 传递会话信息给父组件
+        onConnectionStatusChange?.(true, {
+          sessionId: newSessionId,
+          shellType: shellType,
+          terminalSize: '80×24' // 默认尺寸，后续可以根据实际调整
+        });
         
         // After successful connection, session and WebSocket have established one-to-one relationship
         console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);

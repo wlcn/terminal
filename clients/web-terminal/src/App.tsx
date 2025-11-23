@@ -4,17 +4,24 @@ import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, Term
 import { listSessions } from './services/terminalApi';
 
 function App() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const terminalRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [terminalSettings, setTerminalSettings] = useState({
     fontSize: 14,
-    fontFamily: 'Consolas, "Courier New", monospace',
+    fontFamily: "Consolas, 'Courier New', monospace",
     theme: 'dark',
     autoConnect: false,
     showLineNumbers: false
   });
-  const terminalRef = useRef<any>(null);
+  
+  // 新增：会话信息状态
+  const [currentSessionInfo, setCurrentSessionInfo] = useState({
+    sessionId: '',
+    shellType: 'bash',
+    terminalSize: '80×24'
+  });
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -44,8 +51,24 @@ function App() {
     }
   };
 
-  const handleConnectionStatusChange = (connected: boolean) => {
+  const handleConnectionStatusChange = (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: string }) => {
     setIsConnected(connected);
+    
+    if (connected && sessionInfo) {
+      // 更新会话信息
+      setCurrentSessionInfo({
+        sessionId: sessionInfo.sessionId,
+        shellType: sessionInfo.shellType,
+        terminalSize: sessionInfo.terminalSize
+      });
+    } else {
+      // 断开连接时重置会话信息
+      setCurrentSessionInfo({
+        sessionId: '',
+        shellType: 'bash',
+        terminalSize: '80×24'
+      });
+    }
   };
 
   // Control panel API operations
@@ -307,9 +330,15 @@ function App() {
             <div className="flex items-center space-x-2 text-sm text-gray-400">
               <span>Terminal Session</span>
               <span>•</span>
-              <span>bash</span>
+              <span>{currentSessionInfo.shellType}</span>
               <span>•</span>
-              <span>80×24</span>
+              <span>{currentSessionInfo.terminalSize}</span>
+              {currentSessionInfo.sessionId && (
+                <>
+                  <span>•</span>
+                  <span className="text-xs text-gray-500">ID: {currentSessionInfo.sessionId.substring(0, 8)}...</span>
+                </>
+              )}
             </div>
           </div>
           
