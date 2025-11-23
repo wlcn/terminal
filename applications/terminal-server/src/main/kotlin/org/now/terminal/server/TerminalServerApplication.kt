@@ -3,6 +3,9 @@ package org.now.terminal.server
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.plugins.contentnegotiation.*
+import kotlinx.serialization.json.Json
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.di.configurationModule
@@ -45,6 +48,17 @@ object TerminalServerApplication {
      */
     private fun Application.configureApplication() {
         val logger = LoggerFactory.getLogger("TerminalServerApplication")
+        
+        // 配置Content Negotiation（JSON序列化）
+        install(ContentNegotiation) {
+            json(Json {
+                prettyPrint = true
+                isLenient = true
+                ignoreUnknownKeys = true
+            })
+        }
+        
+        logger.info("🔧 配置Content Negotiation完成")
         
         // 配置Koin依赖注入
         install(Koin) {

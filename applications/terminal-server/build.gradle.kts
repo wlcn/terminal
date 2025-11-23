@@ -26,6 +26,10 @@ dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     
+    // Ktor Content Negotiation (JSON序列化)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    
     // 日志
     implementation(libs.logback.classic)
     

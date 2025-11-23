@@ -18,6 +18,7 @@ import org.now.terminal.session.application.usecases.TerminateSessionUseCase
 import org.now.terminal.session.application.usecases.ResizeTerminalUseCase
 import org.now.terminal.session.application.usecases.ListActiveSessionsUseCase
 import org.now.terminal.infrastructure.configuration.ConfigurationManager
+import org.now.terminal.server.api.models.*
 
 /**
  * 终端管理API配置
@@ -43,13 +44,13 @@ object TerminalManagementApi {
                     val sessionId = createSessionUseCase.execute()
                     
                     logger.info("✅ 通过API创建新会话: {}", sessionId.value)
-                    call.respond(mapOf(
-                        "sessionId" to sessionId.value,
-                        "status" to "created"
+                    call.respond(CreateSessionResponse(
+                        sessionId = sessionId.value,
+                        status = "created"
                     ))
                 } catch (e: Exception) {
                     logger.error("❌ 创建会话失败: {}", e.message)
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to create session"))
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to create session"))
                 }
             }
             
@@ -57,28 +58,25 @@ object TerminalManagementApi {
             put("/api/sessions/{sessionId}/resize") {
                 try {
                     val sessionIdParam = call.parameters["sessionId"] ?: throw IllegalArgumentException("Session ID required")
-                    val sessionId = SessionId.create(sessionIdParam)
                     
-                    val request = call.receive<Map<String, Int>>()
-                    val columns = request["columns"] ?: 80
-                    val rows = request["rows"] ?: 24
-                    val size = TerminalSize(columns, rows)
+                    val request = call.receive<ResizeTerminalRequest>()
+                    val size = TerminalSize(request.columns, request.rows)
                     
-                    resizeTerminalUseCase.execute(sessionId, size)
+                    resizeTerminalUseCase.execute(sessionIdParam, size)
                     
-                    logger.info("📐 通过API调整会话 {} 尺寸: {}x{}", sessionId.value, columns, rows)
-                    call.respond(mapOf(
-                        "sessionId" to sessionId.value,
-                        "columns" to columns,
-                        "rows" to rows,
-                        "status" to "resized"
+                    logger.info("📐 通过API调整会话 {} 尺寸: {}x{}", sessionIdParam, request.columns, request.rows)
+                    call.respond(ResizeTerminalResponse(
+                        sessionId = sessionIdParam,
+                        columns = request.columns,
+                        rows = request.rows,
+                        status = "resized"
                     ))
                 } catch (e: IllegalArgumentException) {
                     logger.error("❌ 调整尺寸参数错误: {}", e.message)
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid parameters"))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid parameters"))
                 } catch (e: Exception) {
                     logger.error("❌ 调整尺寸失败: {}", e.message)
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to resize terminal"))
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to resize terminal"))
                 }
             }
             
@@ -86,32 +84,21 @@ object TerminalManagementApi {
             delete("/api/sessions/{sessionId}") {
                 try {
                     val sessionIdParam = call.parameters["sessionId"] ?: throw IllegalArgumentException("Session ID required")
-                    val sessionId = SessionId.create(sessionIdParam)
                     
-                    val reason = call.request.queryParameters["reason"] ?: "USER_REQUESTED"
-                    val terminationReason = when (reason) {
-                        "USER_REQUESTED" -> TerminationReason.USER_REQUESTED
-                        "TIMEOUT" -> TerminationReason.TIMEOUT
-                        "SYSTEM_ERROR" -> TerminationReason.SYSTEM_ERROR
-                        "PROCESS_ERROR" -> TerminationReason.PROCESS_ERROR
-                        "NORMAL" -> TerminationReason.NORMAL
-                        else -> TerminationReason.USER_REQUESTED
-                    }
+                    terminateSessionUseCase.execute(sessionIdParam, TerminationReason.USER_REQUESTED)
                     
-                    terminateSessionUseCase.execute(sessionId, terminationReason)
-                    
-                    logger.info("🛑 通过API终止会话 {} - 原因: {}", sessionId.value, reason)
-                    call.respond(mapOf(
-                        "sessionId" to sessionId.value,
-                        "reason" to reason,
-                        "status" to "terminated"
+                    logger.info("❌ 通过API终止会话: {}", sessionIdParam)
+                    call.respond(TerminateSessionResponse(
+                        sessionId = sessionIdParam,
+                        reason = "user_request",
+                        status = "terminated"
                     ))
                 } catch (e: IllegalArgumentException) {
                     logger.error("❌ 终止会话参数错误: {}", e.message)
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid parameters"))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid session ID"))
                 } catch (e: Exception) {
                     logger.error("❌ 终止会话失败: {}", e.message)
-                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to terminate session"))
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to terminate session"))
                 }
             }
             
@@ -122,10 +109,14 @@ object TerminalManagementApi {
                     val sessions = listActiveSessionsUseCase.execute(defaultUserId)
                     
                     logger.info("📋 通过API获取活跃会话列表 - 会话数量: {}", sessions.size)
-                    call.respond(mapOf(
-                        "sessions" to sessions.map { it.sessionId.value },
-                        "count" to sessions.size
-                    ))
+                    
+                    // 使用数据类简化响应
+                    val response = SessionListResponse(
+                        sessions = sessions.map { it.sessionId.value },
+                        count = sessions.size
+                    )
+                    
+                    call.respond(response)
                 } catch (e: Exception) {
                     logger.error("❌ 获取会话列表失败: {}", e.message)
                     call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to list sessions"))

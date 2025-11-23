@@ -1,0 +1,12 @@
+package org.now.terminal.server.api.models
+
+import kotlinx.serialization.Serializable
+
+/**
+ * 调整终端尺寸API请求模型
+ */
+@Serializable
+data class ResizeTerminalRequest(
+    val columns: Int,
+    val rows: Int
+)
