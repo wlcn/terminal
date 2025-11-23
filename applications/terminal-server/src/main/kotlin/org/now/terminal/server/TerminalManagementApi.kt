@@ -44,10 +44,19 @@ object TerminalManagementApi {
                     // 直接调用用例，由用例处理默认逻辑
                     val sessionId = createSessionUseCase.execute()
                     
-                    logger.info("✅ 通过API创建新会话: {}", sessionId.value)
+                    // 获取配置管理器中的shell类型信息
+                    val terminalConfig = org.now.terminal.infrastructure.configuration.ConfigurationManager.getTerminalConfig()
+                    val shellType = try {
+                        org.now.terminal.session.domain.valueobjects.ShellType.valueOf(terminalConfig.pty.shellType.uppercase())
+                    } catch (e: IllegalArgumentException) {
+                        org.now.terminal.session.domain.valueobjects.ShellType.AUTO
+                    }
+                    
+                    logger.info("✅ 通过API创建新会话: {}, shell类型: {}", sessionId.value, shellType)
                     call.respond(CreateSessionResponse(
                         sessionId = sessionId.value,
-                        status = "created"
+                        status = "created",
+                        shellType = shellType
                     ))
                 } catch (e: Exception) {
                     logger.error("❌ 创建会话失败: {}", e.message)

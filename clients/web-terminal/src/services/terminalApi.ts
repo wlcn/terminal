@@ -8,7 +8,7 @@ const API_BASE_URL = '/api';
 /**
  * 创建新会话
  */
-export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string }> => {
+export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string; shellType: string }> => {
   try {
     let url = `${API_BASE_URL}/sessions`;
     if (userId) {
@@ -26,7 +26,10 @@ export const createSession = async (userId?: string): Promise<{ sessionId: strin
       throw new Error(`Failed to create session: ${response.statusText}`);
     }
     
-    return await response.json();
+    const responseData = await response.json();
+    console.log('📡 API Response:', responseData);
+    
+    return responseData;
   } catch (error) {
     console.error('❌ Failed to create session:', error);
     throw error;

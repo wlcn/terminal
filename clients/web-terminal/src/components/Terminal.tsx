@@ -67,9 +67,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       const sessionResponse = await createSession(userId);
       const newSessionId = sessionResponse.sessionId;
+      const shellType = sessionResponse.shellType;
       
-      console.log('✅ Session created:', newSessionId);
+      console.log('✅ Session created:', newSessionId, 'Shell type:', shellType);
       terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
+      terminal.current?.writeln(`🐚 Shell type: ${shellType}`);
       setSessionId(newSessionId);
       
       // 2. 立即建立WebSocket连接（一对一绑定）
@@ -82,6 +84,10 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       ws.current.onopen = () => {
         console.log('✅ WebSocket connection established successfully');
         terminal.current?.writeln('✅ WebSocket connected');
+        
+        // 在WebSocket连接成功后配置终端参数
+        configureTerminalForShell(shellType);
+        
         terminal.current?.writeln('🚀 Terminal ready for command line interaction');
         terminal.current?.writeln('');
         terminal.current?.write('$ ');
@@ -189,6 +195,49 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         ws.current.close();
       }
     }
+  };
+
+  // 根据shell类型动态配置xterm.js参数
+  const configureTerminalForShell = (shellType: string | undefined) => {
+    if (!terminal.current) return;
+    
+    // 处理undefined或空值的情况
+    if (!shellType) {
+      console.warn('⚠️ Shell type is undefined or empty, using auto-detection');
+      shellType = 'AUTO';
+    }
+    
+    console.log(`⚙️ Configuring terminal for shell type: ${shellType}`);
+    
+    // 根据shell类型设置不同的xterm.js配置
+    switch (shellType.toUpperCase()) {
+      case 'WINDOWS_CMD':
+      case 'WINDOWS_POWERSHELL':
+        // Windows环境：启用Windows模式，正确处理回车符
+        terminal.current.options.windowsMode = true;
+        terminal.current.options.convertEol = true; // 将\n转换为\r\n
+        terminal.current.writeln('🔧 Terminal configured for Windows environment');
+        break;
+        
+      case 'UNIX':
+        // Unix/Linux环境：使用Unix风格的行结束符
+        terminal.current.options.windowsMode = false;
+        terminal.current.options.convertEol = false; // 保持\n不变
+        terminal.current.writeln('🔧 Terminal configured for Unix/Linux environment');
+        break;
+        
+      case 'AUTO':
+      default:
+        // 自动检测：根据浏览器环境判断
+        const isWindows = navigator.userAgent.includes('Windows');
+        terminal.current.options.windowsMode = isWindows;
+        terminal.current.options.convertEol = isWindows;
+        terminal.current.writeln(`🔧 Terminal configured for ${isWindows ? 'Windows' : 'Unix/Linux'} environment (auto-detected)`);
+        break;
+    }
+    
+    // 刷新终端配置
+    terminal.current.refresh(0, terminal.current.rows - 1);
   };
 
   // 生成随机会话ID

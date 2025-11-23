@@ -57,7 +57,8 @@ object TerminalServerApplication {
             json(Json {
                 prettyPrint = true
                 isLenient = true
-                ignoreUnknownKeys = true
+                ignoreUnknownKeys = false  // 设置为false以确保所有字段都被序列化
+                encodeDefaults = true      // 确保默认值也被序列化
             })
         }
         
