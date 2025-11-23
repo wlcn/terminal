@@ -23,6 +23,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   const fitAddon = useRef<FitAddon | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [shellType, setShellType] = useState<string>('bash');
   const ws = useRef<WebSocket | null>(null);
   const isInitialized = useRef(false);
 
@@ -73,6 +74,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const sessionResponse = await createSession(userId);
       const newSessionId = sessionResponse.sessionId;
       const shellType = sessionResponse.shellType;
+      setShellType(shellType);
       
       // 直接使用后端返回的结构化尺寸数据
       const terminalSize = sessionResponse.terminalSize;

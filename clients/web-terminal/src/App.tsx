@@ -118,19 +118,32 @@ function App() {
     }
   };
 
+  const [showResizeModal, setShowResizeModal] = useState(false);
+  const [resizeColumns, setResizeColumns] = useState(120);
+  const [resizeRows, setResizeRows] = useState(30);
+
   const handleResizeTerminal = () => {
-    const columns = prompt('Enter columns (width):', '120');
-    const rows = prompt('Enter rows (height):', '30');
-    
-    if (columns && rows && terminalRef.current && terminalRef.current.resize) {
-      const cols = parseInt(columns);
-      const rws = parseInt(rows);
-      
-      if (!isNaN(cols) && !isNaN(rws) && cols > 0 && rws > 0) {
-        terminalRef.current.resize(cols, rws);
-      } else {
-        alert('Please enter valid positive numbers for columns and rows.');
-      }
+    setShowResizeModal(true);
+    // 设置当前尺寸作为默认值
+    if (currentSessionInfo.terminalSize) {
+      setResizeColumns(currentSessionInfo.terminalSize.columns);
+      setResizeRows(currentSessionInfo.terminalSize.rows);
+    }
+  };
+
+  const applyResize = () => {
+    if (terminalRef.current && terminalRef.current.resize) {
+      terminalRef.current.resize(resizeColumns, resizeRows);
+      setShowResizeModal(false);
+    }
+  };
+
+  const cancelResize = () => {
+    setShowResizeModal(false);
+    // 重置为当前尺寸
+    if (currentSessionInfo.terminalSize) {
+      setResizeColumns(currentSessionInfo.terminalSize.columns);
+      setResizeRows(currentSessionInfo.terminalSize.rows);
     }
   };
 
@@ -163,12 +176,10 @@ function App() {
             {isConnected && (
               <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-border">
                 <div className="flex flex-col text-sm">
-                  <span className="font-mono text-muted-foreground">SESSION: {currentSessionInfo.sessionId.slice(0, 8)}...</span>
-                  <span className="text-xs text-muted-foreground">SHELL: {currentSessionInfo.shellType}</span>
+                  <span className="text-muted-foreground">SHELL: {currentSessionInfo.shellType}</span>
                 </div>
                 <div className="flex flex-col text-sm">
                   <span className="text-primary font-mono">SIZE: {currentSessionInfo.terminalSize.columns}×{currentSessionInfo.terminalSize.rows}</span>
-                  <span className="text-green-400 text-xs">ACTIVE</span>
                 </div>
               </div>
             )}
@@ -340,6 +351,125 @@ function App() {
           </div>
         </div>
       </header>
+
+      {/* Resize Terminal Modal */}
+      {showResizeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-xl shadow-2xl w-96 p-6 transform transition-all duration-300 scale-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Monitor size={18} className="text-primary" />
+                Resize Terminal
+              </h3>
+              <Button 
+                onClick={cancelResize}
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 hover:bg-muted"
+              >
+                ×
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Current Size Preview */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="text-sm text-muted-foreground mb-2">Current Size</div>
+                <div className="text-2xl font-mono text-primary">
+                  {currentSessionInfo.terminalSize.columns} × {currentSessionInfo.terminalSize.rows}
+                </div>
+              </div>
+              
+              {/* New Size Controls */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Columns (Width)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="40"
+                      max="200"
+                      value={resizeColumns}
+                      onChange={(e) => setResizeColumns(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="font-mono text-primary bg-muted px-3 py-1 rounded-md min-w-[60px] text-center">
+                      {resizeColumns}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Rows (Height)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="10"
+                      max="60"
+                      value={resizeRows}
+                      onChange={(e) => setResizeRows(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="font-mono text-primary bg-muted px-3 py-1 rounded-md min-w-[60px] text-center">
+                      {resizeRows}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Preview */}
+              <div className="bg-muted/30 rounded-lg p-3 border border-border">
+                <div className="text-xs text-muted-foreground mb-1">Preview</div>
+                <div className="flex items-center justify-center">
+                  <div 
+                    className="bg-primary/20 border border-primary/30 rounded p-2"
+                    style={{
+                      width: `${resizeColumns * 2}px`,
+                      height: `${resizeRows * 2}px`
+                    }}
+                  >
+                    <div className="text-xs text-primary font-mono text-center">
+                      {resizeColumns} × {resizeRows}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  onClick={cancelResize}
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setResizeColumns(120);
+                    setResizeRows(30);
+                  }}
+                  variant="outline" 
+                  className="flex-1"
+                  title="Reset to default size (120×30)"
+                >
+                  Reset
+                </Button>
+                <Button 
+                  onClick={applyResize}
+                  className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  Apply Resize
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content - Terminal Focus */}
       <main className="flex-1 p-0 overflow-hidden">
