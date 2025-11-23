@@ -13,6 +13,8 @@ import org.now.terminal.shared.valueobjects.UserId
 import org.now.terminal.session.domain.valueobjects.TerminationReason
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
 import org.now.terminal.session.domain.valueobjects.TerminalSize
+import org.now.terminal.infrastructure.eventbus.DynamicEventHandlerRegistry
+import org.now.terminal.infrastructure.eventbus.DynamicEventHandlerRegistryFactory
 /**
  * 会话生命周期管理服务
  * 实现TerminalSessionService接口
@@ -22,6 +24,9 @@ class SessionLifecycleService(
     private val sessionRepository: TerminalSessionRepository,
     private val processFactory: ProcessFactory
 ) : TerminalSessionService {
+    
+    // 动态事件处理器注册服务，供业务层使用
+    private val dynamicHandlerRegistry = DynamicEventHandlerRegistryFactory.create(eventBus)
     
     private val logger = TerminalLogger.getLogger(SessionLifecycleService::class.java)
     
@@ -209,5 +214,31 @@ class SessionLifecycleService(
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         return session.getConfiguration()
+    }
+    
+    /**
+     * 获取动态事件处理器注册服务实例
+     * 供业务层根据需要动态注册事件处理器
+     */
+    fun getDynamicHandlerRegistry(): DynamicEventHandlerRegistry {
+        return dynamicHandlerRegistry
+    }
+    
+    /**
+     * 强制终止所有用户会话
+     */
+    override suspend fun terminateAllUserSessions(userId: UserId, reason: TerminationReason) {
+        val userSessions = sessionRepository.findByUserId(userId)
+        userSessions.forEach { session ->
+            if (session.canTerminate()) {
+                session.terminate(reason)
+                sessionRepository.delete(session.sessionId)
+                
+                // 异步发布领域事件
+                session.getDomainEvents().forEach { event ->
+                    eventBus.publish(event)
+                }
+            }
+        }
     }
 }
