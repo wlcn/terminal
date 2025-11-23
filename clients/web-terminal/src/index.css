@@ -153,9 +153,58 @@
   backdrop-filter: blur(24px);
 }
 
+.backdrop-blur-2xl {
+  backdrop-filter: blur(40px);
+}
+
 /* Enhanced Shadows */
 .shadow-2xl {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Enterprise Tech Animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes data-stream {
+  0% { transform: translateY(-100px) scaleY(0.5); opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(100vh) scaleY(1.2); opacity: 0; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-scan-line {
+  animation: scan-line 8s linear infinite;
+}
+
+.animate-data-stream {
+  animation: data-stream linear infinite;
+}
+
+/* Enhanced Corner Radius */
+.rounded-3xl {
+  border-radius: 1.5rem;
+}
+
+.rounded-tl-3xl {
+  border-top-left-radius: 1.5rem;
+}
+
+.rounded-tr-3xl {
+  border-top-right-radius: 1.5rem;
 }
 
 /* xterm.js style overrides */
