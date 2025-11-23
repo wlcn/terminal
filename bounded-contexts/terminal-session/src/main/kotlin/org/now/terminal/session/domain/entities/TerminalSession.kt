@@ -48,8 +48,8 @@ class TerminalSession(
         process = createProcess()
         status = SessionStatus.RUNNING
         
-        // 注意：输出监听协程将在SessionCreated事件处理器中启动
-        // 这样可以更好地分离关注点，聚合根专注于状态管理
+        // 启动异步输出监听器
+        startOutputListener()
         
         // 添加会话创建领域事件
         domainEvents.add(SessionCreatedEvent(
@@ -67,18 +67,18 @@ class TerminalSession(
     
     /**
      * 启动输出监听协程
+     * 启动异步监听PTY进程的输出，当有输出时自动发布领域事件
      */
     fun startOutputListener() {
-        val currentProcess = process ?: return
+        require(status == SessionStatus.RUNNING) { "Session must be in RUNNING state" }
         
-        // 启动协程监听PTY进程输出通道（真正的异步监听）
+        val currentProcess = process ?: throw IllegalStateException("No active process")
+        
+        // 启动协程监听PTY进程的输出通道
         GlobalScope.launch {
-            try {
-                currentProcess.getOutputChannel().consumeEach { output ->
-                    // 检查会话是否仍在运行状态
-                    if (status != SessionStatus.RUNNING) return@consumeEach
-                    
-                    // 将输出添加到缓冲区
+            currentProcess.getOutputChannel().consumeEach { output ->
+                if (output.isNotEmpty()) {
+                    // 添加到输出缓冲区
                     outputBuffer.append(output)
                     
                     // 发布输出领域事件
@@ -93,20 +93,6 @@ class TerminalSession(
                         outputAt = Instant.now()
                     ))
                 }
-            } catch (e: Exception) {
-                // 输出监听异常处理
-                domainEvents.add(SessionTerminatedEvent(
-                    eventHelper = EventHelper(
-                        eventType = "SessionTerminated",
-                        aggregateId = sessionId.value,
-                        aggregateType = "TerminalSession"
-                    ),
-                    sessionId = sessionId,
-                    reason = TerminationReason.SYSTEM_ERROR,
-                    exitCode = null,
-                    terminatedAt = Instant.now()
-                ))
-                status = SessionStatus.TERMINATED
             }
         }
     }
@@ -182,6 +168,8 @@ class TerminalSession(
     
     /**
      * 读取输出
+     * 注意：该方法仅用于同步读取输出，不发布领域事件
+     * 领域事件由异步输出监听器负责发布
      */
     fun readOutput(): String {
         require(status == SessionStatus.RUNNING) { "Session must be in RUNNING state" }
@@ -189,19 +177,8 @@ class TerminalSession(
         val output = process?.readOutput() ?: ""
         outputBuffer.append(output)
         
-        if (output.isNotEmpty()) {
-            // 添加输出领域事件
-            domainEvents.add(TerminalOutputEvent(
-                eventHelper = EventHelper(
-                    eventType = "TerminalOutput",
-                    aggregateId = sessionId.value,
-                    aggregateType = "TerminalSession"
-                ),
-                sessionId = sessionId,
-                output = output,
-                outputAt = Instant.now()
-            ))
-        }
+        // 注意：不再发布领域事件，避免与异步监听器产生双重事件发布
+        // 领域事件由startOutputListener()中的异步监听器负责发布
         
         return output
     }
