@@ -139,231 +139,189 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-tech-bg-darker via-tech-bg-dark to-tech-bg-darker relative overflow-hidden">
-      {/* Animated background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-tech-primary/5 via-tech-secondary/3 to-tech-accent/5 animate-pulse"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-tech-primary/10 via-transparent to-transparent"></div>
-      
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,204,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,204,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
-      
-      {/* Top navigation bar */}
-      <header className="bg-tech-bg-dark/90 backdrop-blur-xl border-b border-tech-border/50 relative z-10 shadow-lg">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                {/* Animated status indicator */}
-                <div className="relative">
-                  <div className={`w-4 h-4 rounded-full ${
-                    isConnected 
-                      ? 'bg-tech-success shadow-lg shadow-tech-success/50 animate-pulse' 
-                      : 'bg-tech-danger shadow-lg shadow-tech-danger/50'
-                  }`}></div>
-                  <div className={`absolute inset-0 rounded-full animate-ping ${
-                    isConnected ? 'bg-tech-success/40' : 'bg-tech-danger/40'
-                  }`}></div>
-                </div>
-                
-                <div className="flex flex-col">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-tech-primary via-tech-secondary to-tech-accent bg-clip-text text-transparent">
-                    KT Terminal
-                  </h1>
-                  <div className="flex items-center space-x-2 text-xs text-tech-primary/70">
-                    <span className={`font-mono ${isConnected ? 'text-tech-success' : 'text-tech-danger'}`}>
-                      {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Simple header */}
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              {/* Simple status indicator */}
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
               
-              {/* Session info display */}
-              {isConnected && (
-                <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-tech-border/30">
-                  <div className="flex flex-col text-sm">
-                    <span className="text-tech-primary/80 font-mono">SESSION: {currentSessionInfo.sessionId.slice(0, 8)}...</span>
-                    <span className="text-tech-secondary/70 text-xs">SHELL: {currentSessionInfo.shellType}</span>
-                  </div>
-                  <div className="flex flex-col text-sm">
-                    <span className="text-tech-accent/80 font-mono">SIZE: {currentSessionInfo.terminalSize}</span>
-                    <span className="text-tech-primary/70 text-xs">ACTIVE</span>
-                  </div>
-                </div>
-              )}
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold">KT Terminal</h1>
+                <span className={`text-xs font-mono ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
+                </span>
+              </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              {/* Control panel button group */}
-              {isConnected && (
-                <div className="flex items-center space-x-2 border-r border-tech-border/30 pr-3 mr-3">
-                  <button
-                    onClick={handleRefresh}
-                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-primary/20"
-                    title="Refresh connection"
-                  >
-                    <RefreshCw size={18} className="text-tech-primary group-hover:rotate-180 transition-transform duration-500" />
-                  </button>
-                  
-                  <button
-                    onClick={handleClear}
-                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-warning/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-warning/20"
-                    title="Clear terminal"
-                  >
-                    <Square size={18} className="text-tech-warning group-hover:scale-110 transition-transform" />
-                  </button>
-                  
-                  <button
-                    onClick={handleResizeTerminal}
-                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-secondary/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-secondary/20"
-                    title="Resize terminal (custom size)"
-                  >
-                    <Monitor size={18} className="text-tech-secondary group-hover:scale-110 transition-transform" />
-                  </button>
+            {/* Session info display */}
+            {isConnected && (
+              <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-gray-600">
+                <div className="flex flex-col text-sm">
+                  <span className="font-mono">SESSION: {currentSessionInfo.sessionId.slice(0, 8)}...</span>
+                  <span className="text-gray-400 text-xs">SHELL: {currentSessionInfo.shellType}</span>
                 </div>
-              )}
-              
-              {/* Main connect/disconnect button */}
+                <div className="flex flex-col text-sm">
+                  <span className="text-blue-400 font-mono">SIZE: {currentSessionInfo.terminalSize}</span>
+                  <span className="text-green-400 text-xs">ACTIVE</span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Control panel button group */}
+            {isConnected && (
+              <div className="flex items-center space-x-2 border-r border-gray-600 pr-3 mr-3">
+                <button
+                  onClick={handleRefresh}
+                  className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                  title="Refresh connection"
+                >
+                  <RefreshCw size={16} className="text-blue-400" />
+                </button>
+                
+                <button
+                  onClick={handleClear}
+                  className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                  title="Clear terminal"
+                >
+                  <Square size={16} className="text-orange-400" />
+                </button>
+                
+                <button
+                  onClick={handleResizeTerminal}
+                  className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                  title="Resize terminal"
+                >
+                  <Monitor size={16} className="text-purple-400" />
+                </button>
+              </div>
+            )}
+            
+            {/* Session management buttons */}
+            {isConnected && (
+              <div className="flex items-center space-x-2 border-r border-gray-600 pr-3 mr-3">
+                <button
+                  onClick={handleListSessions}
+                  className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                  title="List sessions"
+                >
+                  <List size={16} className="text-blue-400" />
+                </button>
+                
+                <button
+                  onClick={handleTerminateSession}
+                  className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                  title="Terminate session"
+                >
+                  <Trash2 size={16} className="text-red-400" />
+                </button>
+              </div>
+            )}
+            
+            {/* Main action buttons */}
+            <div className="flex items-center space-x-2">
               <button
                 onClick={handleConnect}
-                className={`group relative p-4 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
+                className={`px-3 py-2 rounded font-medium ${
                   isConnected 
-                    ? 'bg-tech-success/10 border-tech-success/30 hover:border-tech-success/50 hover:shadow-tech-success/30' 
-                    : 'bg-tech-danger/10 border-tech-danger/30 hover:border-tech-danger/50 hover:shadow-tech-danger/30'
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
                 }`}
-                title={isConnected ? 'Disconnect' : 'Connect'}
               >
-                <Power size={20} className={`${
-                  isConnected ? 'text-tech-success' : 'text-tech-danger'
-                } group-hover:scale-110 transition-transform`} />
-                
-                {/* Glow effect */}
-                <div className={`absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity ${
-                  isConnected ? 'bg-tech-success/20' : 'bg-tech-danger/20'
-                }`}></div>
-              </button>
-              
-              <button
-                onClick={handleListSessions}
-                className="p-2 text-orange-400 hover:text-orange-300 transition-colors hover:bg-orange-500/20 rounded-lg"
-                title="View active sessions"
-              >
-                <List size={18} />
-              </button>
-              
-              <button
-                onClick={handleTerminateSession}
-                className="p-2 text-red-400 hover:text-red-300 transition-colors hover:bg-red-500/20 rounded-lg"
-                title="Terminate current session"
-              >
-                <Trash2 size={18} />
+                <div className="flex items-center space-x-2">
+                  <Power size={14} />
+                  <span>{isConnected ? 'Disconnect' : 'Connect'}</span>
+                </div>
               </button>
               
               <button
                 onClick={toggleFullscreen}
-                className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg"
-                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
-                {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
               
-              <button 
+              <button
                 onClick={handleSettings}
-                className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" 
+                className="p-2 rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
                 title="Settings"
               >
-                <Settings size={20} />
+                <Settings size={14} />
               </button>
+            </div>
 
-              {showSettings && (
-                <div className="absolute top-12 right-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg p-4 w-80 z-50">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white">Terminal Settings</h3>
-                    <button 
-                      onClick={handleSettings}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      ×
-                    </button>
+            {showSettings && (
+              <div className="absolute top-12 right-4 bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-4 w-64 z-50">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-md font-semibold">Terminal Settings</h3>
+                  <button 
+                    onClick={handleSettings}
+                    className="text-gray-400 hover:text-white p-1 rounded"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                {/* Version info */}
+                <div className="mb-3 p-2 bg-gray-700 rounded border border-gray-600">
+                  <div className="text-xs text-blue-400 font-mono">Version: v1.0.0</div>
+                  <div className="text-xs text-gray-400 mt-1">KT Terminal Platform</div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Font Size</label>
+                    <input
+                      type="number"
+                      value={terminalSettings.fontSize}
+                      onChange={(e) => updateTerminalSettings({
+                        ...terminalSettings,
+                        fontSize: parseInt(e.target.value) || 14
+                      })}
+                      className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                      min="8"
+                      max="24"
+                    />
                   </div>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Font Size</label>
-                      <input
-                        type="number"
-                        value={terminalSettings.fontSize}
-                        onChange={(e) => updateTerminalSettings({
-                          ...terminalSettings,
-                          fontSize: parseInt(e.target.value) || 14
-                        })}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                        min="8"
-                        max="24"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Font Family</label>
-                      <select
-                        value={terminalSettings.fontFamily}
-                        onChange={(e) => updateTerminalSettings({
-                          ...terminalSettings,
-                          fontFamily: e.target.value
-                        })}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                      >
-                        <option value="Consolas, 'Courier New', monospace">Consolas</option>
-                        <option value="'Courier New', monospace">Courier New</option>
-                        <option value="Monaco, 'Menlo', monospace">Monaco</option>
-                        <option value="'Fira Code', monospace">Fira Code</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Theme</label>
-                      <select
-                        value={terminalSettings.theme}
-                        onChange={(e) => updateTerminalSettings({
-                          ...terminalSettings,
-                          theme: e.target.value
-                        })}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
-                      >
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                        <option value="solarized">Solarized</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={terminalSettings.autoConnect}
-                        onChange={(e) => updateTerminalSettings({
-                          ...terminalSettings,
-                          autoConnect: e.target.checked
-                        })}
-                        className="mr-2"
-                      />
-                      <label className="text-sm text-gray-300">Auto connect on page load</label>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={terminalSettings.showLineNumbers}
-                        onChange={(e) => updateTerminalSettings({
-                          ...terminalSettings,
-                          showLineNumbers: e.target.checked
-                        })}
-                        className="mr-2"
-                      />
-                      <label className="text-sm text-gray-300">Show line numbers</label>
-                    </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Font Family</label>
+                    <select
+                      value={terminalSettings.fontFamily}
+                      onChange={(e) => updateTerminalSettings({
+                        ...terminalSettings,
+                        fontFamily: e.target.value
+                      })}
+                      className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="Consolas, 'Courier New', monospace">Consolas</option>
+                      <option value="'Courier New', monospace">Courier New</option>
+                      <option value="Monaco, 'Menlo', monospace">Monaco</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Theme</label>
+                    <select
+                      value={terminalSettings.theme}
+                      onChange={(e) => updateTerminalSettings({
+                        ...terminalSettings,
+                        theme: e.target.value
+                      })}
+                      className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                    >
+                      <option value="dark">Dark</option>
+                      <option value="light">Light</option>
+                    </select>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
