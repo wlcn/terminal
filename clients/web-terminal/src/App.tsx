@@ -139,62 +139,109 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-tech-bg-darker via-tech-bg-dark to-tech-bg-darker relative overflow-hidden">
+      {/* Animated background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-tech-primary/5 via-tech-secondary/3 to-tech-accent/5 animate-pulse"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-tech-primary/10 via-transparent to-transparent"></div>
+      
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,204,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,204,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+      
       {/* Top navigation bar */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10">
-        <div className="container mx-auto px-4 py-3">
+      <header className="bg-tech-bg-light/80 backdrop-blur-xl border-b border-tech-border/50 relative z-10">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full animate-pulse ${
-                  isConnected ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <h1 className="text-xl font-bold text-white">kt-terminal</h1>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                {/* Animated status indicator */}
+                <div className="relative">
+                  <div className={`w-4 h-4 rounded-full ${
+                    isConnected 
+                      ? 'bg-tech-success shadow-lg shadow-tech-success/50 animate-pulse' 
+                      : 'bg-tech-danger shadow-lg shadow-tech-danger/50'
+                  }`}></div>
+                  <div className={`absolute inset-0 rounded-full animate-ping ${
+                    isConnected ? 'bg-tech-success/40' : 'bg-tech-danger/40'
+                  }`}></div>
+                </div>
+                
+                <div className="flex flex-col">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-tech-primary via-tech-secondary to-tech-accent bg-clip-text text-transparent">
+                    KT Terminal
+                  </h1>
+                  <div className="flex items-center space-x-2 text-xs text-tech-primary/70">
+                    <span className="font-mono">v1.0.0</span>
+                    <span>•</span>
+                    <span className={`font-mono ${isConnected ? 'text-tech-success' : 'text-tech-danger'}`}>
+                      {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
+                    </span>
+                  </div>
+                </div>
               </div>
+              
+              {/* Session info display */}
+              {isConnected && (
+                <div className="flex items-center space-x-4 ml-4 pl-4 border-l border-tech-border/30">
+                  <div className="flex flex-col text-sm">
+                    <span className="text-tech-primary/80 font-mono">SESSION: {currentSessionInfo.sessionId.slice(0, 8)}...</span>
+                    <span className="text-tech-secondary/70 text-xs">SHELL: {currentSessionInfo.shellType}</span>
+                  </div>
+                  <div className="flex flex-col text-sm">
+                    <span className="text-tech-accent/80 font-mono">SIZE: {currentSessionInfo.terminalSize}</span>
+                    <span className="text-tech-primary/70 text-xs">ACTIVE</span>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               {/* Control panel button group */}
               {isConnected && (
-                <div className="flex items-center space-x-1 border-r border-white/20 pr-2 mr-2">
+                <div className="flex items-center space-x-2 border-r border-tech-border/30 pr-3 mr-3">
                   <button
                     onClick={handleRefresh}
-                    className="p-2 text-blue-400 hover:text-blue-300 transition-colors hover:bg-blue-500/20 rounded-lg"
+                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-primary/20"
                     title="Refresh connection"
                   >
-                    <RefreshCw size={18} />
+                    <RefreshCw size={18} className="text-tech-primary group-hover:rotate-180 transition-transform duration-500" />
                   </button>
                   
                   <button
                     onClick={handleClear}
-                    className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors hover:bg-yellow-500/20 rounded-lg"
+                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-warning/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-warning/20"
                     title="Clear terminal"
                   >
-                    <Square size={18} />
+                    <Square size={18} className="text-tech-warning group-hover:scale-110 transition-transform" />
                   </button>
-                  
-
                   
                   <button
                     onClick={handleResizeTerminal}
-                    className="p-2 text-purple-400 hover:text-purple-300 transition-colors hover:bg-purple-500/20 rounded-lg"
+                    className="group p-3 rounded-xl bg-tech-bg-light/50 border border-tech-border/30 hover:border-tech-secondary/50 transition-all duration-300 hover:shadow-lg hover:shadow-tech-secondary/20"
                     title="Resize terminal (custom size)"
                   >
-                    <Monitor size={18} />
+                    <Monitor size={18} className="text-tech-secondary group-hover:scale-110 transition-transform" />
                   </button>
                 </div>
               )}
               
+              {/* Main connect/disconnect button */}
               <button
                 onClick={handleConnect}
-                className={`p-3 rounded-lg transition-all duration-300 ${
+                className={`group relative p-4 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
                   isConnected 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30' 
-                    : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                    ? 'bg-tech-success/10 border-tech-success/30 hover:border-tech-success/50 hover:shadow-tech-success/30' 
+                    : 'bg-tech-danger/10 border-tech-danger/30 hover:border-tech-danger/50 hover:shadow-tech-danger/30'
                 }`}
                 title={isConnected ? 'Disconnect' : 'Connect'}
               >
-                <Power size={18} />
+                <Power size={20} className={`${
+                  isConnected ? 'text-tech-success' : 'text-tech-danger'
+                } group-hover:scale-110 transition-transform`} />
+                
+                {/* Glow effect */}
+                <div className={`absolute inset-0 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity ${
+                  isConnected ? 'bg-tech-success/20' : 'bg-tech-danger/20'
+                }`}></div>
               </button>
               
               <button

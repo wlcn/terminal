@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modern tech terminal styles */
+@layer base {
+  :root {
+    --tech-primary: 174 100% 50%;    /* #00ffcc */
+    --tech-secondary: 204 100% 50%;  /* #0099ff */
+    --tech-accent: 270 100% 50%;     /* #6600ff */
+    --tech-danger: 340 100% 61%;     /* #ff3366 */
+    --tech-success: 158 95% 49%;    /* #0ef0a3 */
+    --tech-warning: 45 100% 51%;     /* #ffb224 */
+    
+    --tech-bg-dark: 222 84% 5%;      /* #020617 */
+    --tech-bg-darker: 222 84% 3%;    /* #01040b */
+    --tech-bg-light: 222 84% 8%;     /* #030712 */
+    
+    --tech-glow: 174 100% 50%;
+    --tech-border: 217 33% 17%;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

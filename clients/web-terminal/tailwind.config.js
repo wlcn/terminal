@@ -23,6 +23,20 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        
+        // Tech terminal colors
+        tech: {
+          primary: "hsl(var(--tech-primary))",
+          secondary: "hsl(var(--tech-secondary))",
+          accent: "hsl(var(--tech-accent))",
+          danger: "hsl(var(--tech-danger))",
+          success: "hsl(var(--tech-success))",
+          warning: "hsl(var(--tech-warning))",
+          'bg-dark': "hsl(var(--tech-bg-dark))",
+          'bg-darker': "hsl(var(--tech-bg-darker))",
+          'bg-light': "hsl(var(--tech-bg-light))",
+        },
+        
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
