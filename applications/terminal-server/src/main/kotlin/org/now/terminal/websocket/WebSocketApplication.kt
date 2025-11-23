@@ -70,9 +70,7 @@ object WebSocketApplication {
         val loggingService = koin.get<org.now.terminal.infrastructure.logging.LoggingLifecycleService>()
         loggingService.initialize()
         
-        // 初始化EventBus系统
-        val eventBusService = koin.get<org.now.terminal.infrastructure.eventbus.EventBusLifecycleService>()
-        eventBusService.initialize()
+        // EventBus不需要显式初始化，业务模块会自行注册事件处理器
     }
     
 

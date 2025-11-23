@@ -12,6 +12,10 @@ import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
 import org.slf4j.LoggerFactory
 
+// 导入配置方法
+import org.now.terminal.server.TerminalWebSocketGateway.configureWebSocketGateway
+import org.now.terminal.server.TerminalManagementApi.configureManagementApi
+
 
 
 /**
@@ -56,12 +60,12 @@ object TerminalServerApplication {
         logger.info("🔧 初始化基础设施完成")
         
         // 配置WebSocket网关功能
-        TerminalWebSocketGateway.configureWebSocketGateway()
+        configureWebSocketGateway()
         
         logger.info("🔧 配置WebSocket网关完成")
         
         // 配置管理API端点
-        TerminalManagementApi.configureManagementApi()
+        configureManagementApi()
         
         logger.info("🔧 配置管理API完成")
     }
@@ -81,9 +85,7 @@ object TerminalServerApplication {
         val loggingService = koin.get<org.now.terminal.infrastructure.logging.LoggingLifecycleService>()
         loggingService.initialize()
         
-        // 初始化EventBus系统
-        val eventBusService = koin.get<org.now.terminal.infrastructure.eventbus.EventBusLifecycleService>()
-        eventBusService.initialize()
+        // EventBus不需要显式初始化，业务模块会自行注册事件处理器
     }
     
 

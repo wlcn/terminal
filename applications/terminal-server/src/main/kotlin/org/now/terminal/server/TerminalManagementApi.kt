@@ -18,12 +18,6 @@ import org.now.terminal.session.application.usecases.TerminateSessionUseCase
 import org.now.terminal.session.application.usecases.ResizeTerminalUseCase
 import org.now.terminal.session.application.usecases.ListActiveSessionsUseCase
 import org.now.terminal.infrastructure.configuration.ConfigurationManager
-import org.now.terminal.shared.valueobjects.UserId
-import org.now.terminal.shared.valueobjects.SessionId
-import org.now.terminal.session.domain.valueobjects.TerminalCommand
-import org.now.terminal.session.domain.valueobjects.PtyConfiguration
-import org.now.terminal.session.domain.valueobjects.TerminalSize
-import org.now.terminal.session.domain.valueobjects.TerminationReason
 
 /**
  * 终端管理API配置
@@ -129,7 +123,7 @@ object TerminalManagementApi {
                     
                     logger.info("📋 通过API获取活跃会话列表 - 会话数量: {}", sessions.size)
                     call.respond(mapOf(
-                        "sessions" to sessions.map { it.value },
+                        "sessions" to sessions.map { it.sessionId.value },
                         "count" to sessions.size
                     ))
                 } catch (e: Exception) {
