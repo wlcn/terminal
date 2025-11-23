@@ -3,8 +3,6 @@ package org.now.terminal.server
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.di.configurationModule
@@ -12,9 +10,9 @@ import org.now.terminal.infrastructure.eventbus.di.eventBusModule
 import org.now.terminal.infrastructure.logging.di.loggingModule
 import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
-import org.now.terminal.websocket.configureWebSocket
-import org.now.terminal.shared.valueobjects.SessionId
-import org.now.terminal.shared.valueobjects.UserId
+import org.slf4j.LoggerFactory
+
+
 
 /**
  * 终端服务器应用容器
@@ -42,26 +40,30 @@ object TerminalServerApplication {
      * Ktor应用模块配置
      */
     private fun Application.configureApplication() {
+        val logger = LoggerFactory.getLogger("TerminalServerApplication")
+        
         // 配置Koin依赖注入
         install(Koin) {
             // 加载基础设施模块和业务模块
             modules(configurationModule, eventBusModule, loggingModule, terminalSessionModule, webSocketModule)
         }
         
+        logger.info("🔧 配置Koin依赖注入完成")
+        
         // 初始化基础设施
         initializeInfrastructure()
         
+        logger.info("🔧 初始化基础设施完成")
+        
         // 配置WebSocket网关功能
-        configureWebSocketGateway(
-            onNewConnection = { session ->
-                // 使用实现的连接处理器
-                this.handleNewConnection(session)
-            },
-            onReconnect = { sessionId, session ->
-                // 使用实现的重连处理器
-                this.handleReconnect(sessionId, session)
-            }
-        )
+        TerminalWebSocketGateway.configureWebSocketGateway()
+        
+        logger.info("🔧 配置WebSocket网关完成")
+        
+        // 配置管理API端点
+        TerminalManagementApi.configureManagementApi()
+        
+        logger.info("🔧 配置管理API完成")
     }
     
     /**
@@ -84,56 +86,11 @@ object TerminalServerApplication {
         eventBusService.initialize()
     }
     
-    /**
-     * 配置WebSocket网关功能
-     */
-    private fun Application.configureWebSocketGateway(
-        onNewConnection: suspend (WebSocketSession) -> SessionId,
-        onReconnect: suspend (SessionId, WebSocketSession) -> Boolean
-    ) {
-        // 委托给WebSocket模块配置
-        configureWebSocket(onNewConnection, onReconnect)
-    }
+
     
-    /**
-     * 处理新的WebSocket连接
-     * 创建默认用户和会话配置
-     */
-    private suspend fun Application.handleNewConnection(session: WebSocketSession): SessionId {
-        // 获取Koin实例
-        val koin = koin()
-        
-        // 获取终端会话服务
-        val terminalSessionService = koin.get<org.now.terminal.session.domain.services.TerminalSessionService>()
-        
-        // 创建默认用户ID
-        val defaultUserId = org.now.terminal.shared.valueobjects.UserId.generate()
-        
-        // 从配置获取默认命令并创建TerminalCommand
-        val defaultCommand = org.now.terminal.infrastructure.configuration.ConfigurationManager
-            .getTerminalConfig().pty.defaultCommand
-        val terminalCommand = org.now.terminal.session.domain.valueobjects.TerminalCommand(defaultCommand)
-        
-        // 创建默认的Pty配置
-        val ptyConfig = org.now.terminal.session.domain.valueobjects.PtyConfiguration.createDefault(terminalCommand)
-        
-        // 创建会话并返回会话ID
-        return terminalSessionService.createSession(defaultUserId, ptyConfig)
-    }
+
     
-    /**
-     * 处理WebSocket重连
-     */
-    private suspend fun Application.handleReconnect(sessionId: SessionId, session: WebSocketSession): Boolean {
-        // 获取Koin实例
-        val koin = koin()
-        
-        // 获取终端会话服务
-        val terminalSessionService = koin.get<org.now.terminal.session.domain.services.TerminalSessionService>()
-        
-        // 检查会话是否仍然活跃
-        return terminalSessionService.isSessionActive(sessionId)
-    }
+
     
     /**
      * 主函数，用于独立运行终端服务器

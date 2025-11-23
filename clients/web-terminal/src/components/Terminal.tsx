@@ -4,6 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
+import { createSession, resizeTerminal, terminateSession, checkSessionActive } from '../services/terminalApi';
 
 interface TerminalComponentProps {
   className?: string;
@@ -22,80 +23,128 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
-    connect: () => {
-      if (!isConnected && ws.current?.readyState !== WebSocket.OPEN) {
-        connectWebSocket();
-      }
-    },
+    connect: connectTerminal,
     disconnect: () => {
-      if (isConnected && ws.current) {
+      if (ws.current) {
         ws.current.close();
       }
     },
-    isConnected: () => isConnected
+    send: (data: string) => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(data);
+      }
+    },
+    resize: handleResize,
+    terminate: handleTerminate,
+    isConnected: () => isConnected,
+    getSessionId: () => sessionId
   }));
 
-  // WebSocket connection function
-  const connectWebSocket = async () => {
-    console.log('🔄 Attempting WebSocket connection...');
-    
-    // Directly connect to WebSocket endpoint, backend will automatically create session
-    console.log('🌐 WebSocket URL: ws://localhost:8080/ws');
-    
-    ws.current = new WebSocket('ws://localhost:8080/ws');
-    
-    ws.current.onopen = () => {
-      console.log('✅ WebSocket connection established successfully');
-      console.log(`📊 WebSocket readyState: ${ws.current?.readyState}`);
+  // 连接终端 - 先通过API创建会话，然后连接WebSocket
+  const connectTerminal = async () => {
+    try {
+      console.log('🔄 Starting terminal connection process...');
+      terminal.current?.writeln('🔄 Starting terminal connection...');
       
-      setIsConnected(true);
-      onConnectionStatusChange?.(true);
-      terminal.current?.writeln('✅ WebSocket connection established');
-      terminal.current?.writeln('⏳ Waiting for Session ID from backend...');
-      terminal.current?.writeln('');
-      terminal.current?.write('$ ');
-    };
-    
-    ws.current.onmessage = (event) => {
-      console.log('📨 Received message from server:', event.data);
+      // 1. 通过API创建新会话
+      console.log('📡 Creating new session via API...');
+      terminal.current?.writeln('📡 Creating new session...');
       
-      // Handle terminal output
-      if (typeof event.data === 'string') {
-        // Check if this is a Session ID message from backend
-        if (event.data.startsWith('SESSION_ID:')) {
-          const sessionId = event.data.substring('SESSION_ID:'.length);
-          console.log('✅ Received Session ID from backend:', sessionId);
-          setSessionId(sessionId);
-          
-          // Update terminal display
-          terminal.current?.writeln(`✅ Session ID: ${sessionId}`);
-          terminal.current?.writeln('');
-          terminal.current?.write('$ ');
-        } else {
-          // Regular terminal output
+      const sessionResponse = await createSession();
+      const newSessionId = sessionResponse.sessionId;
+      
+      console.log('✅ Session created:', newSessionId);
+      terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
+      setSessionId(newSessionId);
+      
+      // 2. 连接WebSocket进行命令行交互
+      console.log('🌐 Connecting to WebSocket for command line interaction...');
+      terminal.current?.writeln('🌐 Connecting to WebSocket...');
+      
+      // 使用重连端点连接WebSocket
+      ws.current = new WebSocket(`ws://localhost:8080/ws/${newSessionId}`);
+      
+      ws.current.onopen = () => {
+        console.log('✅ WebSocket connection established successfully');
+        terminal.current?.writeln('✅ WebSocket connected');
+        terminal.current?.writeln('🚀 Terminal ready for command line interaction');
+        terminal.current?.writeln('');
+        terminal.current?.write('$ ');
+        
+        setIsConnected(true);
+        onConnectionStatusChange?.(true);
+      };
+      
+      ws.current.onmessage = (event) => {
+        console.log('📨 Received terminal output:', event.data);
+        
+        // WebSocket仅用于命令行输出，直接显示
+        if (typeof event.data === 'string') {
           terminal.current?.write(event.data);
         }
+      };
+      
+      ws.current.onclose = (event) => {
+        console.log('🔌 WebSocket connection closed');
+        console.log(`📊 Close code: ${event.code}, reason: ${event.reason}`);
+        
+        setIsConnected(false);
+        onConnectionStatusChange?.(false);
+        terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
+      };
+      
+      ws.current.onerror = (error) => {
+        console.error('❌ WebSocket connection error:', error);
+        terminal.current?.writeln('❌ WebSocket connection error');
+        
+        setIsConnected(false);
+        onConnectionStatusChange?.(false);
+      };
+      
+    } catch (error) {
+      console.error('❌ Failed to connect terminal:', error);
+      terminal.current?.writeln('❌ Failed to connect terminal');
+      
+      setIsConnected(false);
+      onConnectionStatusChange?.(false);
+    }
+  };
+  
+  // 调整终端尺寸
+  const handleResize = async (columns: number, rows: number) => {
+    if (!sessionId) {
+      console.warn('⚠️ No active session to resize');
+      return;
+    }
+    
+    try {
+      console.log(`📐 Resizing terminal to ${columns}x${rows}`);
+      await resizeTerminal(sessionId, columns, rows);
+      console.log('✅ Terminal resized successfully');
+    } catch (error) {
+      console.error('❌ Failed to resize terminal:', error);
+    }
+  };
+  
+  // 终止会话
+  const handleTerminate = async (reason?: string) => {
+    if (!sessionId) {
+      console.warn('⚠️ No active session to terminate');
+      return;
+    }
+    
+    try {
+      console.log(`🛑 Terminating session: ${reason || 'USER_REQUESTED'}`);
+      await terminateSession(sessionId, reason);
+      console.log('✅ Session terminated successfully');
+      
+      // 关闭WebSocket连接
+      if (ws.current) {
+        ws.current.close();
       }
-    };
-    
-    ws.current.onclose = (event) => {
-      console.log('🔌 WebSocket connection closed');
-      console.log(`📊 Close code: ${event.code}, reason: ${event.reason}`);
-      console.log(`📊 Was clean: ${event.wasClean}`);
-      
-      setIsConnected(false);
-      onConnectionStatusChange?.(false);
-      terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
-    };
-    
-    ws.current.onerror = (error) => {
-      console.error('❌ WebSocket connection error:', error);
-      console.log(`📊 WebSocket readyState: ${ws.current?.readyState}`);
-      
-      setIsConnected(false);
-      onConnectionStatusChange?.(false);
-      terminal.current?.writeln('❌ WebSocket connection error');
-    };
+    } catch (error) {
+      console.error('❌ Failed to terminate session:', error);
+    }
   };
 
   // 生成随机会话ID

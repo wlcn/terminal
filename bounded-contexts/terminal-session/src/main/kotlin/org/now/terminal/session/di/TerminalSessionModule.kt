@@ -30,6 +30,7 @@ val terminalSessionModule: Module = module {
     single { TerminateSessionUseCase(get()) }
     single { ResizeTerminalUseCase(get()) }
     single { ListActiveSessionsUseCase(get()) }
+    single { CheckSessionActiveUseCase(get()) }
     
     // 应用层 - 事件处理器
     single { TerminalOutputEventHandler(get()) }

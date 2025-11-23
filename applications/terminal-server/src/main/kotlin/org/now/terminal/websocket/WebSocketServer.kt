@@ -112,7 +112,8 @@ fun Application.configureWebSocket(
     },
     onReconnect: suspend (SessionId, WebSocketSession) -> Boolean = { _, _ -> 
         throw UnsupportedOperationException("Reconnect handler not implemented") 
-    }
+    },
+    onMessage: suspend (SessionId, String) -> Unit = { _, _ -> }
 ) {
     val logger = LoggerFactory.getLogger("WebSocketServer")
     
@@ -139,7 +140,7 @@ fun Application.configureWebSocket(
                 
                 // 处理WebSocket连接
                 val webSocketServer by inject<WebSocketServer>()
-                webSocketServer.handleConnection(sessionId, this)
+                webSocketServer.handleConnection(sessionId, this, onMessage)
                 
             } catch (e: Exception) {
                 logger.error("❌ WebSocket连接处理异常", e)
@@ -166,7 +167,7 @@ fun Application.configureWebSocket(
                 
                 // 处理WebSocket连接
                 val webSocketServer by inject<WebSocketServer>()
-                webSocketServer.handleConnection(sessionId, this)
+                webSocketServer.handleConnection(sessionId, this, onMessage)
                 
             } catch (e: IllegalArgumentException) {
                 logger.error("❌ 无效的会话ID格式: {}", sessionIdParam)
