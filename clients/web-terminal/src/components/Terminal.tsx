@@ -25,7 +25,9 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   useImperativeHandle(ref, () => ({
     connect: connectTerminal,
     disconnect: () => {
-      if (ws.current) {
+      if (sessionId) {
+        handleTerminate('USER_DISCONNECTED');
+      } else if (ws.current) {
         ws.current.close();
       }
     },
@@ -36,11 +38,17 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     },
     resize: handleResize,
     terminate: handleTerminate,
+    clear: () => {
+      if (terminal.current) {
+        terminal.current.clear();
+        terminal.current.write('$ ');
+      }
+    },
     isConnected: () => isConnected,
     getSessionId: () => sessionId
   }));
 
-  // 连接终端 - 先通过API创建会话，然后连接WebSocket
+  // 连接终端 - session和WebSocket一对一绑定
   const connectTerminal = async () => {
     try {
       console.log('🔄 Starting terminal connection process...');
@@ -57,11 +65,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
       setSessionId(newSessionId);
       
-      // 2. 连接WebSocket进行命令行交互
-      console.log('🌐 Connecting to WebSocket for command line interaction...');
-      terminal.current?.writeln('🌐 Connecting to WebSocket...');
+      // 2. 立即建立WebSocket连接（一对一绑定）
+      console.log('🌐 Establishing WebSocket connection for session...');
+      terminal.current?.writeln('🌐 Establishing WebSocket connection...');
       
-      // 使用重连端点连接WebSocket
+      // 使用sessionId建立WebSocket连接
       ws.current = new WebSocket(`ws://localhost:8080/ws/${newSessionId}`);
       
       ws.current.onopen = () => {
@@ -73,6 +81,9 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         
         setIsConnected(true);
         onConnectionStatusChange?.(true);
+        
+        // 连接成功后，session和WebSocket已建立一对一关系
+        console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);
       };
       
       ws.current.onmessage = (event) => {
@@ -91,6 +102,12 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         setIsConnected(false);
         onConnectionStatusChange?.(false);
         terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
+        
+        // WebSocket关闭时，session也应该被终止（一对一关系）
+        if (sessionId) {
+          console.log(`🛑 Terminating session ${sessionId} due to WebSocket closure`);
+          handleTerminate('WEBSOCKET_CLOSED');
+        }
       };
       
       ws.current.onerror = (error) => {
@@ -99,6 +116,12 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         
         setIsConnected(false);
         onConnectionStatusChange?.(false);
+        
+        // WebSocket错误时，session也应该被终止（一对一关系）
+        if (sessionId) {
+          console.log(`🛑 Terminating session ${sessionId} due to WebSocket error`);
+          handleTerminate('WEBSOCKET_ERROR');
+        }
       };
       
     } catch (error) {
@@ -126,7 +149,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     }
   };
   
-  // 终止会话
+  // 终止会话 - 同时关闭WebSocket连接（一对一关系）
   const handleTerminate = async (reason?: string) => {
     if (!sessionId) {
       console.warn('⚠️ No active session to terminate');
@@ -135,15 +158,29 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     
     try {
       console.log(`🛑 Terminating session: ${reason || 'USER_REQUESTED'}`);
+      
+      // 先关闭WebSocket连接
+      if (ws.current) {
+        ws.current.close();
+        console.log('🔌 WebSocket connection closed');
+      }
+      
+      // 然后终止session
       await terminateSession(sessionId, reason);
       console.log('✅ Session terminated successfully');
       
-      // 关闭WebSocket连接
+      // 重置状态
+      setSessionId('');
+      setIsConnected(false);
+      onConnectionStatusChange?.(false);
+      
+    } catch (error) {
+      console.error('❌ Failed to terminate session:', error);
+      
+      // 即使API调用失败，也要确保WebSocket关闭
       if (ws.current) {
         ws.current.close();
       }
-    } catch (error) {
-      console.error('❌ Failed to terminate session:', error);
     }
   };
 

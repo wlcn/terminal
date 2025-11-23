@@ -31,6 +31,12 @@ object TerminalWebSocketGateway {
                 // 使用用例检查会话状态
                 val isActive = checkSessionActiveUseCase.execute(sessionIdParam)
                 
+                if (!isActive) {
+                    // 会话不存在或已终止，拒绝WebSocket连接
+                    close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Session not found or terminated"))
+                    return@webSocket
+                }
+                
                 // 使用WebSocketServer处理连接
                 webSocketServer.handleConnection(
                     sessionId = sessionIdParam,

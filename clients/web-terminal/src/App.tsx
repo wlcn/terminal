@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
-import { Settings, Maximize2, Minimize2, Power } from 'lucide-react';
+import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, Terminal, List, Trash2, Play, Pause } from 'lucide-react';
 
 function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -39,6 +39,52 @@ function App() {
     setIsConnected(connected);
   };
 
+  // 控制端API操作
+  const handleRefresh = () => {
+    if (terminalRef.current && terminalRef.current.connect) {
+      terminalRef.current.disconnect();
+      setTimeout(() => {
+        terminalRef.current.connect();
+      }, 500);
+    }
+  };
+
+  const handleClear = () => {
+    if (terminalRef.current && terminalRef.current.clear) {
+      terminalRef.current.clear();
+    }
+  };
+
+  const handleListSessions = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      const data = await response.json();
+      console.log('Active sessions:', data);
+      alert(`活跃会话: ${data.sessions?.length || 0}个`);
+    } catch (error) {
+      console.error('Failed to list sessions:', error);
+    }
+  };
+
+  const handleTerminateSession = () => {
+    if (terminalRef.current && terminalRef.current.terminate) {
+      terminalRef.current.terminate('USER_REQUESTED');
+    }
+  };
+
+  const handleResizeTerminal = () => {
+    if (terminalRef.current && terminalRef.current.resize) {
+      terminalRef.current.resize(120, 30);
+    }
+  };
+
+  const handleSendCommand = () => {
+    const command = prompt('请输入要发送的命令:');
+    if (command && terminalRef.current && terminalRef.current.send) {
+      terminalRef.current.send(command + '\n');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Top navigation bar */}
@@ -55,6 +101,43 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-2">
+              {/* 控制端按钮组 */}
+              {isConnected && (
+                <div className="flex items-center space-x-1 border-r border-white/20 pr-2 mr-2">
+                  <button
+                    onClick={handleRefresh}
+                    className="p-2 text-blue-400 hover:text-blue-300 transition-colors hover:bg-blue-500/20 rounded-lg"
+                    title="刷新连接"
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                  
+                  <button
+                    onClick={handleClear}
+                    className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors hover:bg-yellow-500/20 rounded-lg"
+                    title="清空终端"
+                  >
+                    <Square size={18} />
+                  </button>
+                  
+                  <button
+                    onClick={handleSendCommand}
+                    className="p-2 text-green-400 hover:text-green-300 transition-colors hover:bg-green-500/20 rounded-lg"
+                    title="发送命令"
+                  >
+                    <Play size={18} />
+                  </button>
+                  
+                  <button
+                    onClick={handleResizeTerminal}
+                    className="p-2 text-purple-400 hover:text-purple-300 transition-colors hover:bg-purple-500/20 rounded-lg"
+                    title="调整尺寸 (120x30)"
+                  >
+                    <Monitor size={18} />
+                  </button>
+                </div>
+              )}
+              
               <button
                 onClick={handleConnect}
                 className={`p-3 rounded-lg transition-all duration-300 ${
@@ -65,6 +148,22 @@ function App() {
                 title={isConnected ? '断开连接' : '建立连接'}
               >
                 <Power size={18} />
+              </button>
+              
+              <button
+                onClick={handleListSessions}
+                className="p-2 text-orange-400 hover:text-orange-300 transition-colors hover:bg-orange-500/20 rounded-lg"
+                title="查看活跃会话"
+              >
+                <List size={18} />
+              </button>
+              
+              <button
+                onClick={handleTerminateSession}
+                className="p-2 text-red-400 hover:text-red-300 transition-colors hover:bg-red-500/20 rounded-lg"
+                title="终止当前会话"
+              >
+                <Trash2 size={18} />
               </button>
               
               <button

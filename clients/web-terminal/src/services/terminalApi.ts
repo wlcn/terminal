@@ -3,7 +3,7 @@
  * 处理会话管理、尺寸调整等操作，与WebSocket分离
  */
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
 
 /**
  * 创建新会话
@@ -64,12 +64,12 @@ export const terminateSession = async (
   reason?: string
 ): Promise<{ sessionId: string; reason: string; status: string }> => {
   try {
-    const url = new URL(`${API_BASE_URL}/sessions/${sessionId}`);
+    let url = `${API_BASE_URL}/sessions/${sessionId}`;
     if (reason) {
-      url.searchParams.append('reason', reason);
+      url += `?reason=${encodeURIComponent(reason)}`;
     }
     
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'DELETE',
     });
     
