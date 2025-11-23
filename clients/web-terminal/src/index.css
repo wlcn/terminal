@@ -58,7 +58,7 @@
   }
 }
 
-/* xterm.js 样式覆盖 */
+/* xterm.js style overrides */
 .xterm {
   font-family: 'Courier New', monospace;
   font-feature-settings: "liga" 0;

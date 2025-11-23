@@ -22,13 +22,13 @@ function App() {
 
   const handleConnect = () => {
     if (isConnected) {
-      // 断开连接
+      // Disconnect
       if (terminalRef.current && terminalRef.current.disconnect) {
         terminalRef.current.disconnect();
       }
       setIsConnected(false);
     } else {
-      // 建立连接
+      // Connect
       if (terminalRef.current && terminalRef.current.connect) {
         terminalRef.current.connect();
       }
@@ -40,7 +40,7 @@ function App() {
     setIsConnected(connected);
   };
 
-  // 控制端API操作
+  // Control panel API operations
   const handleRefresh = () => {
     if (terminalRef.current && terminalRef.current.connect) {
       terminalRef.current.disconnect();
@@ -58,7 +58,7 @@ function App() {
 
   const handleListSessions = async () => {
     try {
-      // 获取或生成用户ID
+      // Get or generate user ID
       let userId = localStorage.getItem('terminal_user_id');
       if (!userId) {
         userId = 'web-terminal-user-' + Date.now();
@@ -67,7 +67,7 @@ function App() {
       
       const data = await listSessions(userId);
       console.log('Active sessions:', data);
-      alert(`活跃会话: ${data.sessions?.length || 0}个`);
+      alert(`Active sessions: ${data.sessions?.length || 0}`);
     } catch (error) {
       console.error('Failed to list sessions:', error);
     }
@@ -86,7 +86,7 @@ function App() {
   };
 
   const handleSendCommand = () => {
-    const command = prompt('请输入要发送的命令:');
+    const command = prompt('Enter command to send:');
     if (command && terminalRef.current && terminalRef.current.send) {
       terminalRef.current.send(command + '\n');
     }
@@ -108,13 +108,13 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-2">
-              {/* 控制端按钮组 */}
+              {/* Control panel button group */}
               {isConnected && (
                 <div className="flex items-center space-x-1 border-r border-white/20 pr-2 mr-2">
                   <button
                     onClick={handleRefresh}
                     className="p-2 text-blue-400 hover:text-blue-300 transition-colors hover:bg-blue-500/20 rounded-lg"
-                    title="刷新连接"
+                    title="Refresh connection"
                   >
                     <RefreshCw size={18} />
                   </button>
@@ -122,7 +122,7 @@ function App() {
                   <button
                     onClick={handleClear}
                     className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors hover:bg-yellow-500/20 rounded-lg"
-                    title="清空终端"
+                    title="Clear terminal"
                   >
                     <Square size={18} />
                   </button>
@@ -130,7 +130,7 @@ function App() {
                   <button
                     onClick={handleSendCommand}
                     className="p-2 text-green-400 hover:text-green-300 transition-colors hover:bg-green-500/20 rounded-lg"
-                    title="发送命令"
+                    title="Send command"
                   >
                     <Play size={18} />
                   </button>
@@ -138,7 +138,7 @@ function App() {
                   <button
                     onClick={handleResizeTerminal}
                     className="p-2 text-purple-400 hover:text-purple-300 transition-colors hover:bg-purple-500/20 rounded-lg"
-                    title="调整尺寸 (120x30)"
+                    title="Resize terminal (120x30)"
                   >
                     <Monitor size={18} />
                   </button>
@@ -152,7 +152,7 @@ function App() {
                     ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30' 
                     : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
                 }`}
-                title={isConnected ? '断开连接' : '建立连接'}
+                title={isConnected ? 'Disconnect' : 'Connect'}
               >
                 <Power size={18} />
               </button>
@@ -160,7 +160,7 @@ function App() {
               <button
                 onClick={handleListSessions}
                 className="p-2 text-orange-400 hover:text-orange-300 transition-colors hover:bg-orange-500/20 rounded-lg"
-                title="查看活跃会话"
+                title="View active sessions"
               >
                 <List size={18} />
               </button>
@@ -168,7 +168,7 @@ function App() {
               <button
                 onClick={handleTerminateSession}
                 className="p-2 text-red-400 hover:text-red-300 transition-colors hover:bg-red-500/20 rounded-lg"
-                title="终止当前会话"
+                title="Terminate current session"
               >
                 <Trash2 size={18} />
               </button>
@@ -176,12 +176,12 @@ function App() {
               <button
                 onClick={toggleFullscreen}
                 className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg"
-                title={isFullscreen ? '退出全屏' : '全屏'}
+                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               >
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" title="设置">
+              <button className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" title="Settings">
                 <Settings size={20} />
               </button>
             </div>
@@ -194,7 +194,7 @@ function App() {
         <div className="bg-black/20 backdrop-blur-lg rounded-xl border border-white/10 overflow-hidden">
           <div className="p-3 border-b border-white/10">
             <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <span>终端会话</span>
+              <span>Terminal Session</span>
               <span>•</span>
               <span>bash</span>
               <span>•</span>
@@ -217,9 +217,9 @@ function App() {
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between text-sm text-gray-400">
             <div className="flex items-center space-x-4">
-              <span>状态: {isConnected ? '已连接' : '未连接'}</span>
+              <span>Status: {isConnected ? 'Connected' : 'Disconnected'}</span>
               <span>•</span>
-              <span>后端: localhost:8080</span>
+              <span>Backend: localhost:8080</span>
             </div>
             <div>
               <span>kt-terminal v1.0</span>

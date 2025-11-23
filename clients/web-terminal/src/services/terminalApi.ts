@@ -1,12 +1,12 @@
 /**
- * 终端管理API服务
- * 处理会话管理、尺寸调整等操作，与WebSocket分离
+ * Terminal Management API Service
+ * Handles session management, size adjustment operations, separated from WebSocket
  */
 
 const API_BASE_URL = '/api';
 
 /**
- * 创建新会话
+ * Create new session
  */
 export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string; shellType: string }> => {
   try {
@@ -37,7 +37,7 @@ export const createSession = async (userId?: string): Promise<{ sessionId: strin
 };
 
 /**
- * 调整终端尺寸
+ * Resize terminal
  */
 export const resizeTerminal = async (
   sessionId: string, 
@@ -65,7 +65,7 @@ export const resizeTerminal = async (
 };
 
 /**
- * 终止会话
+ * Terminate session
  */
 export const terminateSession = async (
   sessionId: string, 
@@ -93,7 +93,7 @@ export const terminateSession = async (
 };
 
 /**
- * 获取活跃会话列表
+ * Get active session list
  */
 export const listSessions = async (userId?: string): Promise<{ sessions: string[]; count: number }> => {
   try {
@@ -116,7 +116,7 @@ export const listSessions = async (userId?: string): Promise<{ sessions: string[
 };
 
 /**
- * 检查会话是否活跃
+ * Check if session is active
  */
 export const checkSessionActive = async (sessionId: string, userId?: string): Promise<boolean> => {
   try {
