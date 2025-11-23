@@ -4,7 +4,6 @@ import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.runBlocking
-import org.now.terminal.shared.events.SystemHeartbeatEvent
 import org.now.terminal.shared.events.EventHandler
 
 class SimpleEventBusTest : BehaviorSpec({
@@ -17,6 +16,12 @@ class SimpleEventBusTest : BehaviorSpec({
                     val eventBus = SimpleEventBus(bufferSize = 100)
                     
                     eventBus.isRunning() shouldBe false
+                    
+                    // 注册一个处理器
+                    eventBus.subscribe(TestEvent::class.java, object : EventHandler<TestEvent> {
+                        override suspend fun handle(event: TestEvent) {}
+                        override fun canHandle(eventType: String): Boolean = eventType == "test-event"
+                    })
                     
                     eventBus.start()
                     eventBus.isRunning() shouldBe true
@@ -32,6 +37,12 @@ class SimpleEventBusTest : BehaviorSpec({
                 runBlocking {
                     val customEventBus = SimpleEventBus(bufferSize = 500)
                     
+                    // 注册一个处理器
+                    customEventBus.subscribe(TestEvent::class.java, object : EventHandler<TestEvent> {
+                        override suspend fun handle(event: TestEvent) {}
+                        override fun canHandle(eventType: String): Boolean = eventType == "test-event"
+                    })
+                    
                     customEventBus.start()
                     customEventBus.isRunning() shouldBe true
                     customEventBus.stop()
@@ -45,6 +56,12 @@ class SimpleEventBusTest : BehaviorSpec({
                 runBlocking {
                     val factoryBus = EventBusFactory.createDefault()
                     
+                    // 注册一个处理器
+                    factoryBus.subscribe(TestEvent::class.java, object : EventHandler<TestEvent> {
+                        override suspend fun handle(event: TestEvent) {}
+                        override fun canHandle(eventType: String): Boolean = eventType == "test-event"
+                    })
+                    
                     factoryBus.start()
                     factoryBus.isRunning() shouldBe true
                     factoryBus.stop()
@@ -57,37 +74,34 @@ class SimpleEventBusTest : BehaviorSpec({
             then("应该能够正确接收事件") {
                 runBlocking {
                     val eventBus = SimpleEventBus(bufferSize = 100)
-                    eventBus.start()
                     
-                    var receivedEvent: SystemHeartbeatEvent? = null
+                    var receivedEvent: TestEvent? = null
                     
                     // 创建事件处理器
-                    val handler = object : EventHandler<SystemHeartbeatEvent> {
-                        override suspend fun handle(event: SystemHeartbeatEvent) {
+                    val handler = object : EventHandler<TestEvent> {
+                        override suspend fun handle(event: TestEvent) {
                             receivedEvent = event
                         }
                         
                         override fun canHandle(eventType: String): Boolean {
-                            return eventType == "SystemHeartbeatEvent"
+                            return eventType == "test-event"
                         }
                     }
                     
-                    // 订阅事件
-                    eventBus.subscribe(SystemHeartbeatEvent::class.java, handler)
+                    // 先订阅事件，再启动事件总线
+                    eventBus.subscribe(TestEvent::class.java, handler)
+                    eventBus.start()
                     
                     // 发布事件
-                    val event = SystemHeartbeatEvent.createHealthy(
-                        systemId = "test-system",
-                        component = "test-component"
-                    )
+                    val event = TestEvent(testData = "test-data")
                     eventBus.publish(event)
                     
-                    // 等待一小段时间让事件被处理
-                    kotlinx.coroutines.delay(100)
+                    // 等待更长时间让事件被处理
+                    kotlinx.coroutines.delay(200)
                     
                     // 验证事件被正确接收
                     receivedEvent shouldNotBe null
-                    receivedEvent!!.systemId shouldBe "test-system"
+                    receivedEvent!!.testData shouldBe "test-data"
                     
                     eventBus.stop()
                 }

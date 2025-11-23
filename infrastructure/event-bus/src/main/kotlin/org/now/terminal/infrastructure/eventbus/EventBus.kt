@@ -35,6 +35,7 @@ class SimpleEventBus(
     private val handlers = ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventHandler<*>>>()
     private val eventChannels = ConcurrentHashMap<Class<*>, Channel<Event>>()
     private val processingJobs = ConcurrentHashMap<Class<*>, Job>()
+    private var isRunningFlag = false
     
     override suspend fun <T : Event> publish(event: T) {
         logger.debug("发布事件: {} (ID: {})", event.eventType, event.eventId)
@@ -51,8 +52,8 @@ class SimpleEventBus(
         handlers.getOrPut(eventType) { CopyOnWriteArrayList() }.add(handler as EventHandler<*>)
         logger.debug("注册事件处理器: {} -> {}", eventType.simpleName, handler.javaClass.simpleName)
         
-        // 如果事件总线已启动，为这个事件类型启动监听协程
-        if (processingJobs.isNotEmpty()) {
+        // 只有在事件总线运行时才启动监听协程
+        if (isRunning()) {
             startProcessingForEventType(eventType)
         }
     }
@@ -68,10 +69,12 @@ class SimpleEventBus(
     }
     
     override fun start() {
-        if (processingJobs.isNotEmpty()) {
+        if (isRunningFlag) {
             logger.warn("事件总线已在运行")
             return
         }
+        
+        isRunningFlag = true
         
         // 为所有已注册的事件类型启动监听协程
         handlers.keys.forEach { eventType ->
@@ -83,6 +86,13 @@ class SimpleEventBus(
     }
     
     override fun stop() {
+        if (!isRunningFlag) {
+            logger.warn("事件总线未在运行")
+            return
+        }
+        
+        isRunningFlag = false
+        
         // 停止所有监听协程
         processingJobs.values.forEach { job ->
             job.cancel()
@@ -98,7 +108,7 @@ class SimpleEventBus(
         logger.info("事件总线已停止")
     }
     
-    override fun isRunning(): Boolean = processingJobs.isNotEmpty()
+    override fun isRunning(): Boolean = isRunningFlag
     
     override fun getRegisteredHandlerCount(): Int {
         return handlers.values.sumOf { it.size }
@@ -124,25 +134,36 @@ class SimpleEventBus(
      * 为特定事件类型启动监听协程
      */
     private fun <T : Event> startProcessingForEventType(eventType: Class<T>) {
-        if (processingJobs.containsKey(eventType)) {
-            return // 已经启动
+        // 如果已经有活跃的监听协程，直接返回
+        val existingJob = processingJobs[eventType]
+        if (existingJob != null && existingJob.isActive) {
+            return // 监听协程已经在运行
         }
         
-        val eventChannel = Channel<Event>(bufferSize)
-        eventChannels[eventType] = eventChannel
+        // 如果协程存在但不活跃，清理掉
+        if (existingJob != null) {
+            processingJobs.remove(eventType)
+            eventChannels.remove(eventType)?.close()
+        }
         
-        val job = CoroutineScope(dispatcher).launch {
-            eventChannel.consumeEach { event ->
-                try {
-                    handleEventForType(eventType, event)
-                } catch (e: Exception) {
-                    logger.error("处理事件失败: {} (ID: {})", event.eventType, event.eventId, e)
+        // 只有在事件总线已启动时才创建新的监听协程
+        if (isRunning()) {
+            val eventChannel = Channel<Event>(bufferSize)
+            eventChannels[eventType] = eventChannel
+            
+            val job = CoroutineScope(dispatcher).launch {
+                eventChannel.consumeEach { event ->
+                    try {
+                        handleEventForType(eventType, event)
+                    } catch (e: Exception) {
+                        logger.error("处理事件失败: {} (ID: {})", event.eventType, event.eventId, e)
+                    }
                 }
             }
+            
+            processingJobs[eventType] = job
+            logger.debug("为事件类型 {} 启动监听协程", eventType.simpleName)
         }
-        
-        processingJobs[eventType] = job
-        logger.debug("为事件类型 {} 启动监听协程", eventType.simpleName)
     }
     
     /**
@@ -204,12 +225,6 @@ object EventBusFactory {
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         bufferSize: Int = 1000
     ): EventBus = SimpleEventBus(dispatcher, bufferSize)
-    
-    /**
-     * 创建内存事件总线（兼容旧接口）
-     */
-    @Deprecated("使用createDefault()替代", ReplaceWith("createDefault()"))
-    fun createInMemoryEventBus(): EventBus = createDefault()
     
     /**
      * 创建带监控的事件总线（简化版本）
