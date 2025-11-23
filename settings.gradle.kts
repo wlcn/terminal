@@ -27,5 +27,8 @@ include("bounded-contexts:audit-logging")
 
 
 
+// 应用层模块
+include("applications:terminal-server")
+
 // Gateway层模块
-include("gateways:websocket-gateway")
+// include("gateways:websocket-gateway") // 已迁移到应用层

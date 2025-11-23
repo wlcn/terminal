@@ -47,5 +47,5 @@ tasks.test {
 }
 
 application {
-    mainClass = "org.now.terminal.websocket.WebSocketApplication"
+    mainClass = "org.now.terminal.server.TerminalServerApplication"
 }
