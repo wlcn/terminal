@@ -57,8 +57,14 @@ function App() {
 
   const handleListSessions = async () => {
     try {
-      const response = await fetch('/api/sessions');
-      const data = await response.json();
+      // 获取或生成用户ID
+      let userId = localStorage.getItem('terminal_user_id');
+      if (!userId) {
+        userId = 'web-terminal-user-' + Date.now();
+        localStorage.setItem('terminal_user_id', userId);
+      }
+      
+      const data = await listSessions(userId);
       console.log('Active sessions:', data);
       alert(`活跃会话: ${data.sessions?.length || 0}个`);
     } catch (error) {

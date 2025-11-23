@@ -8,9 +8,14 @@ const API_BASE_URL = '/api';
 /**
  * 创建新会话
  */
-export const createSession = async (): Promise<{ sessionId: string; status: string }> => {
+export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/sessions`, {
+    let url = `${API_BASE_URL}/sessions`;
+    if (userId) {
+      url += `?userId=${encodeURIComponent(userId)}`;
+    }
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,9 +92,14 @@ export const terminateSession = async (
 /**
  * 获取活跃会话列表
  */
-export const listSessions = async (): Promise<{ sessions: string[]; count: number }> => {
+export const listSessions = async (userId?: string): Promise<{ sessions: string[]; count: number }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/sessions`);
+    let url = `${API_BASE_URL}/sessions`;
+    if (userId) {
+      url += `?userId=${encodeURIComponent(userId)}`;
+    }
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`Failed to list sessions: ${response.statusText}`);
@@ -105,9 +115,9 @@ export const listSessions = async (): Promise<{ sessions: string[]; count: numbe
 /**
  * 检查会话是否活跃
  */
-export const checkSessionActive = async (sessionId: string): Promise<boolean> => {
+export const checkSessionActive = async (sessionId: string, userId?: string): Promise<boolean> => {
   try {
-    const sessions = await listSessions();
+    const sessions = await listSessions(userId);
     return sessions.sessions.includes(sessionId);
   } catch (error) {
     console.error('❌ Failed to check session status:', error);

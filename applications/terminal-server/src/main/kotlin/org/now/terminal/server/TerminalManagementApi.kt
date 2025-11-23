@@ -41,6 +41,7 @@ object TerminalManagementApi {
             // 创建新会话API
             post("/api/sessions") {
                 try {
+                    // 直接调用用例，由用例处理默认逻辑
                     val sessionId = createSessionUseCase.execute()
                     
                     logger.info("✅ 通过API创建新会话: {}", sessionId.value)
@@ -105,8 +106,8 @@ object TerminalManagementApi {
             // 获取会话列表API
             get("/api/sessions") {
                 try {
-                    val defaultUserId = UserId.generate()
-                    val sessions = listActiveSessionsUseCase.execute(defaultUserId)
+                    // 直接调用用例，由用例处理业务逻辑
+                    val sessions = listActiveSessionsUseCase.execute()
                     
                     logger.info("📋 通过API获取活跃会话列表 - 会话数量: {}", sessions.size)
                     

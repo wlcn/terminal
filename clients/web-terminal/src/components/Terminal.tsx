@@ -54,11 +54,18 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('🔄 Starting terminal connection process...');
       terminal.current?.writeln('🔄 Starting terminal connection...');
       
+      // 获取或生成用户ID
+      let userId = localStorage.getItem('terminal_user_id');
+      if (!userId) {
+        userId = 'web-terminal-user-' + Date.now();
+        localStorage.setItem('terminal_user_id', userId);
+      }
+      
       // 1. 通过API创建新会话
       console.log('📡 Creating new session via API...');
       terminal.current?.writeln('📡 Creating new session...');
       
-      const sessionResponse = await createSession();
+      const sessionResponse = await createSession(userId);
       const newSessionId = sessionResponse.sessionId;
       
       console.log('✅ Session created:', newSessionId);
