@@ -37,10 +37,7 @@ interface TerminalSessionService {
      */
     suspend fun listActiveSessions(userId: UserId): List<org.now.terminal.session.domain.entities.TerminalSession>
     
-    /**
-     * 读取会话输出
-     */
-    suspend fun readOutput(sessionId: SessionId): String
+
     
     /**
      * 获取会话统计信息

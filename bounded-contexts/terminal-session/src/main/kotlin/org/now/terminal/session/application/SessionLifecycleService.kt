@@ -163,32 +163,7 @@ class SessionLifecycleService(
             .filter { it.isAlive() }
     }
     
-    /**
-     * 读取会话输出
-     */
-    override suspend fun readOutput(sessionId: SessionId): String {
-        logger.info("📤 开始读取终端输出 - 会话ID: {}", sessionId)
-        
-        val session = sessionRepository.findById(sessionId)
-            ?: throw IllegalArgumentException("Session not found: $sessionId")
-        
-        if (!session.isAlive()) {
-            logger.debug("📭 会话已终止或无输出 - 会话ID: {}", sessionId)
-            return ""
-        }
-        
-        val output = session.readOutput()
-        sessionRepository.save(session)
-        
-        // 异步发布领域事件
-        session.getDomainEvents().forEach { event ->
-            eventBus.publish(event)
-        }
-        
-        logger.info("✅ 终端输出读取完成 - 会话ID: {}, 输出长度: {}, 输出内容: '{}'", 
-            sessionId, output.length, output.replace("\n", "\\n").replace("\r", "\\r"))
-        return output
-    }
+
     
     /**
      * 获取会话统计信息

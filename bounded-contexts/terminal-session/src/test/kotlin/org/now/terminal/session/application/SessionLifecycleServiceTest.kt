@@ -193,30 +193,7 @@ class SessionLifecycleServiceTest : BehaviorSpec({
             }
         }
 
-        `when`("读取会话输出") {
-            then("应该成功读取会话输出") {
-                runBlocking {
-                    // Given
-                    val mockSession: TerminalSession = mockk()
-                    val expectedOutput = "output content"
-                    coEvery { mockRepository.findById(sessionId!!) } returns mockSession
-                    coEvery { mockSession.readOutput() } returns expectedOutput
-                    coEvery { mockSession.getDomainEvents() } returns listOf(mockk()) // 返回一个mock事件
-                    coEvery { mockRepository.save(any()) } returns mockSession
-                    coEvery { mockEventBus.publish(any()) } returns Unit
-                    
-                    // When
-                    val result = service.readOutput(sessionId!!)
-                    
-                    // Then
-                    result shouldBe expectedOutput
-                    coVerify { mockRepository.findById(sessionId!!) }
-                    coVerify { mockSession.readOutput() }
-                    coVerify { mockRepository.save(any()) }
-                    coVerify { mockEventBus.publish(any()) }
-                }
-            }
-        }
+
 
         `when`("获取会话统计信息") {
             then("应该成功获取会话统计信息") {

@@ -3,6 +3,7 @@ package org.now.terminal.session.domain.entities
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.Dispatchers
 import org.now.terminal.shared.events.Event
 import org.now.terminal.shared.events.EventHelper
 import org.now.terminal.shared.valueobjects.SessionId
