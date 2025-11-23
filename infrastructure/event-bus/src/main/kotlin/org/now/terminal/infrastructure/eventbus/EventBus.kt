@@ -225,9 +225,4 @@ object EventBusFactory {
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
         bufferSize: Int = 1000
     ): EventBus = SimpleEventBus(dispatcher, bufferSize)
-    
-    /**
-     * 创建带监控的事件总线（简化版本）
-     */
-    fun createMonitoredEventBus(): EventBus = SimpleEventBus()
 }

@@ -9,15 +9,7 @@ import org.now.terminal.infrastructure.configuration.ConfigurationManager
 @Serializable
 data class EventBusProperties(
     val type: EventBusType = EventBusType.IN_MEMORY,
-    val bufferSize: Int = 1000,
-    val maxRetries: Int = 3,
-    val retryDelayMs: Long = 1000,
-    val enableMetrics: Boolean = true,
-    val enableDeadLetterQueue: Boolean = false,
-    val deadLetterQueueCapacity: Int = 1000,
-    val enableRetry: Boolean = true,
-    val retryBackoffMultiplier: Double = 2.0,
-    val maxRetryDelayMs: Long = 60000
+    val bufferSize: Int = 1000
 )
 
 /**
@@ -58,23 +50,9 @@ object ConfiguredEventBusFactory {
     fun createFromConfiguration(): EventBus {
         val eventBusConfig = org.now.terminal.infrastructure.configuration.ConfigurationManager.getEventBusConfig()
         val properties = EventBusProperties(
-            bufferSize = eventBusConfig.bufferSize,
-            maxRetries = eventBusConfig.maxRetries,
-            enableMetrics = eventBusConfig.enableMetrics,
-            enableDeadLetterQueue = eventBusConfig.enableDeadLetterQueue,
-            deadLetterQueueCapacity = eventBusConfig.deadLetterQueueCapacity
+            bufferSize = eventBusConfig.bufferSize
         )
         
         return EventBusConfig(properties).createEventBus()
-    }
-    
-    /**
-     * 创建带监控的事件总线
-     */
-    fun createMonitoredFromConfiguration(): EventBus {
-        val baseEventBus = createFromConfiguration()
-        val metrics = EventBusMetrics()
-        
-        return MonitoredEventBus(baseEventBus, metrics)
     }
 }
