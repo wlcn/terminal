@@ -9,6 +9,7 @@ import { APP_CONFIG } from '../config/appConfig';
 
 // WebSocket服务器配置
 const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
+const WS_SERVER_PATH = APP_CONFIG.WS_SERVER.PATH;
 
 interface TerminalComponentProps {
   className?: string;
@@ -83,7 +84,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       terminal.current?.writeln('🌐 Establishing WebSocket connection...');
       
       // Use sessionId to establish WebSocket connection
-      ws.current = new WebSocket(`${WS_SERVER_URL}/terminal/${newSessionId}`);
+      ws.current = new WebSocket(`${WS_SERVER_URL}/${WS_SERVER_PATH}/${newSessionId}`);
       
       ws.current.onopen = () => {
         console.log('✅ WebSocket connection established successfully');

@@ -140,7 +140,7 @@
 
 .xterm .xterm-viewport {
   background-color: #000;
-  overflow-y: scroll;
+  overflow-y: hidden !important; /* 隐藏xterm.js滚动条 */
   cursor: default;
   position: absolute;
   right: 0;
@@ -170,4 +170,19 @@
   top: 0;
   left: -9999em;
   line-height: normal;
+}
+
+/* 全局滚动条隐藏 */
+html, body {
+  overflow: hidden !important;
+}
+
+/* 隐藏所有滚动条 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }

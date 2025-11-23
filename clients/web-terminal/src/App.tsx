@@ -141,7 +141,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <div className="h-screen bg-background text-foreground font-sans overflow-hidden">
       {/* Minimal Header */}
       <header className="glass border-b border-border px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -235,10 +235,10 @@ function App() {
                 onClick={handleConnect}
                 variant={isConnected ? "destructive" : "default"}
                 size="sm"
-                className="h-8 px-3 text-xs font-medium"
+                className="h-8 w-8 p-0"
+                title={isConnected ? 'Disconnect' : 'Connect'}
               >
-                <Power size={14} className="mr-1" />
-                {isConnected ? 'Disconnect' : 'Connect'}
+                <Power size={14} />
               </Button>
               
               <Button
@@ -336,28 +336,14 @@ function App() {
       </header>
 
       {/* Main Content - Terminal Focus */}
-      <main className="flex-1 p-0">
-        <div className="h-screen flex flex-col">
+      <main className="flex-1 p-0 overflow-hidden">
+        <div className="h-full flex flex-col">
           <Card className="flex-1 m-4 mb-0 border-border bg-card rounded-lg overflow-hidden">
-            <CardHeader className="pb-3 pt-4 px-4 border-b border-border">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Terminal
-                </CardTitle>
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                  <span>{currentSessionInfo.terminalSize}</span>
-                  <span>•</span>
-                  <span>{currentSessionInfo.shellType}</span>
-                  <span>•</span>
-                  <span>{isConnected ? 'Live' : 'Ready'}</span>
-                </div>
-              </div>
-            </CardHeader>
             <CardContent className="p-0 h-full">
-              <div className="h-[calc(100vh-180px)]">
+              <div className="h-full overflow-hidden">
                 <TerminalComponent 
                   ref={terminalRef}
-                  className="h-full" 
+                  className="h-full overflow-hidden" 
                   onConnectionStatusChange={handleConnectionStatusChange}
                 />
               </div>
@@ -368,7 +354,6 @@ function App() {
           <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border bg-background">
             <div className="flex items-center justify-between max-w-7xl mx-auto">
               <span>KT Terminal v1.0 • Enterprise Web Terminal</span>
-              <span>Status: {isConnected ? 'Connected to localhost:8080' : 'Ready for connection'}</span>
             </div>
           </div>
         </div>

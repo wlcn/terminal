@@ -3,10 +3,10 @@
 
 export const APP_CONFIG = {
   // WebSocket server configuration
-  WS_SERVER: {
-    URL: 'ws://localhost:8080',
-    PATH: '/terminal'
-  },
+WS_SERVER: {
+  URL: 'ws://localhost:8080',
+  PATH: '/ws'
+},
   
   // API server configuration
   API_SERVER: {
