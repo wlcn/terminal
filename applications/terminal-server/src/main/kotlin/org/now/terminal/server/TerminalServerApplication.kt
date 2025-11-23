@@ -99,7 +99,9 @@ object TerminalServerApplication {
         val loggingService = koin.get<org.now.terminal.infrastructure.logging.LoggingLifecycleService>()
         loggingService.initialize()
         
-        // EventBus不需要显式初始化，业务模块会自行注册事件处理器
+        // 启动事件总线
+        val eventBus = koin.get<org.now.terminal.infrastructure.eventbus.EventBus>()
+        eventBus.start()
     }
     
 

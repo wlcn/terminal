@@ -147,8 +147,8 @@ class SessionLifecycleService(
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
-        if (!session.hasOutput()) {
-            logger.debug("📭 会话暂无输出 - 会话ID: {}", sessionId)
+        if (!session.isAlive()) {
+            logger.debug("📭 会话已终止或无输出 - 会话ID: {}", sessionId)
             return ""
         }
         

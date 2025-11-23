@@ -6,8 +6,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
-import org.now.terminal.infrastructure.logging.Logger
-import org.now.terminal.infrastructure.logging.LoggerFactory
+import org.now.terminal.infrastructure.logging.TerminalLogger
 import org.now.terminal.session.domain.valueobjects.ShellType
 import org.now.terminal.session.domain.services.Process
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
@@ -29,7 +28,7 @@ class Pty4jProcess(
     private val customCoroutineContext: CoroutineContext = Dispatchers.IO
 ) : Process, CoroutineScope {
     
-    private val logger = LoggerFactory.getLogger<Pty4jProcess>()
+    private val logger = TerminalLogger.getLogger(Pty4jProcess::class.java)
     private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext = customCoroutineContext + job
     
