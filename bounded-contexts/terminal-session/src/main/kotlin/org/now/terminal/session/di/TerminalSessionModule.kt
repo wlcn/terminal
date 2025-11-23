@@ -5,6 +5,7 @@ import org.koin.dsl.module
 import org.now.terminal.session.application.SessionLifecycleService
 import org.now.terminal.session.application.handlers.SessionCreatedEventHandler
 import org.now.terminal.session.application.handlers.TerminalOutputEventHandler
+import org.now.terminal.session.application.handlers.TerminalInputProcessedEventHandler
 import org.now.terminal.session.application.usecases.*
 import org.now.terminal.session.domain.repositories.TerminalSessionRepository
 import org.now.terminal.session.domain.services.ProcessFactory
@@ -34,7 +35,8 @@ val terminalSessionModule: Module = module {
     
     // 应用层 - 事件处理器
     single { TerminalOutputEventHandler(get()) }
-    single<SessionCreatedEventHandler> { SessionCreatedEventHandler(get()) }
+    single { SessionCreatedEventHandler(get()) }
+    single { TerminalInputProcessedEventHandler(get()) }
     
     // 应用层 - 服务
     single<TerminalSessionService> { SessionLifecycleService(get(), get(), get()) }
