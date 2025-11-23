@@ -17,6 +17,9 @@ dependencies {
     // SLF4J API依赖（用于TerminalLogger返回的Logger类型）
     implementation(libs.slf4j.api)
     
+    // Koin依赖注入
+    implementation(libs.koin.core)
+    
     // 测试依赖
     testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.kotest.assertions.core)

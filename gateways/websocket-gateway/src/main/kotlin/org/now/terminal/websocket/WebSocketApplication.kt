@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import org.koin.ktor.plugin.Koin
 import org.koin.ktor.plugin.koin
 import org.now.terminal.infrastructure.configuration.di.configurationModule
+import org.now.terminal.infrastructure.eventbus.di.eventBusModule
 import org.now.terminal.infrastructure.logging.di.loggingModule
 import org.now.terminal.session.di.terminalSessionModule
 import org.now.terminal.websocket.di.webSocketModule
@@ -34,8 +35,8 @@ object WebSocketApplication {
     private fun Application.configureApplication() {
         // 配置Koin依赖注入
         install(Koin) {
-            // 加载WebSocket模块和TerminalSession模块
-            modules(configurationModule, loggingModule, terminalSessionModule, webSocketModule)
+            // 加载基础设施模块和业务模块
+            modules(configurationModule, eventBusModule, loggingModule, terminalSessionModule, webSocketModule)
         }
         
         // 初始化基础设施
@@ -68,6 +69,10 @@ object WebSocketApplication {
         // 初始化日志系统
         val loggingService = koin.get<org.now.terminal.infrastructure.logging.LoggingLifecycleService>()
         loggingService.initialize()
+        
+        // 初始化EventBus系统
+        val eventBusService = koin.get<org.now.terminal.infrastructure.eventbus.EventBusLifecycleService>()
+        eventBusService.initialize()
     }
     
 

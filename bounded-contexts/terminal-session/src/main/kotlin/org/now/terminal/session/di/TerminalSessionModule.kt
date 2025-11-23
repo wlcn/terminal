@@ -2,8 +2,6 @@ package org.now.terminal.session.di
 
 import org.koin.core.module.Module
 import org.koin.dsl.module
-import org.now.terminal.infrastructure.eventbus.EventBus
-import org.now.terminal.infrastructure.eventbus.EventBusFactory
 import org.now.terminal.session.application.SessionLifecycleService
 import org.now.terminal.session.application.handlers.SessionCreatedEventHandler
 import org.now.terminal.session.application.handlers.TerminalOutputEventHandler
@@ -17,11 +15,10 @@ import org.now.terminal.session.infrastructure.repositories.InMemoryTerminalSess
 /**
  * Terminal Session模块的Koin依赖注入配置
  * 配置终端会话相关的服务和用例
+ * 
+ * 注意：EventBus依赖通过全局eventBusModule提供
  */
 val terminalSessionModule: Module = module {
-    
-    // EventBus依赖
-    single<EventBus> { EventBusFactory.createDefault() }
     
     // 基础设施层
     single<TerminalSessionRepository> { InMemoryTerminalSessionRepository() }
