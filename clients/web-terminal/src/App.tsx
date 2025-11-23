@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
-import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, List, Trash2 } from 'lucide-react';
+import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, List, Trash2, X, Maximize } from 'lucide-react';
 import { listSessions } from './services/terminalApi';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -160,14 +160,20 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground font-sans overflow-hidden">
-      {/* Minimal Header */}
-      <header className="glass border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+    <div className="h-screen bg-gradient-to-br from-tech-bg-darker via-tech-bg-dark to-tech-secondary text-foreground font-sans overflow-hidden">
+      {/* Enhanced Futuristic Header */}
+      <header className="glass border-b border-border/50 px-4 py-3 relative overflow-hidden">
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse"></div>
+        
+        <div className="flex items-center justify-between max-w-7xl mx-auto relative z-10">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'status-connected' : 'status-disconnected'}`}></div>
-              <h1 className="text-lg font-semibold tracking-tight">
+              <div className={`w-3 h-3 rounded-full relative ${isConnected ? 'status-connected glow-success' : 'status-disconnected'}`}>
+                {/* Pulsing effect */}
+                <div className={`absolute inset-0 rounded-full animate-ping ${isConnected ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></div>
+              </div>
+              <h1 className="text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 KT Terminal
               </h1>
             </div>
@@ -186,122 +192,165 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-2">
-            {/* Control panel button group */}
-            {isConnected && (
-              <div className="flex items-center space-x-2 border-r border-border pr-3 mr-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="h-8 w-8 p-0"
-                  title="Refresh connection"
-                >
-                  <RefreshCw size={14} />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClear}
-                  className="h-8 w-8 p-0"
-                  title="Clear terminal"
-                >
-                  <Square size={14} />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResizeTerminal}
-                  className="h-8 w-8 p-0"
-                  title="Resize terminal"
-                >
-                  <Monitor size={14} />
-                </Button>
-              </div>
-            )}
-            
-            {/* Session management buttons */}
-            {isConnected && (
-              <div className="flex items-center space-x-2 border-r border-border pr-3 mr-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleListSessions}
-                  className="h-8 w-8 p-0"
-                  title="List sessions"
-                >
-                  <List size={14} />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTerminateSession}
-                  className="h-8 w-8 p-0"
-                  title="Terminate session"
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-            )}
-            
-            {/* Main action buttons */}
-            <div className="flex items-center space-x-2">
+            {/* Enhanced Main action buttons - 主要操作放在最左侧 */}
+            <div className="flex items-center space-x-2 border-r border-border/30 pr-3 mr-3 relative">
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-lg blur-sm"></div>
+              
               <Button
-                onClick={handleConnect}
-                variant={isConnected ? "destructive" : "default"}
-                size="sm"
-                className="h-8 w-8 p-0"
-                title={isConnected ? 'Disconnect' : 'Connect'}
-              >
-                <Power size={14} />
-              </Button>
+              onClick={handleConnect}
+              variant={isConnected ? "destructive" : "default"}
+              size="sm"
+              className={`h-9 w-9 p-0 relative bg-background/80 hover:scale-105 transition-all duration-200 shadow-md ${
+                isConnected ? 'bg-green-500/20 hover:bg-green-500/30' : 'bg-blue-500/20 hover:bg-blue-500/30'
+              }`}
+              title={isConnected ? 'Disconnect' : 'Connect'}
+            >
+              <Power size={16} className={isConnected ? "text-green-500" : "text-blue-500"} />
+            </Button>
               
               <Button
                 onClick={toggleFullscreen}
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0 relative bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
                 title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
               >
-                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isFullscreen ? <Minimize2 size={16} className="text-primary" /> : <Maximize2 size={16} className="text-primary" />}
               </Button>
+            </div>
+            
+            {/* Enhanced Session management buttons - 会话管理放在中间，保持位置稳定 */}
+            <div className="flex items-center space-x-2 border-r border-border/30 pr-3 mr-3 relative">
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-transparent rounded-lg blur-sm"></div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleListSessions}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "List sessions" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <List size={16} className={isConnected ? "text-purple-500" : "text-muted-foreground"} />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTerminateSession}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "Terminate session" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <X size={16} className={isConnected ? "text-red-500" : "text-muted-foreground"} />
+              </Button>
+            </div>
+            
+            {/* Enhanced Control buttons - 控制按钮放在右侧，保持位置稳定 */}
+            <div className="flex items-center space-x-2 border-r border-border/30 pr-3 mr-3 relative">
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-lg blur-sm"></div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "Refresh terminal" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <RefreshCw size={16} className={isConnected ? "text-orange-500" : "text-muted-foreground"} />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClear}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-gray-500/20 hover:bg-gray-500/30 border-gray-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "Clear terminal" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <Trash2 size={16} className={isConnected ? "text-gray-500" : "text-muted-foreground"} />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResizeTerminal}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-teal-500/20 hover:bg-teal-500/30 border-teal-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "Resize terminal" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <Maximize size={16} className={isConnected ? "text-teal-500" : "text-muted-foreground"} />
+              </Button>
+            </div>
+            
+            {/* Settings button - 设置按钮放在最右侧 */}
+            <div className="flex items-center space-x-2 relative">
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 rounded-lg blur-sm"></div>
               
               <Button
                 onClick={handleSettings}
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0 relative bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
                 title="Settings"
               >
-                <Settings size={14} />
+                <Settings size={16} className="text-primary" />
               </Button>
             </div>
 
             {showSettings && (
-              <div className="absolute top-12 right-4 bg-card border border-border rounded-lg shadow-lg p-4 w-64 z-50">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-md font-semibold">Terminal Settings</h3>
+              <div className="absolute top-12 right-4 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl p-4 w-72 z-50 glass">
+                {/* Header with gradient */}
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
+                  <h3 className="text-md font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Terminal Settings</h3>
                   <Button 
                     onClick={handleSettings}
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0"
+                    className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive transition-colors"
                   >
                     ×
                   </Button>
                 </div>
                 
-                {/* Version info */}
-                <div className="mb-3 p-2 bg-muted rounded border border-border">
-                  <div className="text-xs text-primary font-mono">Version: v1.0.0</div>
-                  <div className="text-xs text-muted-foreground mt-1">KT Terminal Platform</div>
+                {/* Enhanced Version info */}
+                <div className="mb-4 p-3 bg-gradient-to-br from-primary/10 to-accent/5 rounded-lg border border-primary/20 relative overflow-hidden">
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse"></div>
+                  <div className="relative z-10">
+                    <div className="text-xs text-primary font-mono font-semibold">Version: v1.0.0</div>
+                    <div className="text-xs text-muted-foreground mt-1">KT Terminal Platform</div>
+                  </div>
                 </div>
                 
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1">Font Size</label>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Size</label>
                     <input
                       type="number"
                       value={terminalSettings.fontSize}
@@ -309,41 +358,54 @@ function App() {
                         ...terminalSettings,
                         fontSize: parseInt(e.target.value) || 14
                       })}
-                      className="w-full px-2 py-1 bg-background border border-input rounded text-foreground focus:border-primary focus:outline-none"
+                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
                       min="8"
                       max="24"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1">Font Family</label>
+                  <div className="relative">
+                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Family</label>
                     <select
                       value={terminalSettings.fontFamily}
                       onChange={(e) => updateTerminalSettings({
                         ...terminalSettings,
                         fontFamily: e.target.value
                       })}
-                      className="w-full px-2 py-1 bg-background border border-input rounded text-foreground focus:border-primary focus:outline-none"
+                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
                     >
                       <option value="Consolas, 'Courier New', monospace">Consolas</option>
                       <option value="'Courier New', monospace">Courier New</option>
                       <option value="Monaco, 'Menlo', monospace">Monaco</option>
                     </select>
+                    {/* Custom dropdown arrow */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1">Theme</label>
+                  <div className="relative">
+                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Theme</label>
                     <select
                       value={terminalSettings.theme}
                       onChange={(e) => updateTerminalSettings({
                         ...terminalSettings,
                         theme: e.target.value
                       })}
-                      className="w-full px-2 py-1 bg-background border border-input rounded text-foreground focus:border-primary focus:outline-none"
+                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
                     >
                       <option value="dark">Dark</option>
                       <option value="light">Light</option>
+                      <option value="high-contrast">High Contrast</option>
                     </select>
+                    {/* Custom dropdown arrow */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>

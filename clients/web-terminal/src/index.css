@@ -65,11 +65,56 @@
   background: hsl(217.2 32.6% 25%);
 }
 
-/* Glass morphism effect */
+/* Enhanced glass morphism effect */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.08) 0%, 
+    rgba(255, 255, 255, 0.04) 50%, 
+    rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Futuristic glow effects */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(217 91% 60% / 0.3);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px hsl(142 76% 36% / 0.3);
+}
+
+.glow-danger {
+  box-shadow: 0 0 20px hsl(0 84% 60% / 0.3);
+}
+
+/* Animated gradient borders */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(45deg, 
+    hsl(217 91% 60%), 
+    hsl(142 76% 36%), 
+    hsl(217 91% 60%));
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: hsl(222 47% 11%);
+  border-radius: inherit;
+  z-index: -1;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Terminal focus styles */

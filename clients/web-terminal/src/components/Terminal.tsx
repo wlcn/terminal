@@ -47,7 +47,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     clear: () => {
       if (terminal.current) {
         terminal.current.clear();
-        terminal.current.write('$ ');
+        // 清屏后不自动添加提示符，避免重复的$符号
+        // 提示符会在用户输入时由终端自动显示
       }
     },
     isConnected: () => isConnected,
@@ -345,7 +346,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     
     // Display welcome message
     terminal.current.writeln('🚀 Web Terminal Ready');
-    terminal.current.writeln('Type "connect" to start a session');
+    terminal.current.writeln('Click the "Connect" button to start a session');
     terminal.current.write('$ ');
 
   }, []);
