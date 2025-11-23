@@ -148,7 +148,7 @@ function App() {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,204,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,204,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
       
       {/* Top navigation bar */}
-      <header className="bg-tech-bg-light/80 backdrop-blur-xl border-b border-tech-border/50 relative z-10">
+      <header className="bg-tech-bg-dark/90 backdrop-blur-xl border-b border-tech-border/50 relative z-10 shadow-lg">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -170,8 +170,6 @@ function App() {
                     KT Terminal
                   </h1>
                   <div className="flex items-center space-x-2 text-xs text-tech-primary/70">
-                    <span className="font-mono">v1.0.0</span>
-                    <span>•</span>
                     <span className={`font-mono ${isConnected ? 'text-tech-success' : 'text-tech-danger'}`}>
                       {isConnected ? 'CONNECTED' : 'DISCONNECTED'}
                     </span>
