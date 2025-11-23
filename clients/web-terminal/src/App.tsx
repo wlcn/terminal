@@ -201,12 +201,14 @@ function App() {
               onClick={handleConnect}
               variant={isConnected ? "destructive" : "default"}
               size="sm"
-              className={`h-9 w-9 p-0 relative bg-background/80 hover:scale-105 transition-all duration-200 shadow-md ${
-                isConnected ? 'bg-green-500/20 hover:bg-green-500/30' : 'bg-blue-500/20 hover:bg-blue-500/30'
+              className={`h-9 w-9 p-0 relative hover:scale-105 transition-all duration-200 shadow-md ${
+                isConnected 
+                  ? 'bg-green-500/30 hover:bg-green-500/40 border-green-500/40' 
+                  : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg animate-pulse'
               }`}
-              title={isConnected ? 'Disconnect' : 'Connect'}
+              title={isConnected ? 'Disconnect' : 'Connect to terminal'}
             >
-              <Power size={16} className={isConnected ? "text-green-500" : "text-blue-500"} />
+              <Power size={16} className={isConnected ? "text-white" : "text-white"} />
             </Button>
               
               <Button
@@ -533,25 +535,67 @@ function App() {
         </div>
       )}
 
-      {/* Main Content - Terminal Focus */}
-      <main className="flex-1 p-0 overflow-hidden">
-        <div className="h-full flex flex-col">
-          <Card className="flex-1 m-4 mb-0 border-border bg-card rounded-lg overflow-hidden">
-            <CardContent className="p-0 h-full">
-              <div className="h-full overflow-hidden">
-                <TerminalComponent 
-                  ref={terminalRef}
-                  className="h-full overflow-hidden" 
-                  onConnectionStatusChange={handleConnectionStatusChange}
-                />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Main Content - Terminal Focus with Enhanced Tech Design */}
+      <main className="flex-1 p-0 overflow-hidden relative">
+        {/* Animated Background Grid */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+        
+        {/* Subtle Glow Effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
+        
+        <div className="h-full flex flex-col relative z-10">
+          {/* Enhanced Terminal Container */}
+           <Card className="flex-1 m-4 mb-0 border-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl relative">
+             {/* Terminal Border Glow */}
+             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-sm opacity-50 pointer-events-none"></div>
+             
+             <CardContent className="p-0 h-full">
+               <div className="h-full overflow-hidden relative">
+                 {/* Terminal Content Glow */}
+                 <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+                 
+                 <TerminalComponent 
+                   ref={terminalRef}
+                   className="h-full overflow-hidden" 
+                   onConnectionStatusChange={handleConnectionStatusChange}
+                 />
+               </div>
+             </CardContent>
+           </Card>
           
-          {/* Status Bar */}
-          <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border bg-background">
-            <div className="flex items-center justify-between max-w-7xl mx-auto">
-              <span>KT Terminal v1.0 • Enterprise Web Terminal</span>
+          {/* Enhanced Status Bar */}
+          <div className="bg-gradient-to-r from-background/95 to-background/90 backdrop-blur-xl border-t border-primary/20 px-4 py-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1">
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+                </div>
+                {isConnected && (
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span>Performance: Optimal</span>
+                  </div>
+                )}
+                {isConnected && (
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                    <span>Session: {currentSessionInfo.shellType}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <a 
+                  href="https://github.com/wlcn/kt-terminal" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-primary transition-colors"
+                >
+                  GitHub
+                </a>
+                <span className="text-primary">•</span>
+                <span>by long.wang</span>
+              </div>
             </div>
           </div>
         </div>
