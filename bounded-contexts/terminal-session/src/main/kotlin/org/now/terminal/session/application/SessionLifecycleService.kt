@@ -259,6 +259,9 @@ class SessionLifecycleService(
         // 注册TerminalInputProcessed事件处理器（可选，用于统计）
         dynamicHandlerRegistry.registerHandler(TerminalInputProcessedEvent::class.java, terminalInputProcessedEventHandler)
         
+        // 添加短暂延迟，确保事件处理器已完全注册并准备就绪
+        kotlinx.coroutines.delay(50)
+        
         logger.info("会话事件处理器注册完成 - 会话ID: {}", sessionId)
     }
     

@@ -249,15 +249,123 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
 
       // 处理键盘输入
       terminal.current.onData((data) => {
-        // 发送键盘输入到后端
+        // 发送键盘输入到后端，由后端进程负责回显
         if (ws.current && ws.current.readyState === WebSocket.OPEN) {
           ws.current.send(data);
         }
         
-        // 智能本地回显：只回显普通字符，不处理特殊控制字符
-        // 这样可以避免重复显示，同时让用户看到自己的输入
-        if (data.length === 1 && data.charCodeAt(0) >= 32 && data.charCodeAt(0) <= 126) {
-          terminal.current?.write(data);
+        // 注意：移除了本地回显逻辑，避免双重回显导致的显示混乱
+        // 后端进程会负责将用户的输入回显到终端
+      });
+
+      // 处理特殊按键（如backspace、回车、方向键等）
+      terminal.current.onKey(({ key, domEvent }) => {
+        // 处理特殊按键，确保发送正确的控制字符
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+          const keyCode = domEvent.keyCode;
+          const ctrlKey = domEvent.ctrlKey;
+          const altKey = domEvent.altKey;
+          
+          // 处理特殊按键组合
+          if (ctrlKey || altKey) {
+            // 处理Ctrl/Alt组合键
+            let specialKey = '';
+            
+            if (ctrlKey && keyCode === 67) { // Ctrl+C
+              specialKey = '\x03'; // ETX (End of Text)
+            } else if (ctrlKey && keyCode === 68) { // Ctrl+D
+              specialKey = '\x04'; // EOT (End of Transmission)
+            } else if (ctrlKey && keyCode === 90) { // Ctrl+Z
+              specialKey = '\x1a'; // SUB (Substitute)
+            } else if (ctrlKey && keyCode === 65) { // Ctrl+A
+              specialKey = '\x01'; // SOH (Start of Heading)
+            } else if (ctrlKey && keyCode === 69) { // Ctrl+E
+              specialKey = '\x05'; // ENQ (Enquiry)
+            } else if (ctrlKey && keyCode === 76) { // Ctrl+L
+              specialKey = '\x0c'; // FF (Form Feed) - 清屏
+            }
+            
+            if (specialKey) {
+              ws.current.send(specialKey);
+              domEvent.preventDefault(); // 阻止默认行为
+              return;
+            }
+          }
+          
+          // 处理单个特殊按键
+          switch (keyCode) {
+            case 8: // Backspace
+              ws.current.send('\x7f'); // DEL (Delete)
+              domEvent.preventDefault();
+              break;
+            case 13: // Enter
+              ws.current.send('\r'); // CR (Carriage Return)
+              domEvent.preventDefault();
+              break;
+            case 9: // Tab
+              ws.current.send('\t'); // TAB
+              domEvent.preventDefault();
+              break;
+            case 27: // Escape
+              ws.current.send('\x1b'); // ESC
+              domEvent.preventDefault();
+              break;
+            case 37: // Left Arrow
+              ws.current.send('\x1b[D'); // ESC [ D
+              domEvent.preventDefault();
+              break;
+            case 38: // Up Arrow
+              ws.current.send('\x1b[A'); // ESC [ A
+              domEvent.preventDefault();
+              break;
+            case 39: // Right Arrow
+              ws.current.send('\x1b[C'); // ESC [ C
+              domEvent.preventDefault();
+              break;
+            case 40: // Down Arrow
+              ws.current.send('\x1b[B'); // ESC [ B
+              domEvent.preventDefault();
+              break;
+            case 46: // Delete
+              ws.current.send('\x1b[3~'); // ESC [ 3 ~
+              domEvent.preventDefault();
+              break;
+            case 36: // Home
+              ws.current.send('\x1b[H'); // ESC [ H
+              domEvent.preventDefault();
+              break;
+            case 35: // End
+              ws.current.send('\x1b[F'); // ESC [ F
+              domEvent.preventDefault();
+              break;
+            case 33: // Page Up
+              ws.current.send('\x1b[5~'); // ESC [ 5 ~
+              domEvent.preventDefault();
+              break;
+            case 34: // Page Down
+              ws.current.send('\x1b[6~'); // ESC [ 6 ~
+              domEvent.preventDefault();
+              break;
+            case 112: // F1
+              ws.current.send('\x1bOP'); // ESC O P
+              domEvent.preventDefault();
+              break;
+            case 113: // F2
+              ws.current.send('\x1bOQ'); // ESC O Q
+              domEvent.preventDefault();
+              break;
+            case 114: // F3
+              ws.current.send('\x1bOR'); // ESC O R
+              domEvent.preventDefault();
+              break;
+            case 115: // F4
+              ws.current.send('\x1bOS'); // ESC O S
+              domEvent.preventDefault();
+              break;
+            default:
+              // 普通字符由onData处理
+              break;
+          }
         }
       });
 
