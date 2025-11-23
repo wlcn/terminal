@@ -49,7 +49,7 @@ class TerminalSession(
         process = createProcess()
         status = SessionStatus.RUNNING
         
-        // 启动异步输出监听器
+        // 立即启动异步输出监听器，确保及时捕获初始输出
         startOutputListener()
         
         // 添加会话创建领域事件
@@ -168,23 +168,7 @@ class TerminalSession(
         ))
     }
     
-    /**
-     * 读取输出
-     * 注意：该方法仅用于同步读取输出，不发布领域事件
-     * 领域事件由异步输出监听器负责发布
-     */
-    fun readOutput(): String {
-        require(status == SessionStatus.RUNNING) { "Session must be in RUNNING state" }
-        
-        val output = process?.readOutput() ?: ""
-        outputBuffer.append(output)
-        
-        // 注意：不再发布领域事件，避免与异步监听器产生双重事件发布
-        // 领域事件由startOutputListener()中的异步监听器负责发布
-        
-        return output
-    }
-    
+      
     /**
      * 检查会话是否存活
      */

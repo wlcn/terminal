@@ -27,23 +27,11 @@ class SessionCreatedEventHandler(
             return
         }
         
-        // 启动输出监听协程
-        startOutputListener(session)
+        // 注意：输出监听已在TerminalSession.start()中启动，避免重复启动
+        logger.debug("会话已启动，输出监听协程已在TerminalSession中启动 - 会话ID: {}", event.sessionId)
     }
     
-    /**
-     * 启动输出监听协程
-     */
-    private fun startOutputListener(session: org.now.terminal.session.domain.entities.TerminalSession) {
-        coroutineScope.launch {
-            try {
-                logger.debug("启动输出监听协程 - 会话ID: {}", session.sessionId)
-                session.startOutputListener()
-            } catch (e: Exception) {
-                logger.error("输出监听协程异常 - 会话ID: {}, 错误: {}", session.sessionId, e.message, e)
-            }
-        }
-    }
+
     
     override fun canHandle(eventType: String): Boolean {
         return eventType == "SessionCreated"
