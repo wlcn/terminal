@@ -6,6 +6,14 @@ import { listSessions } from './services/terminalApi';
 function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [terminalSettings, setTerminalSettings] = useState({
+    fontSize: 14,
+    fontFamily: 'Consolas, "Courier New", monospace',
+    theme: 'dark',
+    autoConnect: false,
+    showLineNumbers: false
+  });
   const terminalRef = useRef<any>(null);
 
   const toggleFullscreen = () => {
@@ -80,15 +88,30 @@ function App() {
   };
 
   const handleResizeTerminal = () => {
-    if (terminalRef.current && terminalRef.current.resize) {
-      terminalRef.current.resize(120, 30);
+    const columns = prompt('Enter columns (width):', '120');
+    const rows = prompt('Enter rows (height):', '30');
+    
+    if (columns && rows && terminalRef.current && terminalRef.current.resize) {
+      const cols = parseInt(columns);
+      const rws = parseInt(rows);
+      
+      if (!isNaN(cols) && !isNaN(rws) && cols > 0 && rws > 0) {
+        terminalRef.current.resize(cols, rws);
+      } else {
+        alert('Please enter valid positive numbers for columns and rows.');
+      }
     }
   };
 
-  const handleSendCommand = () => {
-    const command = prompt('Enter command to send:');
-    if (command && terminalRef.current && terminalRef.current.send) {
-      terminalRef.current.send(command + '\n');
+  const handleSettings = () => {
+    setShowSettings(!showSettings);
+  };
+
+  const updateTerminalSettings = (newSettings: any) => {
+    setTerminalSettings(newSettings);
+    // Apply settings to terminal if connected
+    if (isConnected && terminalRef.current && terminalRef.current.updateSettings) {
+      terminalRef.current.updateSettings(newSettings);
     }
   };
 
@@ -127,18 +150,12 @@ function App() {
                     <Square size={18} />
                   </button>
                   
-                  <button
-                    onClick={handleSendCommand}
-                    className="p-2 text-green-400 hover:text-green-300 transition-colors hover:bg-green-500/20 rounded-lg"
-                    title="Send command"
-                  >
-                    <Play size={18} />
-                  </button>
+
                   
                   <button
                     onClick={handleResizeTerminal}
                     className="p-2 text-purple-400 hover:text-purple-300 transition-colors hover:bg-purple-500/20 rounded-lg"
-                    title="Resize terminal (120x30)"
+                    title="Resize terminal (custom size)"
                   >
                     <Monitor size={18} />
                   </button>
@@ -181,9 +198,103 @@ function App() {
                 {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
               </button>
               
-              <button className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" title="Settings">
+              <button 
+                onClick={handleSettings}
+                className="p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/10 rounded-lg" 
+                title="Settings"
+              >
                 <Settings size={20} />
               </button>
+
+              {showSettings && (
+                <div className="absolute top-12 right-4 bg-slate-800 border border-slate-600 rounded-lg shadow-lg p-4 w-80 z-50">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">Terminal Settings</h3>
+                    <button 
+                      onClick={handleSettings}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Font Size</label>
+                      <input
+                        type="number"
+                        value={terminalSettings.fontSize}
+                        onChange={(e) => updateTerminalSettings({
+                          ...terminalSettings,
+                          fontSize: parseInt(e.target.value) || 14
+                        })}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                        min="8"
+                        max="24"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Font Family</label>
+                      <select
+                        value={terminalSettings.fontFamily}
+                        onChange={(e) => updateTerminalSettings({
+                          ...terminalSettings,
+                          fontFamily: e.target.value
+                        })}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                      >
+                        <option value="Consolas, 'Courier New', monospace">Consolas</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="Monaco, 'Menlo', monospace">Monaco</option>
+                        <option value="'Fira Code', monospace">Fira Code</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Theme</label>
+                      <select
+                        value={terminalSettings.theme}
+                        onChange={(e) => updateTerminalSettings({
+                          ...terminalSettings,
+                          theme: e.target.value
+                        })}
+                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                      >
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                        <option value="solarized">Solarized</option>
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={terminalSettings.autoConnect}
+                        onChange={(e) => updateTerminalSettings({
+                          ...terminalSettings,
+                          autoConnect: e.target.checked
+                        })}
+                        className="mr-2"
+                      />
+                      <label className="text-sm text-gray-300">Auto connect on page load</label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={terminalSettings.showLineNumbers}
+                        onChange={(e) => updateTerminalSettings({
+                          ...terminalSettings,
+                          showLineNumbers: e.target.checked
+                        })}
+                        className="mr-2"
+                      />
+                      <label className="text-sm text-gray-300">Show line numbers</label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
