@@ -10,7 +10,7 @@ import java.time.Instant
  */
 data class TerminalInputProcessedEvent(
     override val eventHelper: EventHelper,
-    val sessionId: SessionId,
+    override val sessionId: SessionId,
     val input: String,
     val processedAt: Instant
 ) : Event

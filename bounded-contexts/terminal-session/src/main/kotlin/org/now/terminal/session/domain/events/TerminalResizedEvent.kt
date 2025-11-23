@@ -10,7 +10,7 @@ import java.time.Instant
  */
 data class TerminalResizedEvent(
     override val eventHelper: EventHelper,
-    val sessionId: SessionId,
+    override val sessionId: SessionId,
     val columns: Int,
     val rows: Int,
     val resizedAt: Instant

@@ -264,10 +264,10 @@ class SessionLifecycleService(
     private suspend fun registerSessionEventHandlers(sessionId: SessionId) {
         logger.info("注册会话事件处理器 - 会话ID: {}", sessionId)
         
-        // 为每个会话创建独立的事件处理器实例
-        val sessionOutputEventHandler = TerminalOutputEventHandler(terminalOutputPublisher)
-        val sessionInputProcessedEventHandler = TerminalInputProcessedEventHandler()
-        val sessionCreatedEventHandler = SessionCreatedEventHandler()
+        // 使用构造函数传入的事件处理器实例
+        val sessionOutputEventHandler = terminalOutputEventHandler
+        val sessionInputProcessedEventHandler = terminalInputProcessedEventHandler
+        val sessionCreatedEventHandler = sessionCreatedEventHandler
         
         // 注册终端输出事件处理器（基于session）
         dynamicHandlerRegistry.registerHandler(TerminalOutputEvent::class.java, sessionId.value, sessionOutputEventHandler)

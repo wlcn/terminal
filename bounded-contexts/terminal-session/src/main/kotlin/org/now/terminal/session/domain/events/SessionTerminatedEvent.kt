@@ -11,7 +11,7 @@ import java.time.Instant
  */
 data class SessionTerminatedEvent(
     override val eventHelper: EventHelper,
-    val sessionId: SessionId,
+    override val sessionId: SessionId,
     val reason: TerminationReason,
     val exitCode: Int?,
     val terminatedAt: Instant

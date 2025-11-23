@@ -10,7 +10,7 @@ import java.time.Instant
  */
 data class TerminalOutputEvent(
     override val eventHelper: EventHelper,
-    val sessionId: SessionId,
+    override val sessionId: SessionId,
     val output: String,
     val outputAt: Instant
 ) : Event

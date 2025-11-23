@@ -33,10 +33,10 @@ val terminalSessionModule: Module = module {
     single { ListActiveSessionsUseCase(get()) }
     single { CheckSessionActiveUseCase(get()) }
     
-    // 应用层 - 事件处理器
-    single { TerminalOutputEventHandler(get()) }
-    single { SessionCreatedEventHandler(get()) }
-    single { TerminalInputProcessedEventHandler(get()) }
+    // 应用层 - 事件处理器（工厂模式，每个session创建新实例）
+    factory { TerminalOutputEventHandler(get()) }
+    factory { SessionCreatedEventHandler(get()) }
+    factory { TerminalInputProcessedEventHandler(get()) }
     
     // 应用层 - 服务
     single<TerminalSessionService> { SessionLifecycleService(get(), get(), get(), get(), get(), get()) }

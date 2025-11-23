@@ -12,7 +12,7 @@ import java.time.Instant
  */
 data class SessionCreatedEvent(
     override val eventHelper: EventHelper,
-    val sessionId: SessionId,
+    override val sessionId: SessionId,
     val userId: UserId,
     val configuration: PtyConfiguration,
     val createdAt: Instant
