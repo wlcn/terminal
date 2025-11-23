@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
 import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, Terminal, List, Trash2, Play, Pause } from 'lucide-react';
+import { listSessions } from './services/terminalApi';
 
 function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);

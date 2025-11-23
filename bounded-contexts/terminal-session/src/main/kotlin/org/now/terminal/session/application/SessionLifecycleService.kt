@@ -92,13 +92,14 @@ class SessionLifecycleService(
      * 处理终端输入
      */
     override suspend fun handleInput(sessionId: SessionId, input: String) {
-        logger.info("开始处理用户输入 - 会话ID: {}, 输入长度: {}", sessionId, input.length)
+        logger.info("📥 开始处理用户输入 - 会话ID: {}, 输入长度: {}, 输入内容: '{}'", 
+            sessionId, input.length, input.replace("\n", "\\n").replace("\r", "\\r"))
         
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
         
         if (!session.canReceiveInput()) {
-            logger.warn("会话无法处理输入 - 会话ID: {}, 当前状态: {}", sessionId, session.getStatus())
+            logger.warn("⚠️ 会话无法处理输入 - 会话ID: {}, 当前状态: {}", sessionId, session.getStatus())
             throw IllegalStateException("Session cannot handle input: $sessionId")
         }
         
@@ -110,7 +111,7 @@ class SessionLifecycleService(
             eventBus.publish(event)
         }
         
-        logger.info("用户输入处理完成 - 会话ID: {}, 输入长度: {}", sessionId, input.length)
+        logger.info("✅ 用户输入处理完成 - 会话ID: {}, 输入长度: {}", sessionId, input.length)
     }
     
     /**
@@ -141,8 +142,15 @@ class SessionLifecycleService(
      * 读取会话输出
      */
     override suspend fun readOutput(sessionId: SessionId): String {
+        logger.info("📤 开始读取终端输出 - 会话ID: {}", sessionId)
+        
         val session = sessionRepository.findById(sessionId)
             ?: throw IllegalArgumentException("Session not found: $sessionId")
+        
+        if (!session.hasOutput()) {
+            logger.debug("📭 会话暂无输出 - 会话ID: {}", sessionId)
+            return ""
+        }
         
         val output = session.readOutput()
         sessionRepository.save(session)
@@ -152,6 +160,8 @@ class SessionLifecycleService(
             eventBus.publish(event)
         }
         
+        logger.info("✅ 终端输出读取完成 - 会话ID: {}, 输出长度: {}, 输出内容: '{}'", 
+            sessionId, output.length, output.replace("\n", "\\n").replace("\r", "\\r"))
         return output
     }
     

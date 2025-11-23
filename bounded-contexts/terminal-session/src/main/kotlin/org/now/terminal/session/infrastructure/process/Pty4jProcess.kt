@@ -6,6 +6,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.consumeEach
+import org.now.terminal.infrastructure.logging.Logger
+import org.now.terminal.infrastructure.logging.LoggerFactory
 import org.now.terminal.session.domain.valueobjects.ShellType
 import org.now.terminal.session.domain.services.Process
 import org.now.terminal.session.domain.valueobjects.PtyConfiguration
@@ -27,6 +29,7 @@ class Pty4jProcess(
     private val customCoroutineContext: CoroutineContext = Dispatchers.IO
 ) : Process, CoroutineScope {
     
+    private val logger = LoggerFactory.getLogger<Pty4jProcess>()
     private val job = SupervisorJob()
     override val coroutineContext: CoroutineContext = customCoroutineContext + job
     
@@ -40,11 +43,20 @@ class Pty4jProcess(
     override fun writeInput(input: String) {
         if (::outputStream.isInitialized && isAlive()) {
             try {
+                logger.info("⌨️ 写入进程输入 - 会话ID: {}, 输入长度: {}, 输入内容: '{}'", 
+                    sessionId.value, input.length, input.replace("\n", "\\n").replace("\r", "\\r"))
+                
                 outputStream.write(input.toByteArray(StandardCharsets.UTF_8))
                 outputStream.flush()
+                
+                logger.info("✅ 输入写入完成 - 会话ID: {}", sessionId.value)
             } catch (e: Exception) {
+                logger.error("❌ 输入写入失败 - 会话ID: {}, 错误: {}", sessionId.value, e.message)
                 throw RuntimeException("Failed to write input to process", e)
             }
+        } else {
+            logger.warn("⚠️ 无法写入输入 - 会话ID: {}, 输出流初始化: {}, 进程存活: {}", 
+                sessionId.value, ::outputStream.isInitialized, isAlive())
         }
     }
     
