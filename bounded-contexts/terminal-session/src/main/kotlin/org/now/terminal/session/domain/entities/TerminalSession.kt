@@ -67,6 +67,7 @@ class TerminalSession(
     
     /**
      * 启动输出监听协程
+     * 优化：使用Dispatchers.IO避免主线程阻塞，提升响应速度
      * 启动异步监听PTY进程的输出，当有输出时自动发布领域事件
      */
     fun startOutputListener() {
@@ -74,14 +75,14 @@ class TerminalSession(
         
         val currentProcess = process ?: throw IllegalStateException("No active process")
         
-        // 启动协程监听PTY进程的输出通道
-        GlobalScope.launch {
+        // 启动协程监听PTY进程的输出通道，使用IO调度器提升性能
+        GlobalScope.launch(Dispatchers.IO) {
             currentProcess.getOutputChannel().consumeEach { output ->
                 if (output.isNotEmpty()) {
                     // 添加到输出缓冲区
                     outputBuffer.append(output)
                     
-                    // 发布输出领域事件
+                    // 立即发布输出领域事件，减少延迟
                     domainEvents.add(TerminalOutputEvent(
                         eventHelper = EventHelper(
                             eventType = "TerminalOutput",

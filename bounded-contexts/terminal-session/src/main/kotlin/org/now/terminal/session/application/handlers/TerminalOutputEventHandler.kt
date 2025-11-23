@@ -17,12 +17,18 @@ class TerminalOutputEventHandler(
     private val logger = TerminalLogger.getLogger(TerminalOutputEventHandler::class.java)
 
     override suspend fun handle(event: TerminalOutputEvent) {
-        logger.info("处理终端输出事件 - 会话ID: {}, 输出长度: {}, 输出内容: '{}'", 
-            event.sessionId.value, event.output.length, event.output.replace("\n", "\\n").replace("\r", "\\r"))
+        // 优化：减少日志开销，仅在调试模式下记录详细信息
+        if (logger.isDebugEnabled) {
+            logger.debug("处理终端输出事件 - 会话ID: {}, 输出长度: {}", 
+                event.sessionId.value, event.output.length)
+        }
         
+        // 立即发布输出，减少延迟
         terminalOutputPublisher.publishOutput(event.sessionId, event.output)
         
-        logger.debug("终端输出事件处理完成 - 会话ID: {}", event.sessionId.value)
+        if (logger.isTraceEnabled) {
+            logger.trace("终端输出事件处理完成 - 会话ID: {}", event.sessionId.value)
+        }
     }
 
     override fun canHandle(eventType: String): Boolean {

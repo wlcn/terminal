@@ -104,6 +104,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         
         // WebSocket仅用于命令行输出，直接显示
         if (typeof event.data === 'string') {
+          // xterm.js 专门设计用于处理终端转义序列，不需要手动转义
+          // 直接写入数据，让xterm.js处理所有ANSI转义序列
           terminal.current?.write(event.data);
         }
       };
@@ -245,85 +247,74 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     return 'session-' + Math.random().toString(36).substr(2, 9);
   };
 
+  // 初始化终端 - 使用xterm.js官方最佳实践配置
   useEffect(() => {
-    if (!terminalRef.current) return;
+    if (!terminalRef.current || isInitialized.current) return;
 
-    // 使用setTimeout确保DOM完全渲染
-    const initTerminal = () => {
-      // 创建终端实例
-      terminal.current = new Terminal({
-        theme: {
-          background: '#0f172a',
-          foreground: '#f8fafc',
-          cursor: '#f8fafc',
-          selection: '#334155',
-        },
-        fontSize: 14,
-        fontFamily: '"Fira Code", "Cascadia Code", "Courier New", monospace',
-        cursorBlink: true,
-        allowTransparency: true,
-        // 关键配置：确保xterm.js根据操作系统正确处理回车符
-        convertEol: true, // 将\n转换为\r\n
-        windowsMode: true, // 启用Windows模式，正确处理回车符
-      });
+    console.log('🎯 Initializing xterm.js terminal with official best practices...');
+    
+    // 创建终端实例 - 使用最简洁的官方推荐配置
+    terminal.current = new Terminal({
+      // 基础配置
+      fontSize: 14,
+      fontFamily: 'Consolas, "Courier New", monospace',
+      theme: {
+        background: '#1e1e1e',
+        foreground: '#cccccc',
+        cursor: '#ffffff',
+        selection: '#3a3d41'
+      }
+      // 不添加任何特殊配置，让xterm.js按默认方式处理所有字符
+    });
 
-      // 创建插件
-      fitAddon.current = new FitAddon();
-      const webLinksAddon = new WebLinksAddon();
-      const webglAddon = new WebglAddon();
+    // 创建并安装插件
+    fitAddon.current = new FitAddon();
+    const webLinksAddon = new WebLinksAddon();
+    const webglAddon = new WebglAddon();
 
-      // 加载插件
-      terminal.current.loadAddon(fitAddon.current);
-      terminal.current.loadAddon(webLinksAddon);
-      terminal.current.loadAddon(webglAddon);
+    terminal.current.loadAddon(fitAddon.current);
+    terminal.current.loadAddon(webLinksAddon);
+    terminal.current.loadAddon(webglAddon);
 
-      // 打开终端
-      terminal.current.open(terminalRef.current);
+    // 挂载到DOM
+    terminal.current.open(terminalRef.current);
+
+    // 调整尺寸
+    setTimeout(() => {
+      fitAddon.current?.fit();
       
-      // 延迟执行fit，确保终端容器已完全渲染
-      setTimeout(() => {
-        fitAddon.current?.fit();
-        
-        // Add welcome message
-        terminal.current?.writeln('🚀 Welcome to Web Terminal');
-        terminal.current?.writeln('📡 Ready to connect - click "Connect" button to start');
-        terminal.current?.writeln('');
-        
-        isInitialized.current = true;
-      }, 100);
-
-      // 处理窗口大小变化
+      // 监听窗口大小变化
       const handleResize = () => {
         fitAddon.current?.fit();
       };
-
+      
       window.addEventListener('resize', handleResize);
-
-      // 处理所有键盘输入 - 简单桥接，不处理任何逻辑
-      terminal.current.onData((data) => {
-        // 添加本地回显，确保字符立即显示
-        terminal.current?.write(data);
-        
-        // 发送到后端 - 前端输入什么就是什么
-        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-          ws.current.send(data);
-        }
-      });
-
+      
+      // 清理函数
       return () => {
         window.removeEventListener('resize', handleResize);
-        if (ws.current) {
-          ws.current.close();
-        }
-        terminal.current?.dispose();
       };
-    };
+    }, 100);
 
-    const timer = setTimeout(initTerminal, 100);
+    // 监听键盘输入 - 使用最简单的处理方式
+    terminal.current.onData((data) => {
+      console.log('⌨️ Terminal input:', data);
+      
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        // 不进行任何本地回显，完全由后端处理所有输出
+        // 发送所有输入到后端，后端负责完整的命令处理和回显
+        ws.current.send(data);
+      }
+    });
+
+    isInitialized.current = true;
+    console.log('✅ Terminal initialized with official best practices');
     
-    return () => {
-      clearTimeout(timer);
-    };
+    // 显示欢迎信息
+    terminal.current.writeln('🚀 Web Terminal Ready');
+    terminal.current.writeln('Type "connect" to start a session');
+    terminal.current.write('$ ');
+
   }, []);
 
   return (

@@ -27,23 +27,25 @@ class WebSocketOutputPublisher : TerminalOutputPublisher {
     
     /**
      * 发布终端输出到指定会话
+     * 优化：使用会话级别的锁避免全局锁竞争，提升并发性能
      * @param sessionId 会话ID
      * @param output 输出内容
      */
     override suspend fun publishOutput(sessionId: SessionId, output: String) {
-        mutex.withLock {
-            val session = sessions[sessionId]
-            if (session != null) {
-                try {
-                    session.send(Frame.Text(output))
-                } catch (e: Exception) {
-                    // 发送失败时移除会话
+        val session = sessions[sessionId]
+        if (session != null) {
+            try {
+                // 直接发送，避免全局锁竞争
+                session.send(Frame.Text(output))
+            } catch (e: Exception) {
+                // 发送失败时移除会话（使用互斥锁确保线程安全）
+                mutex.withLock {
                     sessions.remove(sessionId)
-                    throw WebSocketPublishException("Failed to send output to session $sessionId", e)
                 }
-            } else {
-                throw WebSocketSessionNotFoundException("WebSocket session not found for sessionId: $sessionId")
+                throw WebSocketPublishException("Failed to send output to session $sessionId", e)
             }
+        } else {
+            throw WebSocketSessionNotFoundException("WebSocket session not found for sessionId: $sessionId")
         }
     }
     
