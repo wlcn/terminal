@@ -1,10 +1,10 @@
 package org.now.terminal.infrastructure.eventbus
 
-import org.slf4j.LoggerFactory
+import org.now.terminal.infrastructure.logging.TerminalLogger
 
 class EventHandlerDiscoveryService(private val eventBus: EventBus) {
     
-    private val logger = LoggerFactory.getLogger(EventHandlerDiscoveryService::class.java)
+    private val logger = TerminalLogger.getLogger(EventHandlerDiscoveryService::class.java)
     
     /**
      * 初始化事件处理器注册

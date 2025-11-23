@@ -94,6 +94,8 @@ class MonitoredEventBus(
     }
     
     override fun isRunning(): Boolean = delegate.isRunning()
+    
+    override fun getRegisteredHandlerCount(): Int = delegate.getRegisteredHandlerCount()
 }
 
 /**

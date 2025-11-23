@@ -7,14 +7,14 @@ import kotlinx.coroutines.runBlocking
 import org.now.terminal.shared.events.SystemHeartbeatEvent
 import org.now.terminal.shared.events.EventHandler
 
-class InMemoryEventBusTest : BehaviorSpec({
+class SimpleEventBusTest : BehaviorSpec({
     
-    given("一个内存事件总线") {
+    given("一个简单事件总线") {
         
         `when`("启动和停止事件总线") {
             then("事件总线应该正常启动和停止") {
                 runBlocking {
-                    val eventBus = InMemoryEventBus(bufferSize = 100)
+                    val eventBus = SimpleEventBus(bufferSize = 100)
                     
                     eventBus.isRunning() shouldBe false
                     
@@ -30,7 +30,7 @@ class InMemoryEventBusTest : BehaviorSpec({
         `when`("事件总线配置") {
             then("应该能够创建不同配置的事件总线") {
                 runBlocking {
-                    val customEventBus = InMemoryEventBus(bufferSize = 500)
+                    val customEventBus = SimpleEventBus(bufferSize = 500)
                     
                     customEventBus.start()
                     customEventBus.isRunning() shouldBe true
@@ -43,7 +43,7 @@ class InMemoryEventBusTest : BehaviorSpec({
         `when`("事件总线工厂") {
             then("应该能够通过工厂创建事件总线") {
                 runBlocking {
-                    val factoryBus = EventBusFactory.createInMemoryEventBus()
+                    val factoryBus = EventBusFactory.createDefault()
                     
                     factoryBus.start()
                     factoryBus.isRunning() shouldBe true
@@ -56,7 +56,7 @@ class InMemoryEventBusTest : BehaviorSpec({
         `when`("发布和订阅事件") {
             then("应该能够正确接收事件") {
                 runBlocking {
-                    val eventBus = InMemoryEventBus(bufferSize = 100)
+                    val eventBus = SimpleEventBus(bufferSize = 100)
                     eventBus.start()
                     
                     var receivedEvent: SystemHeartbeatEvent? = null

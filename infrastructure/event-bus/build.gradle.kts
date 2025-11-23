@@ -6,21 +6,16 @@ plugins {
 dependencies {
     // 项目内部依赖
     implementation(project(":shared-kernel"))
-    implementation(project(":infrastructure:configuration"))
     implementation(project(":infrastructure:logging"))
+    implementation(project(":infrastructure:configuration"))
     
     // Kotlin标准库
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
-    
-    // Kotlin序列化
     implementation(libs.kotlinx.serialization.json)
     
-    // 日志
-    implementation(libs.logback.classic)
-    
-    // Koin依赖注入
-    implementation(libs.koin.core)
+    // SLF4J API依赖（用于TerminalLogger返回的Logger类型）
+    implementation(libs.slf4j.api)
     
     // 测试依赖
     testImplementation(libs.kotest.runner.junit5)

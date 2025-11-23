@@ -10,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * 事件总线接口
+ * 简化的事件总线接口
+ * 提供动态注册事件处理器的能力，移除Ktor DI依赖
  */
 interface EventBus {
     suspend fun <T : Event> publish(event: T)
@@ -18,222 +19,200 @@ interface EventBus {
     suspend fun <T : Event> unsubscribe(eventType: Class<T>, handler: EventHandler<T>)
     fun start()
     fun stop()
-    
-    /**
-     * 检查事件总线是否正在运行
-     */
     fun isRunning(): Boolean
-    
-    /**
-     * 获取已注册的事件处理器数量
-     */
     fun getRegisteredHandlerCount(): Int
 }
 
 /**
- * 内存事件总线实现
+ * 轻量级内存事件总线实现
+ * 专注于动态注册能力，移除复杂的DI和批量注册功能
  */
-class InMemoryEventBus(
+class SimpleEventBus(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val bufferSize: Int = 1000,
-    private val config: EventBusProperties = EventBusProperties(),
-    private val deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
-    private val retryHandler: EventRetryHandler = EventRetryHandler(config),
-    private val eventHandlers: Set<EventHandler<*>> = emptySet()
+    private val bufferSize: Int = 1000
 ) : EventBus {
-    private val logger = TerminalLogger.getLogger(InMemoryEventBus::class.java)
+    private val logger = TerminalLogger.getLogger(SimpleEventBus::class.java)
     private val handlers = ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventHandler<*>>>()
-    private val eventChannel = Channel<Event>(bufferSize)
-    private var processingJob: Job? = null
+    private val eventChannels = ConcurrentHashMap<Class<*>, Channel<Event>>()
+    private val processingJobs = ConcurrentHashMap<Class<*>, Job>()
     
     override suspend fun <T : Event> publish(event: T) {
-        logger.debug("Publishing event: {} with id: {}", event.eventType, event.eventId)
-        eventChannel.send(event)
+        logger.debug("发布事件: {} (ID: {})", event.eventType, event.eventId)
+        
+        val eventChannel = eventChannels[event::class.java]
+        if (eventChannel != null && !eventChannel.isClosedForSend) {
+            eventChannel.send(event)
+        } else {
+            logger.warn("事件类型 {} 没有活跃的处理器，事件将被丢弃", event::class.java.simpleName)
+        }
     }
     
     override suspend fun <T : Event> subscribe(eventType: Class<T>, handler: EventHandler<T>) {
         handlers.getOrPut(eventType) { CopyOnWriteArrayList() }.add(handler as EventHandler<*>)
-        logger.debug("Subscribed handler for event type: {}", eventType.simpleName)
-    }
-    
-    /**
-     * 批量注册事件处理器
-     * 业务层可以直接调用此方法来注册所有事件处理器
-     */
-    suspend fun registerHandlers(vararg handlerPairs: Pair<Class<out Event>, EventHandler<*>>) {
-        handlerPairs.forEach { (eventClass, handler) ->
-            @Suppress("UNCHECKED_CAST")
-            subscribe(eventClass as Class<Event>, handler as EventHandler<Event>)
+        logger.debug("注册事件处理器: {} -> {}", eventType.simpleName, handler.javaClass.simpleName)
+        
+        // 如果事件总线已启动，为这个事件类型启动监听协程
+        if (processingJobs.isNotEmpty()) {
+            startProcessingForEventType(eventType)
         }
-        logger.info("✅ 批量注册了 ${handlerPairs.size} 个事件处理器")
     }
     
     override suspend fun <T : Event> unsubscribe(eventType: Class<T>, handler: EventHandler<T>) {
         handlers[eventType]?.remove(handler as EventHandler<*>)
-        logger.debug("Unsubscribed handler for event type: {}", eventType.simpleName)
+        logger.debug("取消注册事件处理器: {} -> {}", eventType.simpleName, handler.javaClass.simpleName)
+        
+        // 如果没有更多处理器，停止监听协程
+        if (handlers[eventType]?.isEmpty() == true) {
+            stopProcessingForEventType(eventType)
+        }
     }
     
     override fun start() {
-        if (processingJob?.isActive == true) {
-            logger.warn("Event bus is already running")
+        if (processingJobs.isNotEmpty()) {
+            logger.warn("事件总线已在运行")
             return
         }
         
-        // 自动注册所有事件处理器
-        if (eventHandlers.isNotEmpty()) {
-            runBlocking {
-                registerHandlers(*eventHandlers.map { handler ->
-                    Event::class.java to handler
-                }.toTypedArray())
-            }
+        // 为所有已注册的事件类型启动监听协程
+        handlers.keys.forEach { eventType ->
+            @Suppress("UNCHECKED_CAST")
+            startProcessingForEventType(eventType as Class<Event>)
         }
         
-        processingJob = CoroutineScope(dispatcher).launch {
-            eventChannel.consumeEach { event ->
-                try {
-                    handleEvent(event)
-                } catch (e: Exception) {
-                    logger.error("Error processing event: {}", event.eventId, e)
-                }
-            }
-        }
-        logger.info("In-memory event bus started with ${eventHandlers.size} event handlers")
+        logger.info("事件总线已启动，当前处理器数量: {}", getRegisteredHandlerCount())
     }
     
     override fun stop() {
-        processingJob?.cancel()
-        processingJob = null
-        eventChannel.close()
-        logger.info("In-memory event bus stopped")
+        // 停止所有监听协程
+        processingJobs.values.forEach { job ->
+            job.cancel()
+        }
+        processingJobs.clear()
+        
+        // 关闭所有事件通道
+        eventChannels.values.forEach { channel ->
+            channel.close()
+        }
+        eventChannels.clear()
+        
+        logger.info("事件总线已停止")
     }
     
-    override fun isRunning(): Boolean = processingJob?.isActive == true
+    override fun isRunning(): Boolean = processingJobs.isNotEmpty()
     
-    /**
-     * 获取死信队列（用于监控和管理）
-     */
-    fun getDeadLetterQueue(): DeadLetterQueue = deadLetterQueue
-    
-    /**
-     * 获取当前配置
-     */
-    fun getConfig(): EventBusProperties = config
-    
-    /**
-     * 获取活跃订阅者数量
-     */
-    fun getActiveSubscriptions(): Int {
+    override fun getRegisteredHandlerCount(): Int {
         return handlers.values.sumOf { it.size }
     }
     
-    private suspend fun handleEvent(event: Event) {
-        val eventHandlers = handlers[event::class.java] ?: return
-        
-        logger.debug("Processing event: {} with {} handlers", event.eventType, eventHandlers.size)
-        
-        // 首先调用默认的事件日志处理器
-        try {
-            val defaultLogger = EventLoggingHandler()
-            if (defaultLogger.canHandle(event.eventType)) {
-                defaultLogger.handle(event)
-            }
-        } catch (e: Exception) {
-            logger.warn("Default event logging handler failed: {}", e.message)
+    /**
+     * 获取活跃订阅数量
+     */
+    fun getActiveSubscriptions(): Int = getRegisteredHandlerCount()
+    
+    /**
+     * 获取事件总线状态
+     */
+    fun getStatus(): EventBusStatus {
+        return EventBusStatus(
+            isActive = isRunning(),
+            activeSubscriptions = getActiveSubscriptions(),
+            queueSize = 0 // Channel没有size属性，暂时返回0
+        )
+    }
+    
+    /**
+     * 为特定事件类型启动监听协程
+     */
+    private fun <T : Event> startProcessingForEventType(eventType: Class<T>) {
+        if (processingJobs.containsKey(eventType)) {
+            return // 已经启动
         }
         
-        eventHandlers.forEach { handler ->
-            if (handler.canHandle(event.eventType)) {
+        val eventChannel = Channel<Event>(bufferSize)
+        eventChannels[eventType] = eventChannel
+        
+        val job = CoroutineScope(dispatcher).launch {
+            eventChannel.consumeEach { event ->
                 try {
-                    @Suppress("UNCHECKED_CAST")
-                    val typedHandler = handler as EventHandler<Event>
-                    
-                    // 使用重试机制处理事件
-                    val success = retryHandler.retry(event, handler.javaClass.simpleName) { eventToProcess ->
-                        typedHandler.handle(eventToProcess)
-                    }
-                    
-                    if (!success && config.enableDeadLetterQueue) {
-                        // 重试失败，将事件添加到死信队列
-                        val error = EventHandlingException(
-                            eventType = event.eventType,
-                            handlerId = handler.javaClass.simpleName,
-                            message = "Event processing failed after ${config.maxRetries} retries"
-                        )
-                        deadLetterQueue.add(event, error, config.maxRetries)
-                    }
-                    
+                    handleEventForType(eventType, event)
                 } catch (e: Exception) {
-                    logger.error("Handler error for event: {}", event.eventId, e)
-                    
-                    if (config.enableDeadLetterQueue) {
-                        // 将事件添加到死信队列
-                        deadLetterQueue.add(event, e, 0)
-                    }
+                    logger.error("处理事件失败: {} (ID: {})", event.eventType, event.eventId, e)
                 }
             }
         }
+        
+        processingJobs[eventType] = job
+        logger.debug("为事件类型 {} 启动监听协程", eventType.simpleName)
+    }
+    
+    /**
+     * 停止特定事件类型的监听协程
+     */
+    private fun <T : Event> stopProcessingForEventType(eventType: Class<T>) {
+        val job = processingJobs.remove(eventType)
+        job?.cancel()
+        
+        val channel = eventChannels.remove(eventType)
+        channel?.close()
+        
+        logger.debug("为事件类型 {} 停止监听协程", eventType.simpleName)
+    }
+    
+    /**
+     * 处理特定事件类型的事件
+     */
+    private suspend fun <T : Event> handleEventForType(eventType: Class<T>, event: Event) {
+        val eventHandlers = handlers[eventType] ?: return
+        
+        logger.debug("处理事件: {}，处理器数量: {}", event.eventType, eventHandlers.size)
+        
+        // 直接处理所有已注册的处理器
+        eventHandlers.forEach { handler ->
+            try {
+                @Suppress("UNCHECKED_CAST")
+                (handler as EventHandler<Event>).handle(event)
+                logger.debug("事件处理成功: {} -> {}", event.eventType, handler.javaClass.simpleName)
+            } catch (e: Exception) {
+                logger.error("事件处理器失败: {} -> {}", event.eventType, handler.javaClass.simpleName, e)
+            }
+        }
     }
 }
 
 /**
- * 事件总线工厂
+ * 事件总线状态
+ */
+data class EventBusStatus(
+    val isActive: Boolean,
+    val activeSubscriptions: Int,
+    val queueSize: Int
+)
+
+/**
+ * 简化的事件总线工厂
  */
 object EventBusFactory {
     /**
-     * 创建内存事件总线
+     * 创建默认事件总线
      */
-    fun createInMemoryEventBus(
-        config: EventBusProperties = EventBusProperties(),
-        deadLetterQueue: DeadLetterQueue = DeadLetterQueue(config.deadLetterQueueCapacity),
-        eventHandlers: Set<EventHandler<*>> = emptySet()
-    ): EventBus {
-        return InMemoryEventBus(
-            config = config,
-            deadLetterQueue = deadLetterQueue,
-            retryHandler = EventRetryHandler(config),
-            eventHandlers = eventHandlers
-        )
-    }
+    fun createDefault(): EventBus = SimpleEventBus()
     
     /**
-     * 创建带监控的事件总线
+     * 创建带自定义配置的事件总线
      */
-    fun createMonitoredEventBus(
-        delegate: EventBus = createInMemoryEventBus(),
-        metrics: EventBusMetrics = EventBusMetrics()
-    ): EventBus {
-        return MonitoredEventBus(delegate, metrics)
-    }
+    fun createWithConfig(
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        bufferSize: Int = 1000
+    ): EventBus = SimpleEventBus(dispatcher, bufferSize)
     
-
-}
-
-/**
- * 默认事件日志处理器
- * 用于记录所有事件的接收和处理情况，提供事件总线的运行监控
- */
-class EventLoggingHandler : EventHandler<Event> {
-    private val logger = TerminalLogger.getLogger(EventLoggingHandler::class.java)
+    /**
+     * 创建内存事件总线（兼容旧接口）
+     */
+    @Deprecated("使用createDefault()替代", ReplaceWith("createDefault()"))
+    fun createInMemoryEventBus(): EventBus = createDefault()
     
-    override suspend fun handle(event: Event) {
-        logger.info("📢 事件接收成功 - 类型: {}, ID: {}, 时间: {}, 聚合根: {}/{}",
-            event.eventType,
-            event.eventId.value,
-            event.occurredAt,
-            event.aggregateType ?: "N/A",
-            event.aggregateId ?: "N/A"
-        )
-        
-        // 记录事件的详细信息（调试级别）
-        logger.debug("事件详细信息 - 类型: {}, 版本: {}, 完整数据: {}",
-            event.eventType,
-            event.version,
-            event
-        )
-    }
-    
-    override fun canHandle(eventType: String): Boolean {
-        // 默认日志处理器处理所有类型的事件
-        return true
-    }
+    /**
+     * 创建带监控的事件总线（简化版本）
+     */
+    fun createMonitoredEventBus(): EventBus = SimpleEventBus()
 }

@@ -19,7 +19,7 @@ class EventBusComprehensiveTest : BehaviorSpec({
         
         `when`("发布和订阅事件") {
             then("应该能够正确接收事件") {
-                val eventBus = InMemoryEventBus(bufferSize = 100)
+                val eventBus = SimpleEventBus(bufferSize = 100)
                 eventBus.start()
                 
                 val receivedEvent = AtomicReference<TestEvent?>()
@@ -59,7 +59,7 @@ class EventBusComprehensiveTest : BehaviorSpec({
         
         `when`("处理多个订阅者") {
             then("应该能够调用所有订阅者") {
-                val eventBus = InMemoryEventBus(bufferSize = 100)
+                val eventBus = SimpleEventBus(bufferSize = 100)
                 eventBus.start()
                 
                 val handler1Count = AtomicInteger(0)
@@ -112,7 +112,7 @@ class EventBusComprehensiveTest : BehaviorSpec({
         
         `when`("取消订阅事件") {
             then("应该能够正确取消订阅") {
-                val eventBus = InMemoryEventBus(bufferSize = 100)
+                val eventBus = SimpleEventBus(bufferSize = 100)
                 eventBus.start()
                 
                 val handlerCount = AtomicInteger(0)
