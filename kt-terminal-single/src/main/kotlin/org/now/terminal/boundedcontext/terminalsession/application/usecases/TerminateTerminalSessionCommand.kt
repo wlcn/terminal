@@ -1,4 +1,4 @@
-package org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos
+package org.now.terminal.boundedcontext.terminalsession.application.usecases
 
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
 

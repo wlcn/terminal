@@ -26,7 +26,7 @@ class TerminalSessionManagementUseCase(
         val defaultConfiguration = SessionConfiguration(
             shellType = ShellType.BASH,
             workingDirectory = command.workingDirectory ?: System.getProperty("user.home"),
-            terminalSize = TerminalSize(rows = 24, columns = 80),
+            terminalSize = TerminalSize.DEFAULT,
             environmentVariables = emptyMap()
         )
         
