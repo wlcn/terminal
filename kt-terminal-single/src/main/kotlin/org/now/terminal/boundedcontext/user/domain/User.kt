@@ -1,5 +1,7 @@
 package org.now.terminal.boundedcontext.user.domain
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import org.now.terminal.boundedcontext.user.domain.valueobjects.Email
 import org.now.terminal.boundedcontext.user.domain.valueobjects.PhoneNumber
 import org.now.terminal.boundedcontext.user.domain.valueobjects.SessionLimit
@@ -10,6 +12,7 @@ import java.time.Instant
 /**
  * User Aggregate Root
  */
+@Serializable
 data class User(
     val id: UserId,
     val username: String,
@@ -21,9 +24,9 @@ data class User(
     val isActive: Boolean = true, // Whether activated
     val isLocked: Boolean = false, // Whether locked
     val loginCount: Int = 0, // Login count
-    val lastLoginTime: Instant? = null, // Last login time
-    val createdAt: Instant = Instant.now(), // Creation time
-    val updatedAt: Instant = Instant.now() // Update time
+    @Contextual val lastLoginTime: Instant? = null, // Last login time
+    @Contextual val createdAt: Instant = Instant.now(), // Creation time
+    @Contextual val updatedAt: Instant = Instant.now() // Update time
 ) {
     
     companion object {

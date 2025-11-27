@@ -1,10 +1,12 @@
 package org.now.terminal.boundedcontext.user.domain.valueobjects
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * User ID Value Object - ID generation with prefix marker
  */
+@Serializable
 @JvmInline
 value class UserId(val value: String) {
     

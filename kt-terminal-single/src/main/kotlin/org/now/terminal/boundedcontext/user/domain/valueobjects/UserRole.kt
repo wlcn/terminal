@@ -1,8 +1,11 @@
 package org.now.terminal.boundedcontext.user.domain.valueobjects
 
+import kotlinx.serialization.Serializable
+
 /**
  * User Role Enumeration
  */
+@Serializable
 enum class UserRole(val allowedShells: Set<String>) {
     ADMIN(setOf("bash", "cmd", "powershell", "zsh")),
     DEVELOPER(setOf("bash", "cmd", "powershell")),

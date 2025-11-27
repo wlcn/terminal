@@ -1,10 +1,12 @@
 package org.now.terminal.boundedcontext.user.domain.valueobjects
 
+import kotlinx.serialization.Serializable
 import org.now.terminal.shared.kernel.utils.ValidationUtils
 
 /**
  * Phone Number Value Object
  */
+@Serializable
 data class PhoneNumber(val value: String) {
     
     companion object {

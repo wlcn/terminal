@@ -1,10 +1,12 @@
 package org.now.terminal.boundedcontext.user.domain.valueobjects
 
+import kotlinx.serialization.Serializable
 import org.now.terminal.shared.kernel.utils.ValidationUtils
 
 /**
  * Email Value Object
  */
+@Serializable
 @JvmInline
 value class Email private constructor(val value: String) {
     

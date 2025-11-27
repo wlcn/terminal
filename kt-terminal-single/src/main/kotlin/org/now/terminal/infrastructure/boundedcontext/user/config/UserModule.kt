@@ -76,6 +76,12 @@ fun Application.configureUserModule() {
  */
 fun Routing.configureUserRoutes(userController: UserController) {
     route("/api/users") {
+        // Get all users
+        get {
+            val users = userController.getUsers()
+            call.respond(HttpStatusCode.OK, users)
+        }
+
         // Create user
         post {
             val params = call.request.queryParameters
@@ -89,7 +95,6 @@ fun Routing.configureUserRoutes(userController: UserController) {
             )
             call.respond(HttpStatusCode.Created, result)
         }
-
 
         // Search users
         get("/search") {

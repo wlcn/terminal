@@ -1,8 +1,11 @@
 package org.now.terminal.boundedcontext.user.domain.valueobjects
 
+import kotlinx.serialization.Serializable
+
 /**
  * Session Limit Policy Value Object - Contains only user-related business restrictions
  */
+@Serializable
 data class SessionLimit(
     val maxConcurrentSessions: Int,
     val maxSessionDuration: Long, // milliseconds
