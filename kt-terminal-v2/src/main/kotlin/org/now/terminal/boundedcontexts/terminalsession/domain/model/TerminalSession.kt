@@ -1,9 +1,12 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.model
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
+@Serializable
 class TerminalSession(
-    val id: UUID,
+    @Contextual val id: UUID,
     val userId: String,
     val title: String?,
     val workingDirectory: String,
@@ -14,12 +17,14 @@ class TerminalSession(
     var updatedAt: Long = System.currentTimeMillis()
 )
 
+@Serializable
 enum class TerminalSessionStatus {
     ACTIVE,
     INACTIVE,
     TERMINATED
 }
 
+@Serializable
 class TerminalSize(
     val columns: Int,
     val rows: Int

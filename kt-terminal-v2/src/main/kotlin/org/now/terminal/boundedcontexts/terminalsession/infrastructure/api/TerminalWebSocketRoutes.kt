@@ -48,7 +48,10 @@ fun Application.configureTerminalWebSocketRoutes() {
                 for (frame in incoming) {
                     if (frame is Frame.Text) {
                         val text = frame.readText()
-                        terminalProcessService.writeToProcess(sessionId, text)
+                        // Run write operation in coroutine to avoid blocking
+                        launch(Dispatchers.IO) {
+                            terminalProcessService.writeToProcess(sessionId, text)
+                        }
                     }
                 }
             } catch (e: ClosedReceiveChannelException) {
