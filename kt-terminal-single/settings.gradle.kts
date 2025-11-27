@@ -1,4 +1,4 @@
-rootProject.name = "terminal"
+rootProject.name = "kt-terminal-single"
 
 dependencyResolutionManagement {
     repositories {
