@@ -117,25 +117,51 @@ class RealTimeTerminalWebSocketHandler(
     }
     
     /**
-     * Monitor terminal process output and send to channel
+     * Monitor terminal process output and send to channel using async channels
      */
     private suspend fun monitorTerminalOutput(process: TerminalProcess, outputChannel: Channel<String>) {
         try {
-            while (process.isAlive && outputChannel.isClosedForSend.not()) {
-                // Read output from the process
-                val output = process.readOutput()
-                if (output.isNotBlank()) {
-                    outputChannel.send(output)
-                }
+            // Cast to Pty4jTerminalProcess to access async channels
+            val ptyProcess = process as? org.now.terminal.infrastructure.boundedcontext.terminalsession.process.Pty4jTerminalProcess
+            
+            if (ptyProcess != null) {
+                // Use async channels for real-time streaming
+                val processOutputChannel = ptyProcess.getOutputChannel()
+                val processErrorChannel = ptyProcess.getErrorChannel()
                 
-                // Read error output from the process
-                val errorOutput = process.readError()
-                if (errorOutput.isNotBlank()) {
-                    outputChannel.send(errorOutput)
+                // Start receiving from both channels concurrently
+                select {
+                    processOutputChannel.onReceive { output ->
+                        if (output.isNotBlank() && outputChannel.isClosedForSend.not()) {
+                            outputChannel.send(output)
+                            logger.debug("📤 Sent async output to WebSocket: {}", output.take(50))
+                        }
+                    }
+                    processErrorChannel.onReceive { error ->
+                        if (error.isNotBlank() && outputChannel.isClosedForSend.not()) {
+                            outputChannel.send(error)
+                            logger.debug("📤 Sent async error to WebSocket: {}", error.take(50))
+                        }
+                    }
                 }
-                
-                // Small delay to prevent busy waiting
-                delay(10)
+            } else {
+                // Fallback to polling for other process implementations
+                while (process.isAlive && outputChannel.isClosedForSend.not()) {
+                    // Read output from the process
+                    val output = process.readOutput()
+                    if (output.isNotBlank()) {
+                        outputChannel.send(output)
+                    }
+                    
+                    // Read error output from the process
+                    val errorOutput = process.readError()
+                    if (errorOutput.isNotBlank()) {
+                        outputChannel.send(errorOutput)
+                    }
+                    
+                    // Small delay to prevent busy waiting
+                    delay(10)
+                }
             }
         } catch (e: Exception) {
             logger.error("❌ Error monitoring terminal output: {}", e.message)
@@ -148,10 +174,8 @@ class RealTimeTerminalWebSocketHandler(
     private suspend fun sendTerminalOutput(outputChannel: Channel<String>, webSocketSession: DefaultWebSocketSession) {
         try {
             for (output in outputChannel) {
-                if (webSocketSession.outgoing.isClosedForSend.not()) {
-                    webSocketSession.send(Frame.Text(output))
-                    logger.debug("📤 Sent real-time output to WebSocket: {}", output.take(50))
-                }
+                webSocketSession.send(Frame.Text(output))
+                logger.debug("📤 Sent real-time output to WebSocket: {}", output.take(50))
             }
         } catch (e: Exception) {
             logger.error("❌ Error sending terminal output: {}", e.message)

@@ -3,6 +3,8 @@ package org.now.terminal.infrastructure.boundedcontext.terminalsession.process
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
 import com.pty4j.WinSize
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
 import org.now.terminal.boundedcontext.terminalsession.infrastructure.TerminalProcess
@@ -11,7 +13,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.concurrent.thread
+import kotlinx.coroutines.channels.onClosed
 
 /**
  * Real-time terminal process implementation using Pty4j
@@ -27,9 +29,15 @@ class Pty4jTerminalProcess(
     private val logger = LoggerFactory.getLogger(Pty4jTerminalProcess::class.java)
     
     private var ptyProcess: PtyProcess? = null
-    private var outputThread: Thread? = null
-    private var errorThread: Thread? = null
     
+    // Coroutine scope for async operations
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
+    // Channels for async output streaming
+    private val outputChannel = Channel<String>(Channel.UNLIMITED)
+    private val errorChannel = Channel<String>(Channel.UNLIMITED)
+    
+    // Buffers for immediate read operations
     private val outputBuffer = ConcurrentLinkedQueue<String>()
     private val errorBuffer = ConcurrentLinkedQueue<String>()
     
@@ -106,6 +114,16 @@ class Pty4jTerminalProcess(
         }
     }
     
+    /**
+     * Get the output channel for async streaming
+     */
+    fun getOutputChannel(): Channel<String> = outputChannel
+    
+    /**
+     * Get the error channel for async streaming
+     */
+    fun getErrorChannel(): Channel<String> = errorChannel
+    
     override fun resizeTerminal(rows: Int, cols: Int) {
         try {
             ptyProcess?.winSize = WinSize(cols, rows)
@@ -117,8 +135,14 @@ class Pty4jTerminalProcess(
     
     override fun terminate() {
         try {
-            outputThread?.interrupt()
-            errorThread?.interrupt()
+            // Cancel coroutines
+            coroutineScope.cancel("Terminal process terminated")
+            
+            // Close channels
+            outputChannel.close()
+            errorChannel.close()
+            
+            // Terminate the process
             ptyProcess?.destroy()
             logger.info("🛑 Terminated terminal process")
         } catch (e: Exception) {
@@ -131,23 +155,34 @@ class Pty4jTerminalProcess(
     }
     
     private fun startOutputMonitoring() {
-        outputThread = thread(name = "TerminalOutput-${shellType.name}") {
+        coroutineScope.launch {
             try {
-                val inputStream: InputStream = ptyProcess?.inputStream ?: return@thread
+                val inputStream: InputStream = ptyProcess?.inputStream ?: return@launch
                 val buffer = ByteArray(1024)
                 
-                while (isAlive && !Thread.currentThread().isInterrupted) {
-                    val bytesRead = inputStream.read(buffer)
+                while (isAlive && isActive) {
+                    val bytesRead = withContext(Dispatchers.IO) {
+                        inputStream.read(buffer)
+                    }
                     if (bytesRead > 0) {
                         val output = String(buffer, 0, bytesRead, StandardCharsets.UTF_8)
+                        
+                        // Send to async channel for real-time streaming
+                        outputChannel.trySend(output).onClosed {
+                            logger.info("Can not send: the outputChannel is closed")
+                        }
+                        
+                        // Also buffer for immediate read operations
                         synchronized(outputBuffer) {
                             outputBuffer.add(output)
                         }
                         logger.debug("📥 Received output from terminal: {}", output.take(50))
                     }
                 }
+            } catch (e: CancellationException) {
+                // Normal cancellation, ignore
             } catch (e: Exception) {
-                if (!Thread.currentThread().isInterrupted) {
+                if (isActive) {
                     logger.error("❌ Error monitoring terminal output: {}", e.message)
                 }
             }
@@ -155,23 +190,34 @@ class Pty4jTerminalProcess(
     }
     
     private fun startErrorMonitoring() {
-        errorThread = thread(name = "TerminalError-${shellType.name}") {
+        coroutineScope.launch {
             try {
-                val errorStream: InputStream = ptyProcess?.errorStream ?: return@thread
+                val errorStream: InputStream = ptyProcess?.errorStream ?: return@launch
                 val buffer = ByteArray(1024)
                 
-                while (isAlive && !Thread.currentThread().isInterrupted) {
-                    val bytesRead = errorStream.read(buffer)
+                while (isAlive && isActive) {
+                    val bytesRead = withContext(Dispatchers.IO) {
+                        errorStream.read(buffer)
+                    }
                     if (bytesRead > 0) {
                         val error = String(buffer, 0, bytesRead, StandardCharsets.UTF_8)
+                        
+
+                        errorChannel.trySend(error).onClosed {
+                            logger.info("Can not send: the channel is closed")
+                        }
+                        
+                        // Also buffer for immediate read operations
                         synchronized(errorBuffer) {
                             errorBuffer.add(error)
                         }
                         logger.debug("📥 Received error from terminal: {}", error.take(50))
                     }
                 }
+            } catch (e: CancellationException) {
+                // Normal cancellation, ignore
             } catch (e: Exception) {
-                if (!Thread.currentThread().isInterrupted) {
+                if (isActive) {
                     logger.error("❌ Error monitoring terminal error: {}", e.message)
                 }
             }
