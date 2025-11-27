@@ -3,6 +3,7 @@ package org.now.terminal.boundedcontext.user.application.usecase
 import org.now.terminal.boundedcontext.user.domain.User
 import org.now.terminal.boundedcontext.user.domain.UserRepository
 import org.now.terminal.boundedcontext.user.domain.valueobjects.*
+import org.now.terminal.shared.valueobjects.UserId
 
 /**
  * User Management Use Case - Handles user creation, update, and deletion operations

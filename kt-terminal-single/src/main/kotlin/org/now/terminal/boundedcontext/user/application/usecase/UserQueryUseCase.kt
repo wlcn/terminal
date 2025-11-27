@@ -3,6 +3,7 @@ package org.now.terminal.boundedcontext.user.application.usecase
 import org.now.terminal.boundedcontext.user.domain.User
 import org.now.terminal.boundedcontext.user.domain.UserRepository
 import org.now.terminal.boundedcontext.user.domain.valueobjects.*
+import org.now.terminal.shared.valueobjects.UserId
 
 /**
  * User Query Use Case - Handles user retrieval and search operations
