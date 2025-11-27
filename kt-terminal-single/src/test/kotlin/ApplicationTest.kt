@@ -1,4 +1,4 @@
-package org.now
+package org.now.terminal
 
 import io.ktor.client.request.*
 import io.ktor.http.*

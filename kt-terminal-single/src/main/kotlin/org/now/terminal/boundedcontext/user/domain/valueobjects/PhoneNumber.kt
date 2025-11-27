@@ -5,7 +5,7 @@ import org.now.terminal.shared.kernel.utils.ValidationUtils
 /**
  * Phone Number Value Object
  */
-data class PhoneNumber private constructor(val value: String) {
+data class PhoneNumber(val value: String) {
     
     companion object {
         private const val PHONE_REQUIRED = "user.phone.required"
