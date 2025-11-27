@@ -100,7 +100,15 @@ fun Routing.configureUserRoutes(userController: UserController) {
 
         route("/{userId}") {
             // Get user by ID
-
+            get {
+                val userId = call.parameters["userId"] ?: ""
+                val user = userController.getUserById(userId)
+                if (user != null) {
+                    call.respond(HttpStatusCode.OK, user)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, mapOf("message" to "User not found"))
+                }
+            }
 
             // Update user
             put {

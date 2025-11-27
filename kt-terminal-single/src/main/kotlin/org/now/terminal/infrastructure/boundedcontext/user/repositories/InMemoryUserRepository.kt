@@ -249,7 +249,7 @@ class InMemoryUserRepository : UserRepository {
     fun initializeWithSampleData() {
         // Add some sample users for testing
         val sampleUser = User(
-            id = UserId("user-1"),
+            id = UserId("usr_1234567890ab"),
             username = "admin",
             email = Email.create("admin@example.com"),
             passwordHash = "hashed_password_123",
@@ -265,7 +265,7 @@ class InMemoryUserRepository : UserRepository {
         )
         
         val regularUser = User(
-            id = UserId("user-2"),
+            id = UserId("usr_abcdef123456"),
             username = "user",
             email = Email.create("user@example.com"),
             passwordHash = "hashed_password_456",
