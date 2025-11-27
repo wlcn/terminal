@@ -1,11 +1,8 @@
 package org.now.terminal.interfaces.user.dto.requests
 
+import org.now.terminal.boundedcontext.user.application.usecase.UpdateUserCommand
+
 /**
- * Update user request DTO
+ * Update user request DTO - 直接使用业务模块的命令类
  */
-interface UpdateUserRequest {
-    val displayName: String?
-    val email: String?
-    val role: String?
-    val status: String?
-}
+typealias UpdateUserRequest = UpdateUserCommand

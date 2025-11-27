@@ -1,15 +1,8 @@
 package org.now.terminal.interfaces.user.dto.responses
 
+import org.now.terminal.boundedcontext.user.domain.User
+
 /**
- * User response DTO
+ * User response DTO - Directly uses the domain User object
  */
-interface UserResponse {
-    val id: String
-    val username: String
-    val email: String
-    val displayName: String?
-    val role: String
-    val status: String
-    val createdAt: Long
-    val updatedAt: Long
-}
+typealias UserResponse = User

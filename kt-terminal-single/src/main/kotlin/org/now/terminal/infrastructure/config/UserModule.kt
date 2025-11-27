@@ -6,6 +6,7 @@ import org.koin.dsl.module
 import org.koin.ktor.ext.get
 import org.now.terminal.boundedcontext.user.application.usecase.*
 import org.now.terminal.boundedcontext.user.domain.valueobjects.*
+import org.now.terminal.boundedcontext.user.domain.UserRepository
 import org.now.terminal.infrastructure.boundedcontext.user.web.controllers.UserControllerImpl
 import org.now.terminal.infrastructure.boundedcontext.user.web.controllers.configureUserRoutes
 
@@ -26,69 +27,21 @@ val userModule: Module = module {
     }
     
     /**
-     * User management use case
+     * User Repository (需要后续实现)
      */
-    single<UserManagementUseCase> {
-        // For now, using a mock or placeholder implementation
-        object : UserManagementUseCase {
-            override suspend fun createUser(command: org.now.terminal.boundedcontext.user.application.command.CreateUserCommand): org.now.terminal.boundedcontext.user.domain.User {
-                TODO("Implement createUser with actual repository")
-            }
-            
-            override suspend fun updateUser(command: org.now.terminal.boundedcontext.user.application.command.UpdateUserCommand): org.now.terminal.boundedcontext.user.domain.User {
-                TODO("Implement updateUser with actual repository")
-            }
-            
-            override suspend fun deleteUser(command: org.now.terminal.boundedcontext.user.application.command.DeleteUserCommand) {
-                TODO("Implement deleteUser with actual repository")
-            }
-            
-            override suspend fun changePassword(command: org.now.terminal.boundedcontext.user.application.command.ChangePasswordCommand) {
-                TODO("Implement changePassword with actual repository")
-            }
-            
-            override suspend fun updateUserRole(command: org.now.terminal.boundedcontext.user.application.command.UpdateUserRoleCommand): org.now.terminal.boundedcontext.user.domain.User {
-                TODO("Implement updateUserRole with actual repository")
-            }
-        }
+    single<UserRepository> { 
+        TODO("Implement actual UserRepository implementation")
     }
     
     /**
-     * User query use case
+     * User management use case - 使用已实现的UseCaseImpl类
      */
-    single<UserQueryUseCase> {
-        // This should be implemented with actual repository injection
-        // For now, using a mock or placeholder implementation
-        object : UserQueryUseCase {
-            override suspend fun getUserById(query: org.now.terminal.boundedcontext.user.application.usecase.GetUserByIdQuery): org.now.terminal.boundedcontext.user.domain.User? {
-                TODO("Implement getUserById with actual repository")
-            }
-            
-            override suspend fun getUserByUsername(query: org.now.terminal.boundedcontext.user.application.usecase.GetUserByUsernameQuery): org.now.terminal.boundedcontext.user.domain.User? {
-                TODO("Implement getUserByUsername with actual repository")
-            }
-            
-            override suspend fun getUserByEmail(query: org.now.terminal.boundedcontext.user.application.usecase.GetUserByEmailQuery): org.now.terminal.boundedcontext.user.domain.User? {
-                TODO("Implement getUserByEmail with actual repository")
-            }
-            
-            override suspend fun getUsersByRole(query: org.now.terminal.boundedcontext.user.application.usecase.GetUsersByRoleQuery): List<org.now.terminal.boundedcontext.user.domain.User> {
-                TODO("Implement getUsersByRole with actual repository")
-            }
-            
-            override suspend fun searchUsers(query: org.now.terminal.boundedcontext.user.application.usecase.SearchUsersQuery): org.now.terminal.boundedcontext.user.application.usecase.SearchUsersResult {
-                TODO("Implement searchUsers with actual repository")
-            }
-            
-            override suspend fun userExists(query: org.now.terminal.boundedcontext.user.application.usecase.UserExistsQuery): Boolean {
-                TODO("Implement userExists with actual repository")
-            }
-            
-            override suspend fun getUserStatistics(query: org.now.terminal.boundedcontext.user.application.usecase.GetUserStatisticsQuery): org.now.terminal.boundedcontext.user.application.usecase.UserStatistics {
-                TODO("Implement getUserStatistics with actual repository")
-            }
-        }
-    }
+    single<UserManagementUseCase> { UserManagementUseCaseImpl(get()) }
+    
+    /**
+     * User query use case - 使用已实现的UseCaseImpl类
+     */
+    single<UserQueryUseCase> { UserQueryUseCaseImpl(get()) }
 }
 
 /**

@@ -8,9 +8,9 @@ import org.now.terminal.boundedcontext.user.application.usecase.UserManagementUs
 import org.now.terminal.boundedcontext.user.application.usecase.UserQueryUseCase
 import org.now.terminal.infrastructure.boundedcontext.user.web.dto.requests.CreateUserRequestImpl
 import org.now.terminal.infrastructure.boundedcontext.user.web.dto.requests.UpdateUserRequestImpl
-import org.now.terminal.infrastructure.boundedcontext.user.web.dto.responses.UserResponseImpl
 import org.now.terminal.infrastructure.web.responses.ApiResponseImpl
 import org.now.terminal.interfaces.user.controllers.UserController
+import org.now.terminal.interfaces.user.dto.responses.UserResponse
 
 /**
  * User management controller implementation
@@ -21,12 +21,12 @@ class UserControllerImpl(
     private val userQueryUseCase: UserQueryUseCase
 ) : UserController {
 
-    override fun createUser(request: CreateUserRequestImpl): ApiResponseImpl<UserResponseImpl> {
+    override fun createUser(request: CreateUserRequestImpl): ApiResponseImpl<UserResponse> {
         return try {
             val command = request.toCommand()
             val user = userManagementUseCase.createUser(command)
             ApiResponseImpl.success(
-                data = UserResponseImpl.fromDomain(user),
+                data = user,
                 message = "User created successfully"
             )
         } catch (e: Exception) {
@@ -37,12 +37,12 @@ class UserControllerImpl(
         }
     }
 
-    override fun updateUser(userId: String, request: UpdateUserRequestImpl): ApiResponseImpl<UserResponseImpl> {
+    override fun updateUser(userId: String, request: UpdateUserRequestImpl): ApiResponseImpl<UserResponse> {
         return try {
             val command = request.toCommand(userId)
             val user = userManagementUseCase.updateUser(command)
             ApiResponseImpl.success(
-                data = UserResponseImpl.fromDomain(user),
+                data = user,
                 message = "User updated successfully"
             )
         } catch (e: Exception) {
@@ -72,14 +72,14 @@ class UserControllerImpl(
         }
     }
 
-    override fun getUserById(userId: String): ApiResponseImpl<UserResponseImpl> {
+    override fun getUserById(userId: String): ApiResponseImpl<UserResponse> {
         return try {
             val user = userQueryUseCase.getUserById(org.now.terminal.boundedcontext.user.application.usecase.GetUserByIdQuery(
                 userId = org.now.terminal.boundedcontext.user.domain.valueobjects.UserId.fromString(userId)
             ))
             if (user != null) {
                 ApiResponseImpl.success(
-                    data = UserResponseImpl.fromDomain(user),
+                    data = user,
                     message = "User retrieved successfully"
                 )
             } else {
@@ -96,7 +96,7 @@ class UserControllerImpl(
         }
     }
 
-    override fun getUsers(): ApiResponseImpl<List<UserResponseImpl>> {
+    override fun getUsers(): ApiResponseImpl<List<UserResponse>> {
         return try {
             val result = userQueryUseCase.searchUsers(
                 org.now.terminal.boundedcontext.user.application.usecase.SearchUsersQuery(
@@ -107,7 +107,7 @@ class UserControllerImpl(
                 )
             )
             ApiResponseImpl.success(
-                data = result.users.map { UserResponseImpl.fromDomain(it) },
+                data = result.users,
                 message = "Users retrieved successfully"
             )
         } catch (e: Exception) {
@@ -118,7 +118,7 @@ class UserControllerImpl(
         }
     }
 
-    override fun searchUsers(keyword: String): ApiResponseImpl<List<UserResponseImpl>> {
+    override fun searchUsers(keyword: String): ApiResponseImpl<List<UserResponse>> {
         return try {
             val result = userQueryUseCase.searchUsers(
                 org.now.terminal.boundedcontext.user.application.usecase.SearchUsersQuery(
@@ -129,7 +129,7 @@ class UserControllerImpl(
                 )
             )
             ApiResponseImpl.success(
-                data = result.users.map { UserResponseImpl.fromDomain(it) },
+                data = result.users,
                 message = "Users search completed successfully"
             )
         } catch (e: Exception) {
