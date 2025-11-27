@@ -1,6 +1,7 @@
 package org.now.terminal.infrastructure.config
 
 import io.ktor.server.application.Application
+import io.ktor.server.application.install
 import org.koin.ktor.plugin.Koin
 import org.now.terminal.infrastructure.boundedcontext.user.config.userModule
 
