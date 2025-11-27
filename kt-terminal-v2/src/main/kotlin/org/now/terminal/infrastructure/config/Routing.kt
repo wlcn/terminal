@@ -8,6 +8,7 @@ import io.ktor.server.plugins.requestvalidation.ValidationResult
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.terminalSessionRoutes
 
 fun Application.configureRouting() {
     install(AutoHeadResponse)
@@ -28,6 +29,11 @@ fun Application.configureRouting() {
     routing {
         get("/") {
             call.respondText("Hello World!")
+        }
+        
+        // API routes with /api prefix
+        route("/api") {
+            terminalSessionRoutes()
         }
     }
 }
