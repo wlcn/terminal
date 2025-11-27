@@ -15,6 +15,8 @@ import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.SessionStatus
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
+import org.now.terminal.infrastructure.boundedcontext.terminalsession.web.websocket.RealTimeTerminalWebSocketHandler
+import org.now.terminal.boundedcontext.terminalsession.infrastructure.ProcessFactory
 import org.now.terminal.shared.valueobjects.UserId
 import org.slf4j.LoggerFactory
 
@@ -25,7 +27,8 @@ import org.slf4j.LoggerFactory
 class TerminalSessionController(
     private val terminalSessionManagementUseCase: TerminalSessionManagementUseCase,
     private val terminalSessionQueryUseCase: TerminalSessionQueryUseCase,
-    private val executeTerminalCommandUseCase: ExecuteTerminalCommandUseCase
+    private val executeTerminalCommandUseCase: ExecuteTerminalCommandUseCase,
+    private val processFactory: ProcessFactory
 ) {
     private val logger = LoggerFactory.getLogger(TerminalSessionController::class.java)
 
@@ -152,25 +155,8 @@ class TerminalSessionController(
         
         logger.info("🔗 WebSocket connection established for session: {}", sessionId)
         
-        try {
-            // Handle incoming messages from the client
-            for (frame in webSocketSession.incoming) {
-                if (frame is Frame.Text) {
-                    val command = frame.readText()
-                    logger.info("📨 Received command from WebSocket: {}", command)
-                    
-                    // Execute the command in the terminal session
-                    val result = executeCommand(sessionId, command)
-                    
-                    // Send the result back to the client
-                    webSocketSession.send(Frame.Text(result))
-                    logger.info("📤 Sent command result to WebSocket")
-                }
-            }
-        } catch (e: Exception) {
-            logger.error("❌ WebSocket connection error: {}", e.message)
-        } finally {
-            logger.info("🔌 WebSocket connection closed for session: {}", sessionId)
-        }
+        // Use real-time terminal WebSocket handler for true terminal interaction
+        val realTimeHandler = RealTimeTerminalWebSocketHandler(this, processFactory)
+        realTimeHandler.handleRealTimeConnection(sessionId, webSocketSession)
     }
 }

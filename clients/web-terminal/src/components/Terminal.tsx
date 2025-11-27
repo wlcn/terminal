@@ -91,8 +91,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const rows = 24;
       
       const sessionResponse = await createSession(userId, 'Web Terminal Session', '/');
-      const newSessionId = sessionResponse.sessionId;
-      const shellType = sessionResponse.shellType;
+      const newSessionId = sessionResponse.id; // 后端返回的是id字段，不是sessionId
+      const shellType = sessionResponse.configuration.shellType;
       setShellType(shellType);
       
       // 使用默认的终端尺寸数据

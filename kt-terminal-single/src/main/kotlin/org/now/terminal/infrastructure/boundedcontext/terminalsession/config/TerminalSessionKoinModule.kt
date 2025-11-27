@@ -8,6 +8,7 @@ import org.now.terminal.boundedcontext.terminalsession.application.usecases.Term
 import org.now.terminal.boundedcontext.terminalsession.domain.repositories.TerminalSessionRepository
 import org.now.terminal.boundedcontext.terminalsession.domain.services.executor.CommandExecutor
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.executor.Pty4jCommandExecutor
+import org.now.terminal.infrastructure.boundedcontext.terminalsession.process.Pty4jProcessFactory
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.repositories.InMemoryTerminalSessionRepository
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.web.controllers.TerminalSessionController
 
@@ -22,6 +23,7 @@ val terminalSessionModule: Module = module {
     
     // Domain Services
     single<CommandExecutor> { Pty4jCommandExecutor() }
+    single<ProcessFactory> { Pty4jProcessFactory() }
     
     // Use Cases
     single { TerminalSessionManagementUseCase(get()) }
@@ -33,7 +35,8 @@ val terminalSessionModule: Module = module {
         TerminalSessionController(
             terminalSessionManagementUseCase = get(),
             terminalSessionQueryUseCase = get(),
-            executeTerminalCommandUseCase = get()
+            executeTerminalCommandUseCase = get(),
+            processFactory = get()
         )
     }
 }

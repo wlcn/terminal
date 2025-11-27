@@ -1,0 +1,39 @@
+package org.now.terminal.infrastructure.boundedcontext.terminalsession.process
+
+import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
+import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
+import org.now.terminal.boundedcontext.terminalsession.infrastructure.ProcessFactory
+import org.now.terminal.boundedcontext.terminalsession.infrastructure.TerminalProcess
+
+/**
+ * Process factory implementation for creating Pty4j-based terminal processes
+ */
+class Pty4jProcessFactory : ProcessFactory {
+    
+    override fun createProcess(
+        shellType: ShellType,
+        workingDirectory: String,
+        environment: Map<String, String>,
+        terminalSize: org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSize
+    ): TerminalProcess {
+        // Create terminal process directly using the provided parameters
+        return Pty4jTerminalProcess(
+            shellType = shellType,
+            workingDirectory = workingDirectory,
+            environment = environment,
+            terminalSize = terminalSize
+        )
+    }
+    
+    /**
+     * Create process from a terminal session
+     */
+    fun createProcess(session: TerminalSession): TerminalProcess {
+        return Pty4jTerminalProcess(
+            session = session,
+            workingDirectory = session.workingDirectory,
+            environment = session.environment,
+            terminalSize = session.terminalSize
+        )
+    }
+}

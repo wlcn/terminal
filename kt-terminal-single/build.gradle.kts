@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)
+    // implementation(libs.pty4j)
+    implementation("org.jetbrains.pty4j:pty4j:0.13.11")
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
 }

@@ -19,7 +19,11 @@ function App() {
   });
   
   // 会话信息状态
-  const [currentSessionInfo, setCurrentSessionInfo] = useState({
+  const [currentSessionInfo, setCurrentSessionInfo] = useState<{
+    sessionId: string;
+    shellType: string;
+    terminalSize: { columns: number; rows: number };
+  }>({
     sessionId: '',
     shellType: 'bash',
     terminalSize: { columns: 120, rows: 30 }
