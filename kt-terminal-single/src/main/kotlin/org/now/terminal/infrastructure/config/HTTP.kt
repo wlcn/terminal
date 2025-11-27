@@ -4,8 +4,15 @@ import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cachingheaders.*
+import io.ktor.server.plugins.cors.routing.*
 
 fun Application.configureHTTP() {
+    install(CORS) {
+        anyHost()
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
+    }
+    
     install(CachingHeaders) {
         options { call, outgoingContent ->
             when (outgoingContent.contentType?.withoutParameters()) {

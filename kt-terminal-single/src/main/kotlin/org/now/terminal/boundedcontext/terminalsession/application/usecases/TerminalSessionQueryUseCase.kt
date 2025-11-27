@@ -4,6 +4,8 @@ import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.GetUserTerminalSessionsQuery
 import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontext.terminalsession.domain.repositories.TerminalSessionRepository
+import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
+import org.now.terminal.shared.valueobjects.UserId
 
 /**
  * Use case for querying terminal sessions
