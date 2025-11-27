@@ -1,4 +1,4 @@
-package org.now.terminal.boundedcontext.terminalsession.application.dtos
+package org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos
 
 import kotlinx.serialization.Serializable
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId

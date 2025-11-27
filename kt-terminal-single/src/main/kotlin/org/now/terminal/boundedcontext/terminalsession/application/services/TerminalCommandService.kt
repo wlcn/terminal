@@ -1,6 +1,6 @@
 package org.now.terminal.boundedcontext.terminalsession.application.services
 
-import org.now.terminal.boundedcontext.terminalsession.application.dtos.ExecuteTerminalCommand
+import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.ExecuteTerminalCommand
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.ExecuteTerminalCommandUseCase
 import org.now.terminal.boundedcontext.terminalsession.domain.services.command.CommandResult
 

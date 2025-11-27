@@ -1,11 +1,10 @@
 package org.now.terminal.boundedcontext.terminalsession.application.usecases
 
-import org.now.terminal.boundedcontext.terminalsession.application.dtos.ExecuteTerminalCommand
+import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.ExecuteTerminalCommand
 import org.now.terminal.boundedcontext.terminalsession.domain.repositories.TerminalSessionRepository
 import org.now.terminal.boundedcontext.terminalsession.domain.services.command.Command
 import org.now.terminal.boundedcontext.terminalsession.domain.services.command.CommandResult
 import org.now.terminal.boundedcontext.terminalsession.domain.services.executor.CommandExecutor
-import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
 
 /**
  * Execute terminal command use case

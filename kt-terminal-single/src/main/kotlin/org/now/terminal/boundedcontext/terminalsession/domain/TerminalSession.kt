@@ -78,6 +78,13 @@ data class TerminalSession(
     }
     
     /**
+     * Terminate the session
+     */
+    fun terminate(): TerminalSession {
+        return updateStatus(SessionStatus.TERMINATED)
+    }
+    
+    /**
      * Record command execution
      */
     fun recordCommand(command: String): TerminalSession {
