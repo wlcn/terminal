@@ -9,6 +9,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import io.ktor.server.websocket.webSocket
 import org.koin.ktor.ext.inject
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.web.controllers.TerminalSessionController
 
@@ -117,10 +118,10 @@ fun Application.configureTerminalSessionModule() {
             }
         }
 
-        // WebSocket endpoint for terminal session interaction (TODO: Implement proper WebSocket handling)
-        // webSocket("/ws/sessions/{sessionId}") {
-        //     val sessionId = call.parameters["sessionId"] ?: ""
-        //     terminalSessionController.handleWebSocketConnection(sessionId, this)
-        // }
+        // WebSocket endpoint for terminal session interaction
+        webSocket("/ws/sessions/{sessionId}") {
+            val sessionId = call.parameters["sessionId"] ?: ""
+            terminalSessionController.handleWebSocketConnection(sessionId, this)
+        }
     }
 }

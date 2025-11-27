@@ -16,6 +16,7 @@ import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.Termi
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.SessionStatus
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
 import org.now.terminal.shared.valueobjects.UserId
+import org.slf4j.LoggerFactory
 
 /**
  * Terminal Session Controller
@@ -26,6 +27,7 @@ class TerminalSessionController(
     private val terminalSessionQueryUseCase: TerminalSessionQueryUseCase,
     private val executeTerminalCommandUseCase: ExecuteTerminalCommandUseCase
 ) {
+    private val logger = LoggerFactory.getLogger(TerminalSessionController::class.java)
 
     
     /**
@@ -136,7 +138,7 @@ class TerminalSessionController(
     /**
      * Handle WebSocket connection for a terminal session
      */
-    suspend fun handleWebSocketConnection(sessionId: String, webSocketSession: DefaultWebSocketServerSession) {
+    suspend fun handleWebSocketConnection(sessionId: String, webSocketSession: DefaultWebSocketSession) {
         val session = getSessionById(sessionId)
         if (session == null) {
             webSocketSession.close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Session not found"))
@@ -148,27 +150,27 @@ class TerminalSessionController(
             return
         }
         
-        println("🔗 WebSocket connection established for session: $sessionId")
+        logger.info("🔗 WebSocket connection established for session: {}", sessionId)
         
         try {
             // Handle incoming messages from the client
             for (frame in webSocketSession.incoming) {
                 if (frame is Frame.Text) {
                     val command = frame.readText()
-                    println("📨 Received command from WebSocket: $command")
+                    logger.info("📨 Received command from WebSocket: {}", command)
                     
                     // Execute the command in the terminal session
                     val result = executeCommand(sessionId, command)
                     
                     // Send the result back to the client
                     webSocketSession.send(Frame.Text(result))
-                    println("📤 Sent command result to WebSocket")
+                    logger.info("📤 Sent command result to WebSocket")
                 }
             }
         } catch (e: Exception) {
-            println("❌ WebSocket connection error: ${e.message}")
+            logger.error("❌ WebSocket connection error: {}", e.message)
         } finally {
-            println("🔌 WebSocket connection closed for session: $sessionId")
+            logger.info("🔌 WebSocket connection closed for session: {}", sessionId)
         }
     }
 }
