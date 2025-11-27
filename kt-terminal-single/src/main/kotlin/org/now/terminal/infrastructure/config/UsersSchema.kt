@@ -1,4 +1,4 @@
-package org.now
+package org.now.terminal.infrastructure.config
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.Serializable
