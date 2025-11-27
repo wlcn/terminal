@@ -555,7 +555,7 @@ function App() {
         
         <div className="h-full flex flex-col relative z-10">
           {/* Enhanced Terminal Container - Enterprise Tech Design */}
-           <Card className="flex-1 m-6 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group">
+           <Card className="flex-1 m-6 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group rounded-none">
              {/* Advanced Border Glow System */}
              <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 blur-xl opacity-60 pointer-events-none animate-pulse-slow"></div>
              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-cyan-500/10 blur-md opacity-40 pointer-events-none"></div>
