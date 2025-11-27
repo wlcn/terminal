@@ -11,7 +11,7 @@ import org.now.terminal.boundedcontext.user.domain.User
 import org.now.terminal.boundedcontext.user.domain.valueobjects.Email
 import org.now.terminal.boundedcontext.user.domain.valueobjects.PhoneNumber
 import org.now.terminal.boundedcontext.user.domain.valueobjects.SessionLimit
-import org.now.terminal.boundedcontext.user.domain.valueobjects.UserId
+import org.now.terminal.shared.valueobjects.UserId
 import org.now.terminal.boundedcontext.user.domain.valueobjects.UserRole
 
 /**

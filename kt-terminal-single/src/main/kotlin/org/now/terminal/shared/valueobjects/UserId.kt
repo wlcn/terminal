@@ -1,10 +1,11 @@
-package org.now.terminal.boundedcontext.user.domain.valueobjects
+package org.now.terminal.shared.valueobjects
 
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * User ID Value Object - ID generation with prefix marker
+ * Shared kernel component for cross-bounded context communication
  */
 @Serializable
 @JvmInline
