@@ -11,6 +11,10 @@ fun Application.configureHTTP() {
         anyHost()
         allowCredentials = true
         allowNonSimpleContentTypes = true
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Delete)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.ContentType)
     }
     
     install(CachingHeaders) {

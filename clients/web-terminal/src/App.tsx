@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
-import { Settings, Maximize2, Minimize2, Power, RefreshCw, Square, Monitor, List, Trash2, X, Maximize } from 'lucide-react';
+import { Settings, Maximize2, Minimize2, Power, RefreshCw, Monitor, List, Trash2, X, Maximize } from 'lucide-react';
 import { listSessions } from './services/terminalApi';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -125,12 +125,6 @@ function App() {
   const handleTerminateSession = () => {
     if (terminalRef.current && terminalRef.current.terminate) {
       terminalRef.current.terminate('USER_REQUESTED');
-    }
-  };
-
-  const handleInterruptTerminal = () => {
-    if (terminalRef.current && terminalRef.current.interrupt) {
-      terminalRef.current.interrupt();
     }
   };
 
@@ -322,21 +316,6 @@ function App() {
                 disabled={!isConnected}
               >
                 <Maximize size={16} className={isConnected ? "text-teal-500" : "text-muted-foreground"} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleInterruptTerminal}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Interrupt (Ctrl+C)" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <Square size={16} className={isConnected ? "text-yellow-500" : "text-muted-foreground"} />
               </Button>
             </div>
             
@@ -576,7 +555,7 @@ function App() {
         
         <div className="h-full flex flex-col relative z-10">
           {/* Enhanced Terminal Container - Enterprise Tech Design */}
-           <Card className="flex-1 m-4 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group">
+           <Card className="flex-1 m-6 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group">
              {/* Advanced Border Glow System */}
              <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 blur-xl opacity-60 pointer-events-none animate-pulse-slow"></div>
              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-cyan-500/10 blur-md opacity-40 pointer-events-none"></div>

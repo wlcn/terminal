@@ -5,7 +5,7 @@
 
 import { APP_CONFIG } from '../config/appConfig';
 
-const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}/${APP_CONFIG.API_SERVER.BASE_PATH}/sessions`;
+const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}${APP_CONFIG.API_SERVER.BASE_PATH}/sessions`;
 
 /**
  * Create new session
