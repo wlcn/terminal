@@ -39,7 +39,7 @@ class UserController(
             phoneNumber = phoneNumber?.let { PhoneNumber.create(it) },
             sessionLimit = SessionLimit(
                 maxConcurrentSessions = sessionLimit,
-                maxSessionDuration = 2 * 60 * 60 * 1000 // 默认2小时
+                maxSessionDuration = 2 * 60 * 60 * 1000 // Default 2 hours
             )
         )
         return userManagementUseCase.createUser(command)
@@ -81,5 +81,5 @@ class UserController(
         return result.users
     }
     
-    // 路由配置已移至UserModule中，此处仅保留业务逻辑方法
+    // Route configuration has been moved to UserModule, only business logic methods remain here
 }

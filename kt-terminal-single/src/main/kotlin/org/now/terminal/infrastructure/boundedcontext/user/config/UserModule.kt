@@ -11,13 +11,13 @@ import org.now.terminal.boundedcontext.user.domain.UserRepository
 import org.now.terminal.infrastructure.boundedcontext.user.web.controllers.UserController
 
 /**
- * User模块依赖注入配置
- * 配置用户相关依赖到Koin DI容器
+ * User Module Dependency Injection Configuration
+ * Configures user-related dependencies in Koin DI container
  */
 val userModule: Module = module {
     
     /**
-     * User控制器
+     * User Controller
      */
     single<UserController> {
         UserController(
@@ -27,43 +27,43 @@ val userModule: Module = module {
     }
     
     /**
-     * User仓储（需要后续实现）
+     * User Repository (to be implemented)
      */
     single<UserRepository> { 
-        TODO("实现实际的UserRepository实现")
+        TODO("Implement actual UserRepository implementation")
     }
     
     /**
-     * 用户管理用例 - 使用已实现的UseCaseImpl类
+     * User Management Use Case - using implemented UseCaseImpl class
      */
     single<UserManagementUseCase> { UserManagementUseCaseImpl(get()) }
     
     /**
-     * 用户查询用例 - 使用已实现的UseCaseImpl类
+     * User Query Use Case - using implemented UseCaseImpl class
      */
     single<UserQueryUseCase> { UserQueryUseCaseImpl(get()) }
 }
 
 /**
- * 用户路由配置
- * 配置Ktor用户端点路由
+ * User Routing Configuration
+ * Configures Ktor user endpoint routes
  */
 fun Application.configureUserModule() {
-    // 从DI容器获取用户控制器
+    // Get user controller from DI container
     val userController = get<UserController>()
     
-    // 配置用户路由
+    // Configure user routes
     routing {
         configureUserRoutes(userController)
     }
 }
 
 /**
- * 配置用户路由
+ * Configure User Routes
  */
 fun Routing.configureUserRoutes(userController: UserController) {
     route("/api/users") {
-        // 创建用户
+        // Create user
         post {
             val params = call.request.queryParameters
             val user = userController.createUser(
@@ -77,13 +77,13 @@ fun Routing.configureUserRoutes(userController: UserController) {
             call.respond(HttpStatusCode.Created, user)
         }
         
-        // 获取所有用户
+        // Get all users
         get {
             val users = userController.getUsers()
             call.respond(HttpStatusCode.OK, users)
         }
         
-        // 用户搜索
+        // Search users
         get("/search") {
             val keyword = call.request.queryParameters["keyword"]
             val users = userController.searchUsers(keyword)
@@ -91,18 +91,18 @@ fun Routing.configureUserRoutes(userController: UserController) {
         }
         
         route("/{userId}") {
-            // 根据ID获取用户
+            // Get user by ID
             get {
                 val userId = call.parameters["userId"] ?: ""
                 val user = userController.getUserById(userId)
                 if (user != null) {
                     call.respond(HttpStatusCode.OK, user)
                 } else {
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "用户未找到"))
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
                 }
             }
             
-            // 更新用户
+            // Update user
             put {
                 val userId = call.parameters["userId"] ?: ""
                 val params = call.request.queryParameters
@@ -115,11 +115,11 @@ fun Routing.configureUserRoutes(userController: UserController) {
                 call.respond(HttpStatusCode.OK, user)
             }
             
-            // 删除用户
+            // Delete user
             delete {
                 val userId = call.parameters["userId"] ?: ""
                 userController.deleteUser(userId)
-                call.respond(HttpStatusCode.OK, mapOf("message" to "用户删除成功"))
+                call.respond(HttpStatusCode.OK, mapOf("message" to "User deleted successfully"))
             }
         }
     }
