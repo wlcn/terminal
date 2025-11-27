@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
-import { createSession, resizeTerminal, terminateSession } from '../services/terminalApi';
+import { createSession, resizeTerminal, interruptTerminal, terminateSession } from '../services/terminalApi';
 import { APP_CONFIG } from '../config/appConfig';
 
 // WebSocket服务器配置
@@ -43,6 +43,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       }
     },
     resize: handleResize,
+    interrupt: handleInterrupt,
     terminate: handleTerminate,
     clear: () => {
       if (terminal.current) {
@@ -247,6 +248,28 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('✅ Terminal resized successfully');
     } catch (error) {
       console.error('❌ Failed to resize terminal:', error);
+    }
+  };
+  
+  // Interrupt terminal (send Ctrl+C signal)
+  const handleInterrupt = async () => {
+    if (!sessionId) {
+      console.warn('⚠️ No active session to interrupt');
+      return;
+    }
+    
+    try {
+      console.log('⏹️ Sending interrupt signal to terminal');
+      await interruptTerminal(sessionId);
+      
+      // 在终端中显示中断提示
+      if (terminal.current) {
+        terminal.current.write('\r\n^C\r\n');
+      }
+      
+      console.log('✅ Terminal interrupted successfully');
+    } catch (error) {
+      console.error('❌ Failed to interrupt terminal:', error);
     }
   };
   

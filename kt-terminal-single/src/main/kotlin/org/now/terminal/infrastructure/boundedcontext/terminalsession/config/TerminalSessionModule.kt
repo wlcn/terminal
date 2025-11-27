@@ -83,6 +83,23 @@ fun Application.configureTerminalSessionModule() {
                     val status = terminalSessionController.getSessionStatus(sessionId)
                     call.respond(mapOf("status" to status))
                 }
+
+                // Resize terminal
+                post("/resize") {
+                    val sessionId = call.parameters["sessionId"] ?: ""
+                    val rows = call.request.queryParameters["rows"]?.toIntOrNull() ?: 24
+                    val cols = call.request.queryParameters["cols"]?.toIntOrNull() ?: 80
+                    
+                    val result = terminalSessionController.resizeTerminal(sessionId, rows, cols)
+                    call.respond(mapOf("success" to result))
+                }
+
+                // Send interrupt signal to terminal
+                post("/interrupt") {
+                    val sessionId = call.parameters["sessionId"] ?: ""
+                    val result = terminalSessionController.interruptTerminal(sessionId)
+                    call.respond(mapOf("success" to result))
+                }
             }
         }
 

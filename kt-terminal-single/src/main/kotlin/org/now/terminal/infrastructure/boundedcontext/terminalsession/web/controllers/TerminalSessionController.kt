@@ -159,4 +159,62 @@ class TerminalSessionController(
         val realTimeHandler = RealTimeTerminalWebSocketHandler(this, processFactory)
         realTimeHandler.handleRealTimeConnection(sessionId, webSocketSession)
     }
+    
+    /**
+     * Resize terminal for a session
+     */
+    suspend fun resizeTerminal(sessionId: String, rows: Int, cols: Int): Boolean {
+        val session = getSessionById(sessionId)
+        if (session == null || !session.isActive) {
+            logger.warn("⚠️ Cannot resize terminal for session {}: session not found or not active", sessionId)
+            return false
+        }
+        
+        // Create a temporary process to resize the terminal
+        try {
+            val process = processFactory.createProcess(
+                shellType = session.configuration.shellType,
+                workingDirectory = session.configuration.workingDirectory,
+                environment = session.configuration.environmentVariables,
+                terminalSize = session.configuration.terminalSize
+            )
+            
+            if (process.isAlive) {
+                process.resizeTerminal(rows, cols)
+                process.terminate()
+                logger.info("📐 Resized terminal for session {} to {}x{}", sessionId, cols, rows)
+                return true
+            }
+        } catch (e: Exception) {
+            logger.error("❌ Error resizing terminal for session {}: {}", sessionId, e.message)
+        }
+        
+        return false
+    }
+    
+    /**
+     * Send interrupt signal to terminal session
+     */
+    suspend fun interruptTerminal(sessionId: String): Boolean {
+        val session = getSessionById(sessionId)
+        if (session == null || !session.isActive) {
+            logger.warn("⚠️ Cannot interrupt terminal for session {}: session not found or not active", sessionId)
+            return false
+        }
+        
+        // Send interrupt signal by executing a command that sends Ctrl+C
+        try {
+            val result = executeTerminalCommandUseCase.execute(
+                sessionId = TerminalSessionId(sessionId),
+                command = "\u0003", // Ctrl+C character
+                timeoutMs = 5000L
+            )
+            
+            logger.info("⚠️ Sent interrupt signal to terminal session: {}", sessionId)
+            return result.isSuccess
+        } catch (e: Exception) {
+            logger.error("❌ Error sending interrupt signal to session {}: {}", sessionId, e.message)
+            return false
+        }
+    }
 }

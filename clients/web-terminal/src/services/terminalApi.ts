@@ -42,7 +42,6 @@ export const createSession = async (userId: string, title?: string, workingDirec
 
 /**
  * Resize terminal
- * Note: Currently not implemented in backend API
  */
 export const resizeTerminal = async (
   sessionId: string, 
@@ -50,15 +49,53 @@ export const resizeTerminal = async (
   rows: number
 ): Promise<{ sessionId: string; terminalSize: { columns: number; rows: number }; status: string }> => {
   try {
-    // TODO: Implement resize terminal endpoint in backend
-    console.warn('⚠️ Resize terminal endpoint not yet implemented in backend');
-    return {
-      sessionId,
-      terminalSize: { columns, rows },
-      status: 'SUCCESS'
-    };
+    const url = `${API_BASE_URL}/${sessionId}/resize`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        columns,
+        rows
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to resize terminal: ${response.statusText}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('❌ Failed to resize terminal:', error);
+    throw error;
+  }
+};
+
+/**
+ * Interrupt terminal (send Ctrl+C signal)
+ */
+export const interruptTerminal = async (
+  sessionId: string
+): Promise<{ sessionId: string; status: string }> => {
+  try {
+    const url = `${API_BASE_URL}/${sessionId}/interrupt`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to interrupt terminal: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Failed to interrupt terminal:', error);
     throw error;
   }
 };
