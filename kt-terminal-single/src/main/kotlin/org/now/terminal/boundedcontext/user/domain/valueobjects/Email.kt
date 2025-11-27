@@ -18,14 +18,14 @@ value class Email private constructor(val value: String) {
          * Create email value object
          */
         fun create(value: String): Email {
-            ValidationUtils.validateString(value, EMAIL_REQUIRED)
+            ValidationUtils.validateString(value, errorMessageProvider = { EMAIL_REQUIRED })
             ValidationUtils.validatePattern(value, EMAIL_REGEX, EMAIL_FORMAT_INVALID)
             return Email(value)
         }
     }
     
     init {
-        ValidationUtils.validateString(value, EMAIL_REQUIRED)
+        ValidationUtils.validateString(value, errorMessageProvider = { EMAIL_REQUIRED })
         ValidationUtils.validatePattern(value, EMAIL_REGEX, EMAIL_FORMAT_INVALID)
     }
     

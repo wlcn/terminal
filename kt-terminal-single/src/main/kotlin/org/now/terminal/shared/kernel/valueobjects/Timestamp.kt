@@ -1,6 +1,7 @@
 package org.now.terminal.shared.kernel.valueobjects
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Contextual
 import java.time.Instant
 
 /**
@@ -8,7 +9,7 @@ import java.time.Instant
  */
 @Serializable
 data class Timestamp(
-    val value: Instant
+    @Contextual val value: Instant
 ) : Comparable<Timestamp> {
     
     companion object {

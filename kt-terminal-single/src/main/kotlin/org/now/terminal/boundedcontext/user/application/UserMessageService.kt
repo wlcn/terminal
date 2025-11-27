@@ -1,6 +1,6 @@
 package org.now.terminal.boundedcontext.user.application
 
-import org.now.terminal.boundedcontext.user.domain.valueobjects.Language
+import org.now.terminal.shared.kernel.Language
 
 /**
  * User Message Service - Provides localized messages for user domain
