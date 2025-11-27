@@ -108,7 +108,7 @@ class Pty4jTerminalProcess(
     
     override fun resizeTerminal(rows: Int, cols: Int) {
         try {
-            ptyProcess?.setWinSize(WinSize(cols, rows))
+            ptyProcess?.winSize = WinSize(cols, rows)
             logger.info("📐 Resized terminal to {}x{}", cols, rows)
         } catch (e: Exception) {
             logger.error("❌ Failed to resize terminal: {}", e.message)

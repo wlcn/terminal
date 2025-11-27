@@ -24,7 +24,7 @@ class TerminalSessionManagementUseCase(
      */
     suspend fun createSession(command: CreateTerminalSessionCommand): TerminalSession {
         val defaultConfiguration = SessionConfiguration(
-            shellType = ShellType.BASH,
+            shellType = ShellType.CMD,
             workingDirectory = command.workingDirectory ?: System.getProperty("user.home"),
             terminalSize = TerminalSize.DEFAULT,
             environmentVariables = emptyMap()

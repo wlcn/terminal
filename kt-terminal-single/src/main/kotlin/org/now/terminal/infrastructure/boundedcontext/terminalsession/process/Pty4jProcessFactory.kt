@@ -1,6 +1,6 @@
 package org.now.terminal.infrastructure.boundedcontext.terminalsession.process
 
-import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
+import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSize
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
 import org.now.terminal.boundedcontext.terminalsession.infrastructure.ProcessFactory
 import org.now.terminal.boundedcontext.terminalsession.infrastructure.TerminalProcess
@@ -14,7 +14,7 @@ class Pty4jProcessFactory : ProcessFactory {
         shellType: ShellType,
         workingDirectory: String,
         environment: Map<String, String>,
-        terminalSize: org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSize
+        terminalSize: TerminalSize
     ): TerminalProcess {
         // Create terminal process directly using the provided parameters
         return Pty4jTerminalProcess(
