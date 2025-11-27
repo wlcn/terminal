@@ -1,6 +1,6 @@
 package org.now.terminal.interfaces.terminalsession.controllers
 
-import org.now.terminal.interfaces.ApiResponse
+import org.now.terminal.interfaces.web.responses.ApiResponse
 import org.now.terminal.interfaces.terminalsession.dto.requests.CreateSessionRequest
 import org.now.terminal.interfaces.terminalsession.dto.responses.SessionResponse
 

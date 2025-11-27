@@ -1,4 +1,4 @@
-package org.now.terminal.interfaces
+package org.now.terminal.interfaces.web.responses
 
 /**
  * Generic API response interface

@@ -1,8 +1,6 @@
 package org.now.terminal.interfaces.user.controllers
 
-import org.now.terminal.boundedcontext.user.application.usecase.UserManagementUseCase
-import org.now.terminal.boundedcontext.user.application.usecase.UserQueryUseCase
-import org.now.terminal.interfaces.ApiResponse
+import org.now.terminal.interfaces.web.responses.ApiResponse
 import org.now.terminal.interfaces.user.dto.requests.CreateUserRequest
 import org.now.terminal.interfaces.user.dto.requests.UpdateUserRequest
 import org.now.terminal.interfaces.user.dto.responses.UserResponse
