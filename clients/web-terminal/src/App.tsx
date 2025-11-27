@@ -312,21 +312,6 @@ function App() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleInterruptTerminal}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Interrupt (Ctrl+C)" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <Square size={16} className={isConnected ? "text-yellow-500" : "text-muted-foreground"} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={handleResizeTerminal}
                 className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
                   isConnected 
@@ -337,6 +322,21 @@ function App() {
                 disabled={!isConnected}
               >
                 <Maximize size={16} className={isConnected ? "text-teal-500" : "text-muted-foreground"} />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleInterruptTerminal}
+                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
+                  isConnected 
+                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30' 
+                    : 'bg-background/80 opacity-50 cursor-not-allowed'
+                }`}
+                title={isConnected ? "Interrupt (Ctrl+C)" : "Connect to enable"}
+                disabled={!isConnected}
+              >
+                <Square size={16} className={isConnected ? "text-yellow-500" : "text-muted-foreground"} />
               </Button>
             </div>
             

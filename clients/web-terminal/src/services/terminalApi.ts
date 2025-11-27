@@ -49,17 +49,17 @@ export const resizeTerminal = async (
   rows: number
 ): Promise<{ sessionId: string; terminalSize: { columns: number; rows: number }; status: string }> => {
   try {
-    const url = `${API_BASE_URL}/${sessionId}/resize`;
+    const params = new URLSearchParams();
+    params.append('cols', columns.toString());
+    params.append('rows', rows.toString());
+    
+    const url = `${API_BASE_URL}/${sessionId}/resize?${params.toString()}`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        columns,
-        rows
-      }),
     });
     
     if (!response.ok) {

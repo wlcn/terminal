@@ -151,9 +151,7 @@ class RealTimeTerminalWebSocketHandler(
             }
 
             // Wait for both jobs to complete or process to die
-            while (process.isAlive && outputChannel.isClosedForSend.not()) {
-                delay(100)
-            }
+            joinAll(outputJob, errorJob)
 
             // Cancel the jobs when done
             outputJob.cancel()
