@@ -2,6 +2,7 @@ package org.now.terminal
 
 import io.ktor.server.application.*
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.configureTerminalWebSocketRoutes
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.configureTerminalWebTransportRoutes
 import org.now.terminal.infrastructure.config.configureHTTP
 import org.now.terminal.infrastructure.config.configureKoin
 import org.now.terminal.infrastructure.config.configureMonitoring
@@ -21,4 +22,5 @@ fun Application.module() {
     installWebSockets()
     configureRouting()
     configureTerminalWebSocketRoutes()
+    configureTerminalWebTransportRoutes()
 }

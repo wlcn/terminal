@@ -4,11 +4,6 @@ import io.ktor.server.application.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.launch
 import org.koin.ktor.ext.inject
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
@@ -21,44 +16,19 @@ fun Application.configureTerminalWebSocketRoutes() {
             val terminalSessionService by inject<TerminalSessionService>()
             val terminalProcessService by inject<TerminalProcessService>()
             
-            // Get or create terminal session
-            val session = terminalSessionService.getSessionById(sessionId) ?: return@webSocket close(CloseReason(CloseReason.Codes.GOING_AWAY, "Session not found"))
+            // Create WebSocket protocol implementation
+            val protocol = WebSocketProtocol(this)
             
-            // Get or create terminal process
-            var process = terminalProcessService.getProcess(sessionId)
-            if (process == null) {
-                process = terminalProcessService.createProcess(sessionId, session.workingDirectory, session.shellType)
-            }
+            // Create communication handler
+            val handler = TerminalCommunicationHandler(
+                sessionId = sessionId,
+                protocol = protocol,
+                terminalSessionService = terminalSessionService,
+                terminalProcessService = terminalProcessService
+            )
             
-            // Add output listener to send data to client
-            val outputListener: (String) -> Unit = { output ->
-                try {
-                    // Send output to client using coroutine scope
-                    CoroutineScope(Dispatchers.IO).launch {
-                        outgoing.send(Frame.Text(output))
-                    }
-                } catch (e: ClosedSendChannelException) {
-                    // Client disconnected
-                }
-            }
-            process.addOutputListener(outputListener)
-            
-            try {
-                for (frame in incoming) {
-                    if (frame is Frame.Text) {
-                        val text = frame.readText()
-                        // Run write operation in coroutine to avoid blocking
-                        launch(Dispatchers.IO) {
-                            terminalProcessService.writeToProcess(sessionId, text)
-                        }
-                    }
-                }
-            } catch (e: ClosedReceiveChannelException) {
-                // Client disconnected
-            } finally {
-                // Cleanup
-                process.removeOutputListener(outputListener)
-            }
+            // Handle communication
+            handler.handleCommunication()
         }
     }
 }
