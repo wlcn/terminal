@@ -72,13 +72,17 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('📡 Creating new session via API...');
       terminal.current?.writeln('📡 Creating new session...');
       
-      const sessionResponse = await createSession(userId);
-      const newSessionId = sessionResponse.sessionId;
+      // 获取终端尺寸
+      const columns = 80;
+      const rows = 24;
+      
+      const sessionResponse = await createSession(userId, 'bash', '/', columns, rows);
+      const newSessionId = sessionResponse.id;
       const shellType = sessionResponse.shellType;
       setShellType(shellType);
       
-      // 直接使用后端返回的结构化尺寸数据
-      const terminalSize = sessionResponse.terminalSize;
+      // 使用默认的终端尺寸数据
+      const terminalSize = { columns, rows };
       
       console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
       terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
@@ -91,7 +95,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       terminal.current?.writeln('🌐 Establishing WebSocket connection...');
       
       // Use sessionId to establish WebSocket connection
-      ws.current = new WebSocket(`${WS_SERVER_URL}/${WS_SERVER_PATH}/${newSessionId}`);
+      ws.current = new WebSocket(`${WS_SERVER_URL}/api/sessions/${newSessionId}/ws`);
       
       ws.current.onopen = () => {
         console.log('✅ WebSocket connection established successfully');

@@ -10,6 +10,7 @@ import org.now.terminal.infrastructure.config.configureSecurity
 import org.now.terminal.infrastructure.config.configureSerialization
 import org.now.terminal.infrastructure.config.configureSockets
 import org.now.terminal.infrastructure.boundedcontext.user.config.configureUserModule
+import org.now.terminal.infrastructure.boundedcontext.terminalsession.config.configureTerminalSessionModule
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -25,4 +26,5 @@ fun Application.module() {
     configureSockets()
     configureRouting()
     configureUserModule()
+    configureTerminalSessionModule()
 }

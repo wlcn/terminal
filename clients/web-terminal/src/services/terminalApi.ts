@@ -5,17 +5,21 @@
 
 import { APP_CONFIG } from '../config/appConfig';
 
-const API_BASE_URL = APP_CONFIG.API_SERVER.BASE_PATH;
+const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}/api/sessions`;
 
 /**
  * Create new session
  */
-export const createSession = async (userId?: string): Promise<{ sessionId: string; status: string; shellType: string; terminalSize: { columns: number; rows: number } }> => {
+export const createSession = async (userId?: string, shellType?: string, workingDirectory?: string, terminalWidth?: number, terminalHeight?: number): Promise<{ sessionId: string; status: string; shellType: string; terminalSize: { columns: number; rows: number } }> => {
   try {
-    let url = `${API_BASE_URL}/sessions`;
-    if (userId) {
-      url += `?userId=${encodeURIComponent(userId)}`;
-    }
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (shellType) params.append('shellType', shellType);
+    if (workingDirectory) params.append('workingDirectory', workingDirectory);
+    if (terminalWidth) params.append('terminalWidth', terminalWidth.toString());
+    if (terminalHeight) params.append('terminalHeight', terminalHeight.toString());
+    
+    const url = `${API_BASE_URL}?${params.toString()}`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -40,6 +44,7 @@ export const createSession = async (userId?: string): Promise<{ sessionId: strin
 
 /**
  * Resize terminal
+ * Note: Currently not implemented in backend API
  */
 export const resizeTerminal = async (
   sessionId: string, 
@@ -47,19 +52,13 @@ export const resizeTerminal = async (
   rows: number
 ): Promise<{ sessionId: string; terminalSize: { columns: number; rows: number }; status: string }> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/resize`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ columns, rows }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to resize terminal: ${response.statusText}`);
-    }
-    
-    return await response.json();
+    // TODO: Implement resize terminal endpoint in backend
+    console.warn('⚠️ Resize terminal endpoint not yet implemented in backend');
+    return {
+      sessionId,
+      terminalSize: { columns, rows },
+      status: 'SUCCESS'
+    };
   } catch (error) {
     console.error('❌ Failed to resize terminal:', error);
     throw error;
@@ -74,10 +73,7 @@ export const terminateSession = async (
   reason?: string
 ): Promise<{ sessionId: string; reason: string; status: string }> => {
   try {
-    let url = `${API_BASE_URL}/sessions/${sessionId}`;
-    if (reason) {
-      url += `?reason=${encodeURIComponent(reason)}`;
-    }
+    const url = `${API_BASE_URL}/${sessionId}`;
     
     const response = await fetch(url, {
       method: 'DELETE',
@@ -99,10 +95,7 @@ export const terminateSession = async (
  */
 export const listSessions = async (userId?: string): Promise<{ sessions: string[]; count: number }> => {
   try {
-    let url = `${API_BASE_URL}/sessions`;
-    if (userId) {
-      url += `?userId=${encodeURIComponent(userId)}`;
-    }
+    const url = `${API_BASE_URL}`;
     
     const response = await fetch(url);
     
@@ -110,9 +103,127 @@ export const listSessions = async (userId?: string): Promise<{ sessions: string[
       throw new Error(`Failed to list sessions: ${response.statusText}`);
     }
     
-    return await response.json();
+    const sessions = await response.json();
+    // Convert backend session objects to session IDs
+    const sessionIds = sessions.map((session: any) => session.id);
+    
+    return {
+      sessions: sessionIds,
+      count: sessionIds.length
+    };
   } catch (error) {
     console.error('❌ Failed to list sessions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Execute command in session
+ */
+export const executeCommand = async (
+  sessionId: string, 
+  command: string,
+  timeoutMs?: number
+): Promise<string> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('command', command);
+    if (timeoutMs) {
+      params.append('timeoutMs', timeoutMs.toString());
+    }
+    
+    const url = `${API_BASE_URL}/${sessionId}/execute?${params.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to execute command: ${response.statusText}`);
+    }
+    
+    return await response.text();
+  } catch (error) {
+    console.error('❌ Failed to execute command:', error);
+    throw error;
+  }
+};
+
+/**
+ * Execute command and check success
+ */
+export const executeCommandAndCheckSuccess = async (
+  sessionId: string, 
+  command: string
+): Promise<boolean> => {
+  try {
+    const params = new URLSearchParams();
+    params.append('command', command);
+    
+    const url = `${API_BASE_URL}/${sessionId}/execute-check?${params.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to execute command: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result === true;
+  } catch (error) {
+    console.error('❌ Failed to execute command:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get session status
+ */
+export const getSessionStatus = async (sessionId: string): Promise<string> => {
+  try {
+    const url = `${API_BASE_URL}/${sessionId}/status`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get session status: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result.status;
+  } catch (error) {
+    console.error('❌ Failed to get session status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get session by ID
+ */
+export const getSessionById = async (sessionId: string): Promise<any> => {
+  try {
+    const url = `${API_BASE_URL}/${sessionId}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error(`Failed to get session: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('❌ Failed to get session:', error);
     throw error;
   }
 };
@@ -122,8 +233,8 @@ export const listSessions = async (userId?: string): Promise<{ sessions: string[
  */
 export const checkSessionActive = async (sessionId: string, userId?: string): Promise<boolean> => {
   try {
-    const sessions = await listSessions(userId);
-    return sessions.sessions.includes(sessionId);
+    const status = await getSessionStatus(sessionId);
+    return status === 'ACTIVE';
   } catch (error) {
     console.error('❌ Failed to check session status:', error);
     return false;

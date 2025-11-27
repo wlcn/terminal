@@ -1,15 +1,17 @@
 package org.now.terminal.infrastructure.boundedcontext.terminalsession.web.controllers
 
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.ExecuteTerminalCommand
-import org.now.terminal.boundedcontext.terminalsession.application.services.TerminalCommandService
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.CreateTerminalSessionCommand
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.GetTerminalSessionByIdQuery
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.GetUserTerminalSessionsQuery
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.TerminateTerminalSessionCommand
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.TerminalSessionManagementUseCase
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.TerminalSessionQueryUseCase
+import org.now.terminal.boundedcontext.terminalsession.application.usecases.ExecuteTerminalCommandUseCase
 import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
+import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.SessionStatus
+import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
 import org.now.terminal.shared.valueobjects.UserId
 
 /**
@@ -19,7 +21,7 @@ import org.now.terminal.shared.valueobjects.UserId
 class TerminalSessionController(
     private val terminalSessionManagementUseCase: TerminalSessionManagementUseCase,
     private val terminalSessionQueryUseCase: TerminalSessionQueryUseCase,
-    private val terminalCommandService: TerminalCommandService
+    private val executeTerminalCommandUseCase: ExecuteTerminalCommandUseCase
 ) {
     
     /**
@@ -27,8 +29,11 @@ class TerminalSessionController(
      */
     suspend fun createSession(
         userId: String,
-        title: String? = null,
-        workingDirectory: String? = null
+        shellType: String = "BASH",
+        workingDirectory: String = "/",
+        terminalWidth: Int = 80,
+        terminalHeight: Int = 24,
+        title: String? = null
     ): TerminalSession {
         val command = CreateTerminalSessionCommand(
             userId = UserId(userId),
@@ -36,6 +41,15 @@ class TerminalSessionController(
             workingDirectory = workingDirectory
         )
         return terminalSessionManagementUseCase.createSession(command)
+    }
+    
+    /**
+     * Get all sessions (for API endpoint)
+     */
+    suspend fun getSessions(): List<TerminalSession> {
+        // TODO: Implement proper session listing for all users
+        // For now, return empty list as this is an admin function
+        return emptyList()
     }
     
     /**
@@ -102,7 +116,13 @@ class TerminalSessionController(
             command = command,
             timeoutMs = timeoutMs
         )
-        return terminalCommandService.executeCommandAndGetOutput(executeCommand)
+        val result = executeTerminalCommandUseCase.execute(executeCommand)
+        
+        if (!result.isSuccess) {
+            throw RuntimeException("Command execution failed with exit code ${result.exitCode}: ${result.errorOutput}")
+        }
+        
+        return result.output
     }
     
     /**
@@ -118,6 +138,15 @@ class TerminalSessionController(
             command = command,
             timeoutMs = timeoutMs
         )
-        return terminalCommandService.executeCommandAndCheckSuccess(executeCommand)
+        val result = executeTerminalCommandUseCase.execute(executeCommand)
+        return result.isSuccess
+    }
+    
+    /**
+     * Get session status
+     */
+    suspend fun getSessionStatus(sessionId: String): String {
+        val session = getSessionById(sessionId)
+        return session?.status?.name ?: "NOT_FOUND"
     }
 }

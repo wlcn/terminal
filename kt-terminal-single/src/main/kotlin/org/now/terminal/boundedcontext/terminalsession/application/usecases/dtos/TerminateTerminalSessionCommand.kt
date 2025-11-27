@@ -10,3 +10,4 @@ import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.Termi
 data class TerminateTerminalSessionCommand(
     val sessionId: TerminalSessionId
 )
+
