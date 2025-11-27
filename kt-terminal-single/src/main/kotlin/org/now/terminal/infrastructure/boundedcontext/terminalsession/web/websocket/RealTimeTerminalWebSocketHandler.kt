@@ -104,7 +104,12 @@ class RealTimeTerminalWebSocketHandler(
         
         if (process == null || !process.isAlive) {
             logger.info("🔄 Creating new terminal process for session: {}", session.id.value)
-            process = processFactory.createProcess(session)
+            process = processFactory.createProcess(
+                shellType = session.configuration.shellType,
+                workingDirectory = session.configuration.workingDirectory,
+                environment = session.configuration.environmentVariables,
+                terminalSize = session.configuration.terminalSize
+            )
             activeProcesses[session.id] = process
         }
         

@@ -49,10 +49,9 @@ class Pty4jTerminalProcess(
             }
             
             // Create PtyProcess
-            val processBuilder = PtyProcessBuilder()
-                .setCommand(*command)
+            val processBuilder = PtyProcessBuilder(command)
                 .setDirectory(workingDirectory)
-                .setEnvironment(environment.toList().toTypedArray())
+                .setEnvironment(environment.map { "${it.key}=${it.value}" }.toTypedArray())
                 .setInitialColumns(terminalSize.cols)
                 .setInitialRows(terminalSize.rows)
             
@@ -106,7 +105,7 @@ class Pty4jTerminalProcess(
     
     override fun resizeTerminal(rows: Int, cols: Int) {
         try {
-            ptyProcess?.setWindowSize(cols, rows)
+            ptyProcess?.setWinSize(cols, rows)
             logger.info("📐 Resized terminal to {}x{}", cols, rows)
         } catch (e: Exception) {
             logger.error("❌ Failed to resize terminal: {}", e.message)
