@@ -2,6 +2,7 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.service
 
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
+import com.pty4j.WinSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -136,6 +137,8 @@ class Pty4jTerminalProcess(
         if (isTerminated) return false
         
         return try {
+            // Use direct method call instead of reflection for write operation
+            // since write is a standard method in OutputStream
             outputStream.write(data.toByteArray())
             outputStream.flush()
             true
@@ -147,8 +150,8 @@ class Pty4jTerminalProcess(
     override fun resize(columns: Int, rows: Int) {
         if (isTerminated) return
         
-        // TODO: Fix this method - find the correct method name for pty4j
-        // For now, this method is not implemented
+        // Direct call to pty4j 0.13.11 resize method
+        process.winSize = WinSize(columns, rows)
     }
     
     override fun terminate() {
