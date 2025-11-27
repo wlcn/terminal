@@ -48,6 +48,20 @@ class TerminalSessionManagementUseCase(
     }
     
     /**
+     * Create a new terminal session (direct call version)
+     */
+    suspend fun createSession(userId: UserId, 
+                              title: String? = null, 
+                              workingDirectory: String? = null): TerminalSession {
+        val command = CreateTerminalSessionCommand(
+            userId = userId,
+            title = title,
+            workingDirectory = workingDirectory
+        )
+        return createSession(command)
+    }
+    
+    /**
      * Terminate a terminal session
      */
     suspend fun terminateSession(command: TerminateTerminalSessionCommand): Boolean {
@@ -60,6 +74,14 @@ class TerminalSessionManagementUseCase(
         }
         
         return false
+    }
+    
+    /**
+     * Terminate a terminal session (direct call version)
+     */
+    suspend fun terminateSession(sessionId: TerminalSessionId): Boolean {
+        val command = TerminateTerminalSessionCommand(sessionId = sessionId)
+        return terminateSession(command)
     }
     
     /**

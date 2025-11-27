@@ -100,13 +100,19 @@ function App() {
       // Get or generate user ID
       let userId = localStorage.getItem('terminal_user_id');
       if (!userId) {
-        userId = 'web-terminal-user-' + Date.now();
+        // Generate user ID in format required by backend: usr_ + 12 hex characters
+        const hexChars = 'abcdef0123456789';
+        let hexId = '';
+        for (let i = 0; i < 12; i++) {
+          hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
+        }
+        userId = 'usr_' + hexId;
         localStorage.setItem('terminal_user_id', userId);
       }
       
-      const data = await listSessions(userId);
+      const data = await listSessions();
       console.log('Active sessions:', data);
-      alert(`Active sessions: ${data.sessions?.length || 0}`);
+      alert(`Active sessions: ${data.count || 0}`);
     } catch (error) {
       console.error('Failed to list sessions:', error);
     }

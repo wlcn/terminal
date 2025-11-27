@@ -49,6 +49,20 @@ class ExecuteTerminalCommandUseCase(
     }
     
     /**
+     * Execute a command in a terminal session (direct call version)
+     */
+    suspend fun execute(sessionId: org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId, 
+                       command: String, 
+                       timeoutMs: Long = 30000L): CommandResult {
+        val executeCommand = ExecuteTerminalCommand(
+            sessionId = sessionId,
+            command = command,
+            timeoutMs = timeoutMs
+        )
+        return execute(executeCommand)
+    }
+    
+    /**
      * Execute multiple commands in sequence
      */
     suspend fun executeCommands(commands: List<ExecuteTerminalCommand>): List<CommandResult> {

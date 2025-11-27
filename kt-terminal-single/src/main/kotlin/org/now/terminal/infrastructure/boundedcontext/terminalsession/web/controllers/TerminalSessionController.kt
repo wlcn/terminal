@@ -23,41 +23,28 @@ class TerminalSessionController(
     private val terminalSessionQueryUseCase: TerminalSessionQueryUseCase,
     private val executeTerminalCommandUseCase: ExecuteTerminalCommandUseCase
 ) {
+
     
     /**
      * Create a new terminal session
      */
     suspend fun createSession(
         userId: String,
-        shellType: String = "BASH",
-        workingDirectory: String = "/",
-        terminalWidth: Int = 80,
-        terminalHeight: Int = 24,
-        title: String? = null
+        title: String?,
+        workingDirectory: String?
     ): TerminalSession {
-        val command = CreateTerminalSessionCommand(
+        return terminalSessionManagementUseCase.createSession(
             userId = UserId(userId),
             title = title,
             workingDirectory = workingDirectory
         )
-        return terminalSessionManagementUseCase.createSession(command)
-    }
-    
-    /**
-     * Get all sessions (for API endpoint)
-     */
-    suspend fun getSessions(): List<TerminalSession> {
-        // TODO: Implement proper session listing for all users
-        // For now, return empty list as this is an admin function
-        return emptyList()
     }
     
     /**
      * Get terminal session by ID
      */
     suspend fun getSessionById(sessionId: String): TerminalSession? {
-        val query = GetTerminalSessionByIdQuery(sessionId = TerminalSessionId(sessionId))
-        return terminalSessionQueryUseCase.getSessionById(query)
+        return terminalSessionQueryUseCase.getSessionById(TerminalSessionId(sessionId))
     }
     
     /**
@@ -67,11 +54,7 @@ class TerminalSessionController(
         userId: String,
         includeInactive: Boolean = false
     ): List<TerminalSession> {
-        val query = GetUserTerminalSessionsQuery(
-            userId = UserId(userId),
-            includeInactive = includeInactive
-        )
-        return terminalSessionQueryUseCase.getUserSessions(query)
+        return terminalSessionQueryUseCase.getUserSessions(UserId(userId), includeInactive)
     }
     
     /**
@@ -85,8 +68,7 @@ class TerminalSessionController(
      * Terminate a terminal session
      */
     suspend fun terminateSession(sessionId: String): Boolean {
-        val command = TerminateTerminalSessionCommand(sessionId = TerminalSessionId(sessionId))
-        return terminalSessionManagementUseCase.terminateSession(command)
+        return terminalSessionManagementUseCase.terminateSession(TerminalSessionId(sessionId))
     }
     
     /**
@@ -111,12 +93,11 @@ class TerminalSessionController(
         command: String,
         timeoutMs: Long = 30000L
     ): String {
-        val executeCommand = ExecuteTerminalCommand(
+        val result = executeTerminalCommandUseCase.execute(
             sessionId = TerminalSessionId(sessionId),
             command = command,
             timeoutMs = timeoutMs
         )
-        val result = executeTerminalCommandUseCase.execute(executeCommand)
         
         if (!result.isSuccess) {
             throw RuntimeException("Command execution failed with exit code ${result.exitCode}: ${result.errorOutput}")
@@ -133,12 +114,11 @@ class TerminalSessionController(
         command: String,
         timeoutMs: Long = 30000L
     ): Boolean {
-        val executeCommand = ExecuteTerminalCommand(
+        val result = executeTerminalCommandUseCase.execute(
             sessionId = TerminalSessionId(sessionId),
             command = command,
             timeoutMs = timeoutMs
         )
-        val result = executeTerminalCommandUseCase.execute(executeCommand)
         return result.isSuccess
     }
     

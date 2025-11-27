@@ -15,18 +15,19 @@ import org.now.terminal.infrastructure.boundedcontext.terminalsession.web.contro
 /**
  * Terminal Session Module Configuration
  *
- * Configures all terminal session related routes, controllers, and dependencies
+ * Configures all terminal session related routes
  */
 fun Application.configureTerminalSessionModule() {
-    // Inject dependencies
+    // Inject controller dependency
     val terminalSessionController by inject<TerminalSessionController>()
 
     routing {
         route("/api/sessions") {
             // Get all sessions
             get {
-                val sessions = terminalSessionController.getSessions()
-                call.respond(sessions)
+                // TODO: Implement proper session listing for all users
+                // For now, return empty list as this is an admin function
+                call.respond(emptyList<Any>())
             }
 
             // Create new session
@@ -34,10 +35,8 @@ fun Application.configureTerminalSessionModule() {
                 val params = call.request.queryParameters
                 val session = terminalSessionController.createSession(
                     userId = params["userId"] ?: "",
-                    shellType = params["shellType"] ?: "BASH",
-                    workingDirectory = params["workingDirectory"] ?: "/",
-                    terminalWidth = params["terminalWidth"]?.toIntOrNull() ?: 80,
-                    terminalHeight = params["terminalHeight"]?.toIntOrNull() ?: 24
+                    title = params["title"],
+                    workingDirectory = params["workingDirectory"]
                 )
                 call.respond(session)
             }
@@ -83,6 +82,38 @@ fun Application.configureTerminalSessionModule() {
                     val status = terminalSessionController.getSessionStatus(sessionId)
                     call.respond(mapOf("status" to status))
                 }
+            }
+        }
+
+        // User-specific endpoints
+        route("/api/users/{userId}/sessions") {
+            // Get all sessions for a user
+            get {
+                val userId = call.parameters["userId"] ?: ""
+                val includeInactive = call.request.queryParameters["includeInactive"]?.toBoolean() ?: false
+                val sessions = terminalSessionController.getUserSessions(userId, includeInactive)
+                call.respond(sessions)
+            }
+
+            // Get active sessions for a user
+            get("/active") {
+                val userId = call.parameters["userId"] ?: ""
+                val sessions = terminalSessionController.getActiveUserSessions(userId)
+                call.respond(sessions)
+            }
+
+            // Count active sessions for a user
+            get("/active/count") {
+                val userId = call.parameters["userId"] ?: ""
+                val count = terminalSessionController.countActiveSessions(userId)
+                call.respond(mapOf("count" to count))
+            }
+
+            // Terminate all sessions for a user
+            delete {
+                val userId = call.parameters["userId"] ?: ""
+                val count = terminalSessionController.terminateAllUserSessions(userId)
+                call.respond(mapOf("terminatedCount" to count))
             }
         }
 

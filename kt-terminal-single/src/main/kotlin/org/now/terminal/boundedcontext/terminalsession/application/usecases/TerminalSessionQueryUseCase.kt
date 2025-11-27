@@ -20,6 +20,14 @@ class TerminalSessionQueryUseCase(
     }
     
     /**
+     * Get terminal session by ID (direct call version)
+     */
+    suspend fun getSessionById(sessionId: TerminalSessionId): TerminalSession? {
+        val query = GetTerminalSessionByIdQuery(sessionId = sessionId)
+        return getSessionById(query)
+    }
+    
+    /**
      * Get all terminal sessions for a user
      */
     suspend fun getUserSessions(query: GetUserTerminalSessionsQuery): List<TerminalSession> {
@@ -30,6 +38,14 @@ class TerminalSessionQueryUseCase(
         } else {
             sessions.filter { it.isActive }
         }
+    }
+    
+    /**
+     * Get all terminal sessions for a user (direct call version)
+     */
+    suspend fun getUserSessions(userId: UserId, includeInactive: Boolean = false): List<TerminalSession> {
+        val query = GetUserTerminalSessionsQuery(userId = userId, includeInactive = includeInactive)
+        return getUserSessions(query)
     }
     
     /**

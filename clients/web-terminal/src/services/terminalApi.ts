@@ -5,19 +5,17 @@
 
 import { APP_CONFIG } from '../config/appConfig';
 
-const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}/api/sessions`;
+const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}/sessions`;
 
 /**
  * Create new session
  */
-export const createSession = async (userId?: string, shellType?: string, workingDirectory?: string, terminalWidth?: number, terminalHeight?: number): Promise<{ sessionId: string; status: string; shellType: string; terminalSize: { columns: number; rows: number } }> => {
+export const createSession = async (userId: string, title?: string, workingDirectory?: string): Promise<{ sessionId: string; status: string; shellType: string; terminalSize: { columns: number; rows: number } }> => {
   try {
     const params = new URLSearchParams();
-    if (userId) params.append('userId', userId);
-    if (shellType) params.append('shellType', shellType);
+    params.append('userId', userId);
+    if (title) params.append('title', title);
     if (workingDirectory) params.append('workingDirectory', workingDirectory);
-    if (terminalWidth) params.append('terminalWidth', terminalWidth.toString());
-    if (terminalHeight) params.append('terminalHeight', terminalHeight.toString());
     
     const url = `${API_BASE_URL}?${params.toString()}`;
     

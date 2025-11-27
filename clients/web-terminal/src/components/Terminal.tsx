@@ -64,7 +64,13 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       // Get or generate user ID
       let userId = localStorage.getItem('terminal_user_id');
       if (!userId) {
-        userId = 'web-terminal-user-' + Date.now();
+        // Generate user ID in format required by backend: usr_ + 12 hex characters
+        const hexChars = 'abcdef0123456789';
+        let hexId = '';
+        for (let i = 0; i < 12; i++) {
+          hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
+        }
+        userId = 'usr_' + hexId;
         localStorage.setItem('terminal_user_id', userId);
       }
       
@@ -76,8 +82,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const columns = 80;
       const rows = 24;
       
-      const sessionResponse = await createSession(userId, 'bash', '/', columns, rows);
-      const newSessionId = sessionResponse.id;
+      const sessionResponse = await createSession(userId, 'Web Terminal Session', '/');
+      const newSessionId = sessionResponse.sessionId;
       const shellType = sessionResponse.shellType;
       setShellType(shellType);
       
@@ -90,18 +96,47 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       terminal.current?.writeln(`📏 Terminal size: ${terminalSize.columns}×${terminalSize.rows}`);
       setSessionId(newSessionId);
       
-      // 2. Immediately establish WebSocket connection (one-to-one binding)
-      console.log('🌐 Establishing WebSocket connection for session...');
-      terminal.current?.writeln('🌐 Establishing WebSocket connection...');
+      // 2. Try to establish WebSocket connection (one-to-one binding)
+      console.log('🌐 Attempting to establish WebSocket connection for session...');
+      terminal.current?.writeln('🌐 Attempting WebSocket connection...');
       
       // Use sessionId to establish WebSocket connection
-      ws.current = new WebSocket(`${WS_SERVER_URL}/api/sessions/${newSessionId}/ws`);
-      
-      ws.current.onopen = () => {
-        console.log('✅ WebSocket connection established successfully');
-        terminal.current?.writeln('✅ WebSocket connected');
+      try {
+        ws.current = new WebSocket(`${WS_SERVER_URL}/sessions/${newSessionId}/ws`);
         
-        // Configure terminal parameters after WebSocket connection is successful
+        ws.current.onopen = () => {
+          console.log('✅ WebSocket connection established successfully');
+          terminal.current?.writeln('✅ WebSocket connected');
+          
+          // Configure terminal parameters after WebSocket connection is successful
+          configureTerminalForShell(shellType);
+          
+          // 直接使用尺寸对象调整xterm.js
+          if (terminalSize.columns && terminalSize.rows) {
+            terminal.current?.resize(terminalSize.columns, terminalSize.rows);
+          }
+          
+          terminal.current?.writeln('🚀 Terminal ready for command line interaction');
+          terminal.current?.writeln('');
+          terminal.current?.write('$ ');
+          
+          setIsConnected(true);
+          
+          // 传递会话信息给父组件
+          onConnectionStatusChange?.(true, {
+            sessionId: newSessionId,
+            shellType: shellType,
+            terminalSize: terminalSize // 使用尺寸对象
+          });
+          
+          // After successful connection, session and WebSocket have established one-to-one relationship
+          console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);
+        };
+      } catch (error) {
+        console.warn('⚠️ WebSocket connection failed, using fallback mode:', error);
+        terminal.current?.writeln('⚠️ WebSocket connection failed, using fallback mode');
+        
+        // Configure terminal parameters even without WebSocket
         configureTerminalForShell(shellType);
         
         // 直接使用尺寸对象调整xterm.js
@@ -109,7 +144,9 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           terminal.current?.resize(terminalSize.columns, terminalSize.rows);
         }
         
-        terminal.current?.writeln('🚀 Terminal ready for command line interaction');
+        terminal.current?.writeln('🚀 Terminal session created successfully');
+        terminal.current?.writeln('⚠️ Note: Real-time terminal interaction requires WebSocket support');
+        terminal.current?.writeln('💡 You can use command execution APIs instead');
         terminal.current?.writeln('');
         terminal.current?.write('$ ');
         
@@ -122,9 +159,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           terminalSize: terminalSize // 使用尺寸对象
         });
         
-        // After successful connection, session and WebSocket have established one-to-one relationship
-        console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);
-      };
+        console.log(`✅ Session ${newSessionId} created (fallback mode)`);
+      }
       
       ws.current.onmessage = (event) => {
         console.log('📨 Received terminal output:', event.data);
