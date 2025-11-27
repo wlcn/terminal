@@ -2,6 +2,7 @@ package org.now.terminal.infrastructure.boundedcontext.terminalsession.process
 
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
+import com.pty4j.WinSize
 import org.now.terminal.boundedcontext.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.ShellType
 import org.now.terminal.boundedcontext.terminalsession.infrastructure.TerminalProcess
@@ -44,6 +45,8 @@ class Pty4jTerminalProcess(
             // Build the command based on shell type
             val command = when (shellType) {
                 ShellType.BASH -> arrayOf("bash")
+                ShellType.ZSH -> arrayOf("zsh")
+                ShellType.FISH -> arrayOf("fish")
                 ShellType.POWERSHELL -> arrayOf("powershell.exe")
                 ShellType.CMD -> arrayOf("cmd.exe")
             }
@@ -51,7 +54,7 @@ class Pty4jTerminalProcess(
             // Create PtyProcess
             val processBuilder = PtyProcessBuilder(command)
                 .setDirectory(workingDirectory)
-                .setEnvironment(environment.map { "${it.key}=${it.value}" }.toTypedArray())
+                .setEnvironment(environment)
                 .setInitialColumns(terminalSize.cols)
                 .setInitialRows(terminalSize.rows)
             
@@ -105,7 +108,7 @@ class Pty4jTerminalProcess(
     
     override fun resizeTerminal(rows: Int, cols: Int) {
         try {
-            ptyProcess?.setWinSize(cols, rows)
+            ptyProcess?.setWinSize(WinSize(cols, rows))
             logger.info("📐 Resized terminal to {}x{}", cols, rows)
         } catch (e: Exception) {
             logger.error("❌ Failed to resize terminal: {}", e.message)

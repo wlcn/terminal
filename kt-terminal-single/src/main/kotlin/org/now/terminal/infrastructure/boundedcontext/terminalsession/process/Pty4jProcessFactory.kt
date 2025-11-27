@@ -25,15 +25,5 @@ class Pty4jProcessFactory : ProcessFactory {
         )
     }
     
-    /**
-     * Create process from a terminal session
-     */
-    fun createProcess(session: TerminalSession): TerminalProcess {
-        return Pty4jTerminalProcess(
-            session = session,
-            workingDirectory = session.workingDirectory,
-            environment = session.environment,
-            terminalSize = session.terminalSize
-        )
-    }
+
 }

@@ -7,6 +7,7 @@ import org.now.terminal.boundedcontext.terminalsession.application.usecases.Term
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.TerminalSessionQueryUseCase
 import org.now.terminal.boundedcontext.terminalsession.domain.repositories.TerminalSessionRepository
 import org.now.terminal.boundedcontext.terminalsession.domain.services.executor.CommandExecutor
+import org.now.terminal.boundedcontext.terminalsession.infrastructure.ProcessFactory
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.executor.Pty4jCommandExecutor
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.process.Pty4jProcessFactory
 import org.now.terminal.infrastructure.boundedcontext.terminalsession.repositories.InMemoryTerminalSessionRepository
