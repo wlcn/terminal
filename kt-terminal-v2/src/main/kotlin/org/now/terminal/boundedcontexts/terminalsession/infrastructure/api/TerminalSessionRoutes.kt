@@ -9,7 +9,6 @@ import org.koin.ktor.ext.inject
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
-import java.util.UUID
 
 fun Route.terminalSessionRoutes() {
     val terminalSessionService by inject<TerminalSessionService>()
@@ -34,14 +33,14 @@ fun Route.terminalSessionRoutes() {
         
         // Get session by ID
         get("/{id}") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.getSessionById(id) ?: return@get call.respond(HttpStatusCode.NotFound, "Session not found")
             call.respond(HttpStatusCode.OK, session)
         }
         
         // Resize terminal
         post("/{id}/resize") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val columns = call.request.queryParameters["cols"]?.toIntOrNull() ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing or invalid columns")
             val rows = call.request.queryParameters["rows"]?.toIntOrNull() ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing or invalid rows")
             
@@ -56,7 +55,7 @@ fun Route.terminalSessionRoutes() {
         
         // Interrupt terminal (send Ctrl+C signal)
         post("/{id}/interrupt") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.getSessionById(id) ?: return@post call.respond(HttpStatusCode.NotFound, "Session not found")
             
             val success = terminalProcessService.interruptProcess(id)
@@ -72,7 +71,7 @@ fun Route.terminalSessionRoutes() {
         
         // Terminate session
         delete("/{id}") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.terminateSession(id) ?: return@delete call.respond(HttpStatusCode.NotFound, "Session not found")
             terminalProcessService.terminateProcess(id)
             call.respond(HttpStatusCode.OK, mapOf(
@@ -84,14 +83,14 @@ fun Route.terminalSessionRoutes() {
         
         // Get session status
         get("/{id}/status") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.getSessionById(id) ?: return@get call.respond(HttpStatusCode.NotFound, "Session not found")
             call.respond(HttpStatusCode.OK, mapOf("status" to session.status))
         }
         
         // Execute command
         post("/{id}/execute") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val command = call.request.queryParameters["command"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing command")
             val timeoutMs = call.request.queryParameters["timeoutMs"]?.toLongOrNull()
             
@@ -105,7 +104,7 @@ fun Route.terminalSessionRoutes() {
         
         // Execute command and check success
         post("/{id}/execute-check") { 
-            val id = call.parameters["id"]?.let { UUID.fromString(it) } ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
+            val id = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val command = call.request.queryParameters["command"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing command")
             
             val success = terminalProcessService.writeToProcess(id, "$command\n")
