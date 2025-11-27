@@ -555,20 +555,20 @@ function App() {
         
         <div className="h-full flex flex-col relative z-10">
           {/* Enhanced Terminal Container - Enterprise Tech Design */}
-           <Card className="flex-1 m-4 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl relative group">
+           <Card className="flex-1 m-4 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group">
              {/* Advanced Border Glow System */}
-             <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 rounded-3xl blur-xl opacity-60 pointer-events-none animate-pulse-slow"></div>
-             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-cyan-500/10 rounded-3xl blur-md opacity-40 pointer-events-none"></div>
+             <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 blur-xl opacity-60 pointer-events-none animate-pulse-slow"></div>
+             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-cyan-500/10 blur-md opacity-40 pointer-events-none"></div>
              
              {/* Corner Accents */}
-             <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/40 to-transparent rounded-tl-3xl pointer-events-none"></div>
-             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-accent/40 to-transparent rounded-tr-3xl pointer-events-none"></div>
+             <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/40 to-transparent pointer-events-none"></div>
+             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-accent/40 to-transparent pointer-events-none"></div>
              
              {/* Scan Line Effect */}
              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-scan-line pointer-events-none"></div>
              
              {/* Data Stream Particles */}
-             <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                {[...Array(8)].map((_, i) => (
                  <div 
                    key={i}
