@@ -12,12 +12,11 @@ import kotlinx.coroutines.launch
 import org.koin.ktor.ext.inject
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
-import java.util.UUID
 
 fun Application.configureTerminalWebSocketRoutes() {
     routing {
         webSocket("/ws/{sessionId}") { // websocketSession
-            val sessionId = call.parameters["sessionId"]?.let { UUID.fromString(it) } ?: return@webSocket close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Invalid session ID"))
+            val sessionId = call.parameters["sessionId"] ?: return@webSocket close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Invalid session ID"))
             
             val terminalSessionService by inject<TerminalSessionService>()
             val terminalProcessService by inject<TerminalProcessService>()

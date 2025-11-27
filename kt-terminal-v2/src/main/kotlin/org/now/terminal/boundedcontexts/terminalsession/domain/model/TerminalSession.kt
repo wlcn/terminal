@@ -1,12 +1,10 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.model
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import java.util.UUID
 
 @Serializable
 class TerminalSession(
-    @Contextual val id: UUID,
+    val id: String,
     val userId: String,
     val title: String?,
     val workingDirectory: String,

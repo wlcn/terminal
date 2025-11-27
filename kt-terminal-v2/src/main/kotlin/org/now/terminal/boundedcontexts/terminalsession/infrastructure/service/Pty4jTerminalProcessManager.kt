@@ -19,42 +19,41 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalP
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 import java.io.InputStream
 import java.io.OutputStream
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 // Concrete implementation using pty4j - should be in infrastructure layer
 class Pty4jTerminalProcessManager : TerminalProcessManager {
-    private val processes = ConcurrentHashMap<UUID, TerminalProcess>()
+    private val processes = ConcurrentHashMap<String, TerminalProcess>()
     
-    override fun createProcess(sessionId: UUID, workingDirectory: String, shellType: String): TerminalProcess {
+    override fun createProcess(sessionId: String, workingDirectory: String, shellType: String): TerminalProcess {
         val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType)
         processes[sessionId] = process
         process.startReading()
         return process
     }
     
-    override fun getProcess(sessionId: UUID): TerminalProcess? {
+    override fun getProcess(sessionId: String): TerminalProcess? {
         return processes[sessionId]
     }
     
-    override fun writeToProcess(sessionId: UUID, data: String): Boolean {
+    override fun writeToProcess(sessionId: String, data: String): Boolean {
         val process = processes[sessionId] ?: return false
         return process.write(data)
     }
     
-    override fun resizeProcess(sessionId: UUID, columns: Int, rows: Int): Boolean {
+    override fun resizeProcess(sessionId: String, columns: Int, rows: Int): Boolean {
         val process = processes[sessionId] ?: return false
         process.resize(columns, rows)
         return true
     }
     
-    override fun terminateProcess(sessionId: UUID): Boolean {
+    override fun terminateProcess(sessionId: String): Boolean {
         val process = processes.remove(sessionId) ?: return false
         process.terminate()
         return true
     }
     
-    override fun interruptProcess(sessionId: UUID): Boolean {
+    override fun interruptProcess(sessionId: String): Boolean {
         val process = processes[sessionId] ?: return false
         process.interrupt()
         return true
@@ -63,7 +62,7 @@ class Pty4jTerminalProcessManager : TerminalProcessManager {
 
 // Concrete terminal process implementation using pty4j - should be in infrastructure layer
 class Pty4jTerminalProcess(
-    private val sessionId: UUID,
+    private val sessionId: String,
     workingDirectory: String,
     shellType: String
 ) : TerminalProcess {

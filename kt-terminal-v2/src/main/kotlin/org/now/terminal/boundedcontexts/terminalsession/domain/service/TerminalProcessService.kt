@@ -1,15 +1,13 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.service
 
-import java.util.UUID
-
 // Define abstract interface for terminal process management - should be in domain layer
 interface TerminalProcessManager {
-    fun createProcess(sessionId: UUID, workingDirectory: String, shellType: String = "bash"): TerminalProcess
-    fun getProcess(sessionId: UUID): TerminalProcess?
-    fun writeToProcess(sessionId: UUID, data: String): Boolean
-    fun resizeProcess(sessionId: UUID, columns: Int, rows: Int): Boolean
-    fun terminateProcess(sessionId: UUID): Boolean
-    fun interruptProcess(sessionId: UUID): Boolean
+    fun createProcess(sessionId: String, workingDirectory: String, shellType: String = "bash"): TerminalProcess
+    fun getProcess(sessionId: String): TerminalProcess?
+    fun writeToProcess(sessionId: String, data: String): Boolean
+    fun resizeProcess(sessionId: String, columns: Int, rows: Int): Boolean
+    fun terminateProcess(sessionId: String): Boolean
+    fun interruptProcess(sessionId: String): Boolean
 }
 
 // Define abstract interface for terminal process - should be in domain layer

@@ -7,7 +7,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class TerminalSessionService {
-    private val sessions = ConcurrentHashMap<UUID, TerminalSession>()
+    private val sessions = ConcurrentHashMap<String, TerminalSession>()
     
     fun createSession(
         userId: String,
@@ -16,7 +16,7 @@ class TerminalSessionService {
         shellType: String = "bash"
     ): TerminalSession {
         val session = TerminalSession(
-            id = UUID.randomUUID(),
+            id = UUID.randomUUID().toString(),
             userId = userId,
             title = title,
             workingDirectory = workingDirectory,
@@ -27,7 +27,7 @@ class TerminalSessionService {
         return session
     }
     
-    fun getSessionById(id: UUID): TerminalSession? {
+    fun getSessionById(id: String): TerminalSession? {
         return sessions[id]
     }
     
@@ -39,28 +39,28 @@ class TerminalSessionService {
         return sessions.values.toList()
     }
     
-    fun resizeTerminal(id: UUID, columns: Int, rows: Int): TerminalSession? {
+    fun resizeTerminal(id: String, columns: Int, rows: Int): TerminalSession? {
         return sessions[id]?.also {
             it.terminalSize = TerminalSize(columns, rows)
             it.updatedAt = System.currentTimeMillis()
         }
     }
     
-    fun terminateSession(id: UUID, reason: String? = null): TerminalSession? {
+    fun terminateSession(id: String, reason: String? = null): TerminalSession? {
         return sessions[id]?.also {
             it.status = TerminalSessionStatus.TERMINATED
             it.updatedAt = System.currentTimeMillis()
         }
     }
     
-    fun updateSessionStatus(id: UUID, status: TerminalSessionStatus): TerminalSession? {
+    fun updateSessionStatus(id: String, status: TerminalSessionStatus): TerminalSession? {
         return sessions[id]?.also {
             it.status = status
             it.updatedAt = System.currentTimeMillis()
         }
     }
     
-    fun deleteSession(id: UUID): Boolean {
+    fun deleteSession(id: String): Boolean {
         return sessions.remove(id) != null
     }
 }
