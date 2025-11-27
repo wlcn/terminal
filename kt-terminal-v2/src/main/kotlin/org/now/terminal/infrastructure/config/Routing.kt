@@ -3,8 +3,6 @@ package org.now.terminal.infrastructure.config
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.autohead.*
-import io.ktor.server.plugins.requestvalidation.RequestValidation
-import io.ktor.server.plugins.requestvalidation.ValidationResult
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -12,13 +10,6 @@ import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.termi
 
 fun Application.configureRouting() {
     install(AutoHeadResponse)
-    install(RequestValidation) {
-        validate<String> { bodyText ->
-            if (!bodyText.startsWith("Hello"))
-                ValidationResult.Invalid("Body text should start with 'Hello'")
-            else ValidationResult.Valid
-        }
-    }
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             // Log detailed error stack trace using Ktor's logging system
@@ -28,7 +19,7 @@ fun Application.configureRouting() {
     }
     routing {
         get("/") {
-            call.respondText("Hello World!")
+            call.respondText("KT Terminal API")
         }
         
         // API routes with /api prefix
