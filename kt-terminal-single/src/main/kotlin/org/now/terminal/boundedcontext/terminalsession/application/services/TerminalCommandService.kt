@@ -18,21 +18,21 @@ class TerminalCommandService(
     /**
      * Execute a single command in a terminal session
      */
-    fun executeCommand(command: ExecuteTerminalCommand): CommandResult {
+    suspend fun executeCommand(command: ExecuteTerminalCommand): CommandResult {
         return executeTerminalCommandUseCase.execute(command)
     }
     
     /**
      * Execute multiple commands in sequence
      */
-    fun executeCommands(commands: List<ExecuteTerminalCommand>): List<CommandResult> {
+    suspend fun executeCommands(commands: List<ExecuteTerminalCommand>): List<CommandResult> {
         return executeTerminalCommandUseCase.executeCommands(commands)
     }
     
     /**
      * Execute a command and return only the output if successful
      */
-    fun executeCommandAndGetOutput(command: ExecuteTerminalCommand): String {
+    suspend fun executeCommandAndGetOutput(command: ExecuteTerminalCommand): String {
         val result = executeTerminalCommandUseCase.execute(command)
         
         if (!result.isSuccess) {
@@ -45,7 +45,7 @@ class TerminalCommandService(
     /**
      * Execute a command and check if it was successful
      */
-    fun executeCommandAndCheckSuccess(command: ExecuteTerminalCommand): Boolean {
+    suspend fun executeCommandAndCheckSuccess(command: ExecuteTerminalCommand): Boolean {
         val result = executeTerminalCommandUseCase.execute(command)
         return result.isSuccess
     }

@@ -22,12 +22,12 @@ class ExecuteTerminalCommandUseCase(
     /**
      * Execute a command in a terminal session
      */
-    fun execute(command: ExecuteTerminalCommand): CommandResult {
+    suspend fun execute(command: ExecuteTerminalCommand): CommandResult {
         // 1. Validate session exists and is active
         val session = sessionRepository.findById(command.sessionId)
             ?: throw IllegalArgumentException("Terminal session not found: ${command.sessionId}")
         
-        if (!session.isActive()) {
+        if (!session.isActive) {
             throw IllegalStateException("Terminal session is not active: ${command.sessionId}")
         }
         
@@ -41,11 +41,10 @@ class ExecuteTerminalCommandUseCase(
         val result = commandExecutor.executeCommand(commandObj)
         
         // 4. Update session state
-        session.recordCommand(command.command, result)
-        session.updateLastActivity()
+        val updatedSession = session.recordCommand(command.command)
         
         // 5. Save session changes
-        sessionRepository.save(session)
+        sessionRepository.save(updatedSession)
         
         return result
     }
@@ -53,7 +52,7 @@ class ExecuteTerminalCommandUseCase(
     /**
      * Execute multiple commands in sequence
      */
-    fun executeCommands(commands: List<ExecuteTerminalCommand>): List<CommandResult> {
+    suspend fun executeCommands(commands: List<ExecuteTerminalCommand>): List<CommandResult> {
         return commands.map { execute(it) }
     }
 }

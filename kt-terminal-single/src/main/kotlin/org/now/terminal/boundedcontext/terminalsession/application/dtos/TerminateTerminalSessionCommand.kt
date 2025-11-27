@@ -1,10 +1,10 @@
-package org.now.terminal.boundedcontext.terminalsession.application.commands
+package org.now.terminal.boundedcontext.terminalsession.application.dtos
 
 import kotlinx.serialization.Serializable
 import org.now.terminal.boundedcontext.terminalsession.domain.valueobjects.TerminalSessionId
 
 /**
- * Command to terminate a terminal session
+ * DTO to terminate a terminal session
  */
 @Serializable
 data class TerminateTerminalSessionCommand(
