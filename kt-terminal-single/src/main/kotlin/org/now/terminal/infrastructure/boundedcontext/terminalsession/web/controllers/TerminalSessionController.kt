@@ -1,5 +1,8 @@
 package org.now.terminal.infrastructure.boundedcontext.terminalsession.web.controllers
 
+import io.ktor.websocket.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.Frame
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.ExecuteTerminalCommand
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.CreateTerminalSessionCommand
 import org.now.terminal.boundedcontext.terminalsession.application.usecases.dtos.GetTerminalSessionByIdQuery
@@ -128,5 +131,44 @@ class TerminalSessionController(
     suspend fun getSessionStatus(sessionId: String): String {
         val session = getSessionById(sessionId)
         return session?.status?.name ?: "NOT_FOUND"
+    }
+    
+    /**
+     * Handle WebSocket connection for a terminal session
+     */
+    suspend fun handleWebSocketConnection(sessionId: String, webSocketSession: DefaultWebSocketServerSession) {
+        val session = getSessionById(sessionId)
+        if (session == null) {
+            webSocketSession.close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Session not found"))
+            return
+        }
+        
+        if (!session.isActive) {
+            webSocketSession.close(CloseReason(CloseReason.Codes.CANNOT_ACCEPT, "Session is not active"))
+            return
+        }
+        
+        println("🔗 WebSocket connection established for session: $sessionId")
+        
+        try {
+            // Handle incoming messages from the client
+            for (frame in webSocketSession.incoming) {
+                if (frame is Frame.Text) {
+                    val command = frame.readText()
+                    println("📨 Received command from WebSocket: $command")
+                    
+                    // Execute the command in the terminal session
+                    val result = executeCommand(sessionId, command)
+                    
+                    // Send the result back to the client
+                    webSocketSession.send(Frame.Text(result))
+                    println("📤 Sent command result to WebSocket")
+                }
+            }
+        } catch (e: Exception) {
+            println("❌ WebSocket connection error: ${e.message}")
+        } finally {
+            println("🔌 WebSocket connection closed for session: $sessionId")
+        }
     }
 }

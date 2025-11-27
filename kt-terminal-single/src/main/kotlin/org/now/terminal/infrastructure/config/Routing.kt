@@ -20,7 +20,9 @@ fun Application.configureRouting() {
     }
     install(StatusPages) {
         exception<Throwable> { call, cause ->
-            call.respondText(text = "500: $cause" , status = HttpStatusCode.InternalServerError)
+            // Log detailed error stack trace using Ktor's logging system
+            call.application.log.error("Internal Server Error: ${cause.message}", cause)
+            call.respondText(text = "500: ${cause.message}" , status = HttpStatusCode.InternalServerError)
         }
     }
     routing {

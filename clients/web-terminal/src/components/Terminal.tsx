@@ -63,15 +63,23 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       // Get or generate user ID
       let userId = localStorage.getItem('terminal_user_id');
-      if (!userId) {
-        // Generate user ID in format required by backend: usr_ + 12 hex characters
+      
+      // Check if userId exists and has correct format (usr_ + 12 lowercase hex chars)
+      const isValidUserId = userId && userId.startsWith('usr_') && userId.length === 16 && /^usr_[a-f0-9]{12}$/.test(userId);
+      
+      if (!userId || !isValidUserId) {
+        // Generate user ID in format required by backend: usr_ + 12 lowercase hex characters
         const hexChars = 'abcdef0123456789';
         let hexId = '';
         for (let i = 0; i < 12; i++) {
           hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
         }
-        userId = 'usr_' + hexId;
+        userId = 'usr_' + hexId.toLowerCase();
         localStorage.setItem('terminal_user_id', userId);
+        
+        if (!isValidUserId && userId) {
+          console.log('🔄 Replaced invalid userId format with new valid format:', userId);
+        }
       }
       
       // 1. Create new session via API
@@ -102,7 +110,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       // Use sessionId to establish WebSocket connection
       try {
-        ws.current = new WebSocket(`${WS_SERVER_URL}/sessions/${newSessionId}/ws`);
+        ws.current = new WebSocket(`${WS_SERVER_URL}/ws/sessions/${newSessionId}`);
         
         ws.current.onopen = () => {
           console.log('✅ WebSocket connection established successfully');

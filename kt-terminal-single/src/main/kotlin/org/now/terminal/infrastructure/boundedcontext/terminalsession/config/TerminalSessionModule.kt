@@ -117,12 +117,10 @@ fun Application.configureTerminalSessionModule() {
             }
         }
 
-        // TODO: Add WebSocket endpoint when WebSocket support is implemented
-        // route("/ws/sessions/{sessionId}") {
-        //     webSocket {
-        //         val sessionId = call.parameters["sessionId"] ?: ""
-        //         terminalSessionController.handleWebSocketConnection(sessionId, this)
-        //     }
+        // WebSocket endpoint for terminal session interaction (TODO: Implement proper WebSocket handling)
+        // webSocket("/ws/sessions/{sessionId}") {
+        //     val sessionId = call.parameters["sessionId"] ?: ""
+        //     terminalSessionController.handleWebSocketConnection(sessionId, this)
         // }
     }
 }
