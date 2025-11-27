@@ -3,14 +3,14 @@ package org.now.terminal.shared.kernel.pagination
 import kotlinx.serialization.Serializable
 
 /**
- * 统一分页请求参数
+ * Unified pagination request parameters
  */
 @Serializable
 sealed class PageRequest {
     abstract val pageSize: Int
     
     /**
-     * 基于游标的分页请求
+     * Cursor-based pagination request
      */
     @Serializable
     data class CursorBased(
@@ -19,7 +19,7 @@ sealed class PageRequest {
     ) : PageRequest()
     
     /**
-     * 基于偏移量的分页请求
+     * Offset-based pagination request
      */
     @Serializable
     data class OffsetBased(

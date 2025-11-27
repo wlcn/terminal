@@ -1,13 +1,13 @@
 package org.now.terminal.shared.kernel.utils
 
 /**
- * 验证工具类 - 提供通用的验证逻辑，不包含硬编码的业务规则
+ * Validation utility class - Provides generic validation logic without hard-coded business rules
  */
 object ValidationUtils {
     
     /**
-     * 验证字符串不为空且长度在范围内
-     * @param errorMessageProvider 错误消息提供函数，允许自定义错误消息
+     * Validate that string is not empty and length is within range
+     * @param errorMessageProvider Error message provider function, allows custom error messages
      */
     fun validateString(
         value: String?,
@@ -24,7 +24,7 @@ object ValidationUtils {
     }
     
     /**
-     * 验证正则表达式匹配
+     * Validate regex pattern matching
      */
     fun validatePattern(
         value: String,
@@ -36,7 +36,7 @@ object ValidationUtils {
     }
     
     /**
-     * 验证数字范围
+     * Validate number range
      */
     fun validateNumber(
         value: Number?,
@@ -61,7 +61,7 @@ object ValidationUtils {
     }
     
     /**
-     * 验证集合不为空
+     * Validate collection is not empty
      */
     fun <T> validateNotEmpty(
         collection: Collection<T>?,
@@ -73,7 +73,7 @@ object ValidationUtils {
     }
     
     /**
-     * 验证布尔条件
+     * Validate boolean condition
      */
     fun validateCondition(
         condition: Boolean,

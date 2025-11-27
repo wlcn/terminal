@@ -3,8 +3,8 @@ package org.now.terminal.shared.kernel.pagination
 import kotlinx.serialization.Serializable
 
 /**
- * 基于偏移量的分页结果
- * 传统但稳定的实现，适用于需要跳页的场景
+ * Offset-based pagination result
+ * Traditional but stable implementation, suitable for scenarios requiring page jumping
  */
 @Serializable
 data class OffsetPage<T>(

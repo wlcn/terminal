@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import java.time.Instant
 
 /**
- * 时间戳值对象
+ * Timestamp value object
  */
 @Serializable
 data class Timestamp(

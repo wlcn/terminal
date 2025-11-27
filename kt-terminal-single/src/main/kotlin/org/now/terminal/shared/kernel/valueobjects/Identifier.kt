@@ -3,7 +3,7 @@ package org.now.terminal.shared.kernel.valueobjects
 import kotlinx.serialization.Serializable
 
 /**
- * 基础标识符接口
+ * Base identifier interface
  */
 interface Identifier<T> {
     val value: T
@@ -13,7 +13,7 @@ interface Identifier<T> {
 }
 
 /**
- * 字符串标识符基类
+ * String identifier base class
  */
 @Serializable
 data class StringIdentifier(

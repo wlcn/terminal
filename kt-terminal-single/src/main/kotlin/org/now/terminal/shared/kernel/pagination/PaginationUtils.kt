@@ -1,19 +1,19 @@
 package org.now.terminal.shared.kernel.pagination
 
 /**
- * 分页工具类
+ * Pagination utility class
  */
 object PaginationUtils {
     
     /**
-     * 生成游标（基于时间戳和ID）
+     * Generate cursor (based on timestamp and ID)
      */
     fun generateCursor(timestamp: Long, id: String): String {
         return "${timestamp}_$id"
     }
     
     /**
-     * 解析游标
+     * Parse cursor
      */
     fun parseCursor(cursor: String): Pair<Long, String>? {
         return try {
@@ -29,7 +29,7 @@ object PaginationUtils {
     }
     
     /**
-     * 验证分页参数
+     * Validate pagination parameters
      */
     fun validatePageRequest(request: PageRequest): Boolean {
         return when (request) {
@@ -39,7 +39,7 @@ object PaginationUtils {
     }
     
     /**
-     * 计算总页数
+     * Calculate total pages
      */
     fun calculateTotalPages(totalElements: Long, pageSize: Int): Int {
         return if (pageSize > 0) {

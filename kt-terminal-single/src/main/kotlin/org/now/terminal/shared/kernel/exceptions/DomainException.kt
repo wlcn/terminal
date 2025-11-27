@@ -1,7 +1,7 @@
 package org.now.terminal.shared.kernel.exceptions
 
 /**
- * 领域异常基类
+ * Base class for domain exceptions
  */
 open class DomainException(
     message: String,
@@ -9,7 +9,7 @@ open class DomainException(
 ) : RuntimeException(message, cause)
 
 /**
- * 验证异常
+ * Validation exception
  */
 class ValidationException(
     message: String,
@@ -18,7 +18,7 @@ class ValidationException(
 ) : DomainException(message, cause)
 
 /**
- * 未找到异常
+ * Not found exception
  */
 class NotFoundException(
     message: String,
@@ -27,7 +27,7 @@ class NotFoundException(
 ) : DomainException(message, cause)
 
 /**
- * 已存在异常
+ * Already exists exception
  */
 class AlreadyExistsException(
     message: String,
@@ -36,7 +36,7 @@ class AlreadyExistsException(
 ) : DomainException(message, cause)
 
 /**
- * 业务规则异常
+ * Business rule exception
  */
 class BusinessRuleException(
     message: String,

@@ -3,8 +3,8 @@ package org.now.terminal.shared.kernel.pagination
 import kotlinx.serialization.Serializable
 
 /**
- * 基于游标的分页结果
- * 适用于无限滚动和性能敏感场景
+ * Cursor-based pagination result
+ * Suitable for infinite scrolling and performance-sensitive scenarios
  */
 @Serializable
 data class CursorPage<T>(

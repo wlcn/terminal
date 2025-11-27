@@ -1,12 +1,12 @@
 package org.now.terminal.shared.kernel.utils
 
 /**
- * 字符串工具类
+ * String utility class
  */
 object StringUtils {
     
     /**
-     * 生成随机字符串
+     * Generate random string
      */
     fun generateRandomString(length: Int = 16): String {
         val charPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
@@ -16,12 +16,12 @@ object StringUtils {
     }
     
     /**
-     * 生成UUID
+     * Generate UUID
      */
     fun generateUUID(): String = java.util.UUID.randomUUID().toString()
     
     /**
-     * 驼峰转下划线
+     * Convert camel case to snake case
      */
     fun camelToSnakeCase(input: String): String {
         return input.replace(
@@ -30,7 +30,7 @@ object StringUtils {
     }
     
     /**
-     * 下划线转驼峰
+     * Convert snake case to camel case
      */
     fun snakeToCamelCase(input: String): String {
         return input.split('_')
@@ -42,7 +42,7 @@ object StringUtils {
     }
     
     /**
-     * 截断字符串并添加省略号
+     * Truncate string and add ellipsis
      */
     fun truncateWithEllipsis(input: String, maxLength: Int): String {
         return if (input.length <= maxLength) input 

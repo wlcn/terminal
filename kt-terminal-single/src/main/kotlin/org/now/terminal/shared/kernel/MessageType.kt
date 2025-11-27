@@ -1,7 +1,7 @@
 package org.now.terminal.shared.kernel
 
 /**
- * 消息类型枚举
+ * Message type enumeration
  */
 enum class MessageType {
     ERROR,
