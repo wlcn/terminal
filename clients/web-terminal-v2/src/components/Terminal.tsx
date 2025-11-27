@@ -93,7 +93,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       const sessionResponse = await createSession(userId, 'Web Terminal Session', '/');
       const newSessionId = sessionResponse.id; // 后端返回的是id字段，不是sessionId
-      const shellType = sessionResponse.configuration.shellType;
+      const shellType = sessionResponse.shellType; // 后端直接返回shellType字段，不是在configuration中
       setShellType(shellType);
       
       // 使用默认的终端尺寸数据
@@ -111,7 +111,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       // Use sessionId to establish WebSocket connection
       try {
-        ws.current = new WebSocket(`${WS_SERVER_URL}/ws/sessions/${newSessionId}`);
+        ws.current = new WebSocket(`${WS_SERVER_URL}/ws/${newSessionId}`);
         
         ws.current.onopen = () => {
           console.log('✅ WebSocket connection established successfully');
@@ -140,6 +140,46 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           
           // After successful connection, session and WebSocket have established one-to-one relationship
           console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);
+        };
+        
+        ws.current.onmessage = (event) => {
+          console.log('📨 Received terminal output:', event.data);
+          
+          // WebSocket is only used for command line output, display directly
+          if (typeof event.data === 'string') {
+            // xterm.js is specifically designed to handle terminal escape sequences, no manual escaping needed
+            // Write data directly, let xterm.js handle all ANSI escape sequences
+            terminal.current?.write(event.data);
+          }
+        };
+        
+        ws.current.onclose = (event) => {
+          console.log('🔌 WebSocket connection closed');
+          console.log(`📊 Close code: ${event.code}, reason: ${event.reason}`);
+          
+          setIsConnected(false);
+          onConnectionStatusChange?.(false);
+          terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
+          
+          // When WebSocket closes, session should also be terminated (one-to-one relationship)
+          if (sessionId) {
+            console.log(`🛑 Terminating session ${sessionId} due to WebSocket closure`);
+            handleTerminate('WEBSOCKET_CLOSED');
+          }
+        };
+        
+        ws.current.onerror = (error) => {
+          console.error('❌ WebSocket connection error:', error);
+          terminal.current?.writeln('❌ WebSocket connection error');
+          
+          setIsConnected(false);
+          onConnectionStatusChange?.(false);
+          
+          // When WebSocket error occurs, session should also be terminated (one-to-one relationship)
+          if (sessionId) {
+            console.log(`🛑 Terminating session ${sessionId} due to WebSocket error`);
+            handleTerminate('WEBSOCKET_ERROR');
+          }
         };
       } catch (error) {
         console.warn('⚠️ WebSocket connection failed, using fallback mode:', error);
@@ -170,46 +210,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         
         console.log(`✅ Session ${newSessionId} created (fallback mode)`);
       }
-      
-      ws.current.onmessage = (event) => {
-        console.log('📨 Received terminal output:', event.data);
-        
-        // WebSocket is only used for command line output, display directly
-        if (typeof event.data === 'string') {
-          // xterm.js is specifically designed to handle terminal escape sequences, no manual escaping needed
-          // Write data directly, let xterm.js handle all ANSI escape sequences
-          terminal.current?.write(event.data);
-        }
-      };
-      
-      ws.current.onclose = (event) => {
-        console.log('🔌 WebSocket connection closed');
-        console.log(`📊 Close code: ${event.code}, reason: ${event.reason}`);
-        
-        setIsConnected(false);
-        onConnectionStatusChange?.(false);
-        terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
-        
-        // When WebSocket closes, session should also be terminated (one-to-one relationship)
-        if (sessionId) {
-          console.log(`🛑 Terminating session ${sessionId} due to WebSocket closure`);
-          handleTerminate('WEBSOCKET_CLOSED');
-        }
-      };
-      
-      ws.current.onerror = (error) => {
-        console.error('❌ WebSocket connection error:', error);
-        terminal.current?.writeln('❌ WebSocket connection error');
-        
-        setIsConnected(false);
-        onConnectionStatusChange?.(false);
-        
-        // When WebSocket error occurs, session should also be terminated (one-to-one relationship)
-        if (sessionId) {
-          console.log(`🛑 Terminating session ${sessionId} due to WebSocket error`);
-          handleTerminate('WEBSOCKET_ERROR');
-        }
-      };
       
     } catch (error) {
       console.error('❌ Failed to connect terminal:', error);

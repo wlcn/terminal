@@ -10,7 +10,7 @@ const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}${APP_CONFIG.API_SERVER.BASE_P
 /**
  * Create new session
  */
-export const createSession = async (userId: string, title?: string, workingDirectory?: string): Promise<{ id: string; status: string; configuration: { shellType: string; terminalSize: { columns: number; rows: number } } }> => {
+export const createSession = async (userId: string, title?: string, workingDirectory?: string): Promise<{ id: string; userId: string; title: string | null; workingDirectory: string; shellType: string; status: string; terminalSize: { columns: number; rows: number }; createdAt: number; updatedAt: number }> => {
   try {
     const params = new URLSearchParams();
     params.append('userId', userId);

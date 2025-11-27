@@ -8,7 +8,11 @@ import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.P
 
 // Export the terminal session module for use in Koin configuration
 val terminalSessionModule = module {
-    single { TerminalSessionService() }
+    single { 
+        val application = get<io.ktor.server.application.Application>()
+        val defaultShellType = application.environment.config.property("terminal.shellType").getString()
+        TerminalSessionService(defaultShellType)
+    }
     single<TerminalProcessManager> { Pty4jTerminalProcessManager() }
     single { TerminalProcessService(get()) }
 }

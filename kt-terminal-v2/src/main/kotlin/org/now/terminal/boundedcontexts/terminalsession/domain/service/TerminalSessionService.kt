@@ -6,14 +6,14 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSiz
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-class TerminalSessionService {
+class TerminalSessionService(private val defaultShellType: String = "bash") {
     private val sessions = ConcurrentHashMap<String, TerminalSession>()
     
     fun createSession(
         userId: String,
         title: String?,
         workingDirectory: String,
-        shellType: String = "bash"
+        shellType: String = defaultShellType
     ): TerminalSession {
         val session = TerminalSession(
             id = UUID.randomUUID().toString(),
