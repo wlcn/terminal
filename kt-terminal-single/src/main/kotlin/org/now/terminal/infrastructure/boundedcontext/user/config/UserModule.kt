@@ -18,6 +18,7 @@ import org.now.terminal.boundedcontext.user.application.usecase.UserManagementUs
 import org.now.terminal.boundedcontext.user.application.usecase.UserQueryUseCase
 import org.now.terminal.boundedcontext.user.application.usecase.UserQueryUseCaseImpl
 import org.now.terminal.boundedcontext.user.domain.UserRepository
+import org.now.terminal.infrastructure.boundedcontext.user.repositories.InMemoryUserRepository
 import org.now.terminal.infrastructure.boundedcontext.user.web.controllers.UserController
 
 /**
@@ -37,10 +38,12 @@ val userModule: Module = module {
     }
 
     /**
-     * User Repository (to be implemented)
+     * User Repository Implementation
      */
     single<UserRepository> {
-        TODO("Implement actual UserRepository implementation")
+        InMemoryUserRepository().apply {
+            initializeWithSampleData()
+        }
     }
 
     /**
