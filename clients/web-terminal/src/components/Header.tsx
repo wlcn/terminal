@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
             
             {/* Dropdown content - 直接作为按钮的子元素，使用absolute定位 */}
             {isConnected && showMoreMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-50 py-1 w-48">
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-500 py-1 w-48">
                 <button
                   onClick={() => {
                     onRefresh();

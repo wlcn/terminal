@@ -71,11 +71,14 @@
     rgba(255, 255, 255, 0.08) 0%, 
     rgba(255, 255, 255, 0.04) 50%, 
     rgba(255, 255, 255, 0.08) 100%);
-  backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  /* 确保header在正确的层级 */
+  z-index: 10;
+  position: relative;
 }
 
 /* Futuristic glow effects */
@@ -209,12 +212,19 @@
 
 /* xterm.js style overrides */
 .xterm {
-  font-family: 'Courier New', monospace;
+  font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
   font-feature-settings: "liga" 0;
   position: relative;
   user-select: none;
   -ms-user-select: none;
   -webkit-user-select: none;
+  /* 确保终端内容清晰可读 */
+  background-color: #1e1e1e;
+  color: #cccccc;
+  /* 确保终端不会遮挡下拉菜单 */
+  z-index: 1;
 }
 
 .xterm.focus,

@@ -424,18 +424,21 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     console.log('🎯 Initializing xterm.js terminal with official best practices...');
     
     // Create terminal instance - using the most concise official recommended configuration
-    terminal.current = new Terminal({
-      // Basic configuration
-      fontSize: 14,
-      fontFamily: 'Consolas, "Courier New", monospace',
-      theme: {
-        background: '#1e1e1e',
-        foreground: '#cccccc',
-        cursor: '#ffffff',
-        selection: '#3a3d41'
-      }
-      // Do not add any special configuration, let xterm.js handle all characters in default way
-    });
+        terminal.current = new Terminal({
+          // Basic configuration
+          fontSize: 14,
+          fontFamily: 'Consolas, "Courier New", monospace',
+          theme: {
+            background: '#1e1e1e',
+            foreground: '#cccccc',
+            cursor: '#ffffff',
+            selection: '#3a3d41'
+          },
+          // 使用与后端一致的默认尺寸，避免连接后终端框变化
+          cols: 80,
+          rows: 24
+          // Do not add any special configuration, let xterm.js handle all characters in default way
+        });
 
     // Create and install addons
     fitAddon.current = new FitAddon();
@@ -449,13 +452,15 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     // Mount to DOM
     terminal.current.open(terminalRef.current);
 
-    // Adjust size
+    // 保持固定的终端大小，不使用fit()方法自动调整
+    // 避免初始化后终端框大小变化
     setTimeout(() => {
-      fitAddon.current?.fit();
+      // 确保终端保持固定的80x24大小
+      terminal.current?.resize(80, 24);
       
-      // Listen for window resize
+      // 窗口大小改变时，保持终端大小不变，不自动调整
       const handleResize = () => {
-        fitAddon.current?.fit();
+        // 保持固定大小，不随窗口变化
       };
       
       window.addEventListener('resize', handleResize);

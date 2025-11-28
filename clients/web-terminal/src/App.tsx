@@ -12,7 +12,7 @@ function App() {
   // 协议选择状态
   const [protocol, setProtocol] = useState<'websocket' | 'webtransport' | 'auto'>('auto');
   
-  // 会话信息状态
+  // 会话信息状态 - 使用与后端一致的默认尺寸
   const [currentSessionInfo, setCurrentSessionInfo] = useState<{
     sessionId: string;
     shellType: string;
@@ -20,7 +20,7 @@ function App() {
   }>({
     sessionId: '',
     shellType: 'bash',
-    terminalSize: { columns: 80, rows: 24 }
+    terminalSize: { columns: 80, rows: 24 } // 与后端默认尺寸保持一致
   });
 
   const toggleFullscreen = () => {
