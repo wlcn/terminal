@@ -19,7 +19,7 @@ function App() {
     terminalSize: { columns: number; rows: number };
   }>({
     sessionId: '',
-    shellType: 'bash',
+    shellType: '',
     terminalSize: { columns: 80, rows: 24 } // 与后端默认尺寸保持一致
   });
 
@@ -75,7 +75,7 @@ function App() {
       // 断开连接时重置会话信息
       setCurrentSessionInfo({
         sessionId: '',
-        shellType: 'bash',
+        shellType: '',
         terminalSize: { columns: 120, rows: 30 }
       });
     }

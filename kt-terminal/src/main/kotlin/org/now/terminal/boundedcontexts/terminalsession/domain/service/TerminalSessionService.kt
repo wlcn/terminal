@@ -9,7 +9,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class TerminalSessionService(
-    private val defaultShellType: String = "bash",
+    private val defaultShellType: String,
     private val sessionTimeoutMs: Long = 30 * 60 * 1000, // 默认30分钟超时
     private val terminalProcessManager: TerminalProcessManager? = null
 ) {

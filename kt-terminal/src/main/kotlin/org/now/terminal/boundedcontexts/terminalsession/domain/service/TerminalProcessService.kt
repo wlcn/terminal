@@ -4,7 +4,7 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSiz
 
 // Define abstract interface for terminal process management - should be in domain layer
 interface TerminalProcessManager {
-    fun createProcess(sessionId: String, workingDirectory: String, shellType: String = "bash", terminalSize: TerminalSize = TerminalSize(80, 24)): TerminalProcess
+    fun createProcess(sessionId: String, workingDirectory: String, shellType: String, terminalSize: TerminalSize = TerminalSize(80, 24)): TerminalProcess
     fun getProcess(sessionId: String): TerminalProcess?
     fun writeToProcess(sessionId: String, data: String): Boolean
     fun resizeProcess(sessionId: String, columns: Int, rows: Int): Boolean

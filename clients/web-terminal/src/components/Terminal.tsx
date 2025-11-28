@@ -25,7 +25,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   const fitAddon = useRef<FitAddon | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const [shellType, setShellType] = useState<string>('bash');
+  const [shellType, setShellType] = useState<string>('');
   const communication = useRef<TerminalCommunication | null>(null);
   const isInitialized = useRef(false);
 
@@ -317,7 +317,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       // 更新父组件状态
       onConnectionStatusChange?.(true, {
         sessionId: sessionId,
-        shellType: shellType || 'bash',
+        shellType: shellType,
         terminalSize: { columns, rows }
       });
       

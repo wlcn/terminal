@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
@@ -11,7 +11,7 @@ use crate::terminal::TerminalProcess;
 pub(crate) struct Session {
     terminal: TerminalProcess,
     // 客户端发送通道
-    client_senders: Vec<tokio::sync::mpsc::Sender<String>>,
+    client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>,
 }
 
 // 会话管理器
@@ -43,13 +43,16 @@ impl SessionManager {
         // 添加到会话映射
         self.sessions.insert(session_id.clone(), Session {
             terminal: terminal.clone(),
-            client_senders: Vec::new(),
+            client_senders: Arc::new(Mutex::new(Vec::new())),
         });
         
         // 启动终端输出监听
         let terminal_clone = terminal.clone();
         let session_id_clone = session_id.clone();
+        let client_senders = Arc::new(Mutex::new(Vec::<tokio::sync::mpsc::Sender<String>>::new()));
         
+        // 保存客户端发送者的引用到会话中
+        let client_senders_clone = client_senders.clone();
         tokio::spawn(async move {
             let mut buffer = [0; 1024];
             
@@ -69,7 +72,15 @@ impl SessionManager {
                         log::debug!("Terminal output for session {}: {:?}", session_id_clone, output);
                         
                         // 发送输出到所有连接的客户端
-                        // 这里简化处理，暂时不发送给客户端
+                        let senders = client_senders_clone.lock().unwrap().clone();
+                        for sender in senders {
+                            if let Err(e) = sender.send(output.clone()).await {
+                                log::error!("Error sending terminal output to client: {}", e);
+                                // 移除失效的发送者
+                                let mut senders = client_senders_clone.lock().unwrap();
+                                senders.retain(|s| !std::ptr::eq(s, &sender));
+                            }
+                        }
                     },
                     Err(e) => {
                         log::error!("Error reading terminal output: {}", e);
@@ -78,6 +89,11 @@ impl SessionManager {
                 }
             }
         });
+        
+        // 更新会话的客户端发送者引用
+        if let Some(session) = self.sessions.get_mut(&session_id) {
+            session.client_senders = client_senders;
+        }
         
         log::info!("Created new session with ID: {} using shell: {:?}", 
                   session_id, default_shell_config.command);
@@ -88,7 +104,8 @@ impl SessionManager {
     // 添加客户端发送通道
     pub fn add_client_sender(&mut self, session_id: &str, sender: tokio::sync::mpsc::Sender<String>) {
         if let Some(session) = self.sessions.get_mut(session_id) {
-            session.client_senders.push(sender);
+            let mut client_senders = session.client_senders.lock().unwrap();
+            client_senders.push(sender);
             log::info!("Added client sender for session: {}", session_id);
         }
     }
@@ -96,7 +113,8 @@ impl SessionManager {
     // 移除客户端发送通道
     pub fn remove_client_sender(&mut self, session_id: &str, sender: &tokio::sync::mpsc::Sender<String>) {
         if let Some(session) = self.sessions.get_mut(session_id) {
-            session.client_senders.retain(|s| !std::ptr::eq(s, sender));
+            let mut client_senders = session.client_senders.lock().unwrap();
+            client_senders.retain(|s| !std::ptr::eq(s, sender));
             log::info!("Removed client sender for session: {}", session_id);
         }
     }
