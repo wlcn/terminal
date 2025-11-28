@@ -86,9 +86,15 @@ async fn handle_connection(
                         log::debug!("WebSocket → PTY: {:?} (session: {})", text, session_id_clone);
                         
                         // 写入到终端 - 异步操作，不阻塞
-                        if let Err(e) = session_manager_clone.write_to_session(&session_id_clone, text).await {
-                            log::error!("Failed to write to terminal: {}", e);
-                            break;
+                        log::debug!("About to write to terminal: {:?}", text);
+                        match session_manager_clone.write_to_session(&session_id_clone, text).await {
+                            Ok(_) => {
+                                log::debug!("Successfully wrote to terminal: {:?}", text);
+                            },
+                            Err(e) => {
+                                log::error!("Failed to write to terminal: {}", e);
+                                break;
+                            }
                         }
                     } else if msg.is_ping() {
                         // 发送ping到pong处理任务

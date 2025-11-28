@@ -136,15 +136,26 @@ impl SessionManager {
     
     // 写入数据到会话 - 线程安全，只需要&self
     pub async fn write_to_session(&self, session_id: &str, data: &str) -> anyhow::Result<()> {
+        log::debug!("write_to_session called with session_id: {}, data: {:?}", session_id, data);
+        
         // 只持有读锁一小段时间，获取会话引用
         let mut session = {
+            log::debug!("Acquiring read lock for sessions map");
             let sessions_read = self.sessions.read().unwrap();
+            log::debug!("Got read lock for sessions map");
             match sessions_read.get(session_id) {
-                Some(session) => session.clone(),
-                None => anyhow::bail!("Session not found: {}", session_id),
+                Some(session) => {
+                    log::debug!("Found session: {}", session_id);
+                    session.clone()
+                },
+                None => {
+                    log::debug!("Session not found: {}", session_id);
+                    anyhow::bail!("Session not found: {}", session_id)
+                },
             }
         };
         
+        log::debug!("Got session clone, about to call write_input");
         // 释放会话管理器锁后，执行异步写入
         session.terminal.write_input(data).await?;
         log::debug!("Wrote data to session {}: {:?}", session_id, data);

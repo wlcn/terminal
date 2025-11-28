@@ -1,14 +1,19 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::process::{Command, Child};
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
+use tokio::io::{AsyncWriteExt, AsyncReadExt, ChildStdin, ChildStdout, ChildStderr};
 
 use crate::config::ShellConfig;
 
-// 终端进程
+// 终端进程 - 细粒度锁设计，避免死锁
 #[derive(Clone)]
 pub struct TerminalProcess {
-    pub child: Arc<Mutex<Child>>,
+    // 分别使用不同的锁保护stdin、stdout和stderr，避免死锁
+    stdin: Arc<Mutex<ChildStdin>>,
+    stdout: Arc<Mutex<ChildStdout>>,
+    stderr: Arc<Mutex<ChildStderr>>,
+    // 保留child用于关闭终端
+    child: Arc<Mutex<Child>>,
 }
 
 impl TerminalProcess {
