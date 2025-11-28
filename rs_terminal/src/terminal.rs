@@ -160,11 +160,19 @@ impl TerminalProcess {
     pub async fn close(&self) -> anyhow::Result<()> {
         let mut child = self.child.lock().await;
         
+        // 获取进程ID（可能为None）
+        let pid = child.id();
+        
         // 终止子进程并等待退出
         child.kill().await?;
         child.wait().await?;
         
-        log::info!("Closed terminal process with PID: {}", child.id().unwrap());
+        // 记录关闭日志，处理PID可能为None的情况
+        if let Some(pid_value) = pid {
+            log::info!("Closed terminal process with PID: {}", pid_value);
+        } else {
+            log::info!("Closed terminal process");
+        }
         
         Ok(())
     }

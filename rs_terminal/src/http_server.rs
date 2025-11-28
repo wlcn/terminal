@@ -1,11 +1,9 @@
 use axum::{extract::{Path, Query, State}, http::StatusCode, routing::{get, post, delete}, Json, Router};
 use tower_http::cors::{Any, CorsLayer};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
-
 use crate::session::SessionManager;
 
 // 响应数据结构
@@ -57,6 +55,65 @@ pub struct TerminalSession {
     pub expiredAt: u64,
 }
 
+// 请求参数
+#[derive(Deserialize)]
+struct CreateSessionParams {
+    #[serde(rename = "userId")]
+    user_id: Option<String>,
+    title: Option<String>,
+    #[serde(rename = "workingDirectory")]
+    working_directory: Option<String>,
+    #[serde(rename = "shellType")]
+    shell_type: Option<String>,
+    columns: Option<u32>,
+    rows: Option<u32>,
+}
+
+#[derive(Deserialize)]
+struct ResizeParams {
+    cols: Option<u32>,
+    rows: Option<u32>,
+}
+
+#[derive(Deserialize)]
+struct ExecuteParams {
+    command: Option<String>,
+    #[serde(rename = "timeoutMs")]
+    timeout_ms: Option<u64>,
+}
+
+// 辅助函数：创建默认的TerminalSession对象
+fn create_default_terminal_session(
+    id: String,
+    user_id: String,
+    title: Option<String>,
+    working_directory: String,
+    shell_type: String,
+    status: String,
+    columns: u32,
+    rows: u32,
+    config: &Config,
+) -> TerminalSession {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    
+    TerminalSession {
+        id,
+        userId: user_id,
+        title,
+        workingDirectory: working_directory,
+        shellType: shell_type,
+        status,
+        terminalSize: TerminalSize { columns, rows },
+        createdAt: now,
+        updatedAt: now,
+        lastActiveTime: now,
+        expiredAt: now + config.terminal.session_timeout,
+    }
+}
+
 // 启动HTTP服务器
 pub async fn start_server(session_manager: Arc<SessionManager>, config: Arc<Config>) -> anyhow::Result<()> {
     // 创建CORS配置
@@ -100,108 +157,56 @@ async fn create_session(
         Some(id) => id,
         None => {
             // 返回400 Bad Request
-            return (StatusCode::BAD_REQUEST, Json(TerminalSession {
-                id: "".to_string(),
-                userId: "".to_string(),
-                title: params.title,
-                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
-                shellType: params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
-                status: "ERROR".to_string(),
-                terminalSize: TerminalSize {
-                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
-                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
-                },
-                createdAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                updatedAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                lastActiveTime: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                expiredAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64 + config.terminal.session_timeout,
-            }));
+            let session = create_default_terminal_session(
+                "".to_string(),
+                "".to_string(),
+                params.title,
+                params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                "ERROR".to_string(),
+                params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
+                &config,
+            );
+            return (StatusCode::BAD_REQUEST, Json(session));
         },
     };
     
     // 生成会话ID
     match session_manager.create_session().await {
         Ok(session_id) => {
-            // 获取默认shell类型
-            let default_shell_type = config.terminal.default_shell_type.clone();
-            
             // 创建会话响应
-            let session = TerminalSession {
-                id: session_id.clone(),
-                userId: user_id,
-                title: params.title,
-                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
-                shellType: params.shell_type.unwrap_or(default_shell_type),
-                status: "ACTIVE".to_string(),
-                terminalSize: TerminalSize {
-                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
-                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
-                },
-                createdAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                updatedAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                lastActiveTime: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                expiredAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64 + config.terminal.session_timeout,
-            };
+            let session = create_default_terminal_session(
+                session_id.clone(),
+                user_id.clone(),
+                params.title,
+                params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                "ACTIVE".to_string(),
+                params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
+                &config,
+            );
             
             (StatusCode::CREATED, Json(session))
         },
         Err(e) => {
             log::error!("Failed to create session: {}", e);
-            // 获取默认shell类型
-            let default_shell_type = config.terminal.default_shell_type.clone();
             
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalSession {
-                id: "".to_string(),
-                userId: user_id,
-                title: params.title,
-                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
-                shellType: params.shell_type.unwrap_or(default_shell_type),
-                status: "ERROR".to_string(),
-                terminalSize: TerminalSize {
-                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
-                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
-                },
-                createdAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                updatedAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                lastActiveTime: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                expiredAt: std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64 + config.terminal.session_timeout,
-            }))
+            // 创建错误响应
+            let session = create_default_terminal_session(
+                "".to_string(),
+                user_id.clone(),
+                params.title,
+                params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                "ERROR".to_string(),
+                params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
+                &config,
+            );
+            
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(session))
         }
     }
 }
@@ -215,34 +220,17 @@ async fn get_all_sessions(
     
     // 创建会话响应列表
     let sessions: Vec<TerminalSession> = session_ids.into_iter().map(|session_id| {
-        TerminalSession {
-            id: session_id.clone(),
-            userId: "default_user".to_string(),
-            title: None,
-            workingDirectory: config.terminal.default_working_directory.clone(),
-            shellType: config.terminal.default_shell_type.clone(),
-            status: "ACTIVE".to_string(),
-            terminalSize: TerminalSize {
-                columns: config.terminal.default_terminal_size.columns,
-                rows: config.terminal.default_terminal_size.rows
-            },
-            createdAt: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            updatedAt: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            lastActiveTime: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            expiredAt: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64 + config.terminal.session_timeout,
-        }
+        create_default_terminal_session(
+            session_id.clone(),
+            "default_user".to_string(),
+            None,
+            config.terminal.default_working_directory.clone(),
+            config.terminal.default_shell_type.clone(),
+            "ACTIVE".to_string(),
+            config.terminal.default_terminal_size.columns,
+            config.terminal.default_terminal_size.rows,
+            &config,
+        )
     }).collect();
     
     (StatusCode::OK, Json(sessions))
@@ -251,44 +239,46 @@ async fn get_all_sessions(
 // 获取会话详情
 async fn get_session_by_id(
     Path(id): Path<String>,
-    State((_session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
+    State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
-    // 后续实现完整逻辑
-    (StatusCode::OK, Json(TerminalSession {
-        id: id,
-        userId: "default_user".to_string(),
-        title: None,
-        workingDirectory: config.terminal.default_working_directory.clone(),
-        shellType: config.terminal.default_shell_type.clone(),
-        status: "ACTIVE".to_string(),
-        terminalSize: TerminalSize {
-            columns: config.terminal.default_terminal_size.columns,
-            rows: config.terminal.default_terminal_size.rows
-        },
-        createdAt: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64,
-        updatedAt: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64,
-        lastActiveTime: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64,
-        expiredAt: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64 + config.terminal.session_timeout,
-    }))
+    // 检查会话是否存在
+    if !session_manager.session_exists(&id).await {
+        // 返回404 Not Found
+        let session = create_default_terminal_session(
+            id,
+            "".to_string(),
+            None,
+            config.terminal.default_working_directory.clone(),
+            config.terminal.default_shell_type.clone(),
+            "ERROR".to_string(),
+            config.terminal.default_terminal_size.columns,
+            config.terminal.default_terminal_size.rows,
+            &config,
+        );
+        return (StatusCode::NOT_FOUND, Json(session));
+    }
+    
+    // 返回会话详情
+    let session = create_default_terminal_session(
+        id,
+        "default_user".to_string(),
+        None,
+        config.terminal.default_working_directory.clone(),
+        config.terminal.default_shell_type.clone(),
+        "ACTIVE".to_string(),
+        config.terminal.default_terminal_size.columns,
+        config.terminal.default_terminal_size.rows,
+        &config,
+    );
+    
+    (StatusCode::OK, Json(session))
 }
 
 // 调整终端大小
 async fn resize_terminal(
     Path(id): Path<String>,
     Query(params): Query<ResizeParams>,
-    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
+    State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalResizeResponse>) {
     // 检查cols和rows参数是否提供
     let cols = match params.cols {
@@ -363,17 +353,21 @@ async fn interrupt_terminal(
     // 发送中断信号（Ctrl+C）到终端
     // 在Windows上，我们可以发送"\x03"（Ctrl+C）
     // 在Unix系统上，我们可以发送SIGINT信号
-    if session_manager.write_to_session(&id, "\x03").await.is_ok() {
-        (StatusCode::OK, Json(TerminalInterruptResponse {
-            sessionId: id,
-            status: "interrupted".to_string(),
-        }))
-    } else {
-        // 返回500 Internal Server Error
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalInterruptResponse {
-            sessionId: id,
-            status: "ERROR".to_string(),
-        }))
+    match session_manager.write_to_session(&id, "\x03").await {
+        Ok(_) => {
+            (StatusCode::OK, Json(TerminalInterruptResponse {
+                sessionId: id,
+                status: "interrupted".to_string(),
+            }))
+        },
+        Err(e) => {
+            log::error!("Failed to interrupt session {}: {}", id, e);
+            // 返回500 Internal Server Error
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalInterruptResponse {
+                sessionId: id,
+                status: "ERROR".to_string(),
+            }))
+        }
     }
 }
 
@@ -426,7 +420,7 @@ async fn get_session_status(
         }));
     }
     
-    // 后续实现完整逻辑
+    // 返回会话状态
     (StatusCode::OK, Json(TerminalStatusResponse {
         status: "ACTIVE".to_string(),
     }))
@@ -454,10 +448,14 @@ async fn execute_command(
     }
     
     // 执行命令
-    if session_manager.write_to_session(&id, &format!("{}\n", command)).await.is_ok() {
-        (StatusCode::OK, format!("Command executed: {}", command))
-    } else {
-        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to execute command".to_string())
+    match session_manager.write_to_session(&id, &format!("{}\n", command)).await {
+        Ok(_) => {
+            (StatusCode::OK, format!("Command executed: {}", command))
+        },
+        Err(e) => {
+            log::error!("Failed to execute command on session {}: {}", id, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to execute command".to_string())
+        }
     }
 }
 
@@ -481,31 +479,4 @@ async fn execute_command_check(
     // 执行命令
     let success = session_manager.write_to_session(&id, &format!("{}\n", command)).await.is_ok();
     (StatusCode::OK, Json(success))
-}
-
-// 请求参数
-#[derive(Deserialize)]
-struct CreateSessionParams {
-    #[serde(rename = "userId")]
-    user_id: Option<String>,
-    title: Option<String>,
-    #[serde(rename = "workingDirectory")]
-    working_directory: Option<String>,
-    #[serde(rename = "shellType")]
-    shell_type: Option<String>,
-    columns: Option<u32>,
-    rows: Option<u32>,
-}
-
-#[derive(Deserialize)]
-struct ResizeParams {
-    cols: Option<u32>,
-    rows: Option<u32>,
-}
-
-#[derive(Deserialize)]
-struct ExecuteParams {
-    command: Option<String>,
-    #[serde(rename = "timeoutMs")]
-    timeout_ms: Option<u64>,
 }
