@@ -191,10 +191,15 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           // Configure terminal parameters after connection is successful
           configureTerminalForShell(shellType);
           
-          // 直接使用尺寸对象调整xterm.js
-          if (terminalSize.columns && terminalSize.rows) {
-            terminal.current?.resize(terminalSize.columns, terminalSize.rows);
-          }
+          // 使用fitAddon让终端自动适应容器大小
+          fitAddon.current?.fit();
+          
+          // 获取当前终端的实际大小
+          const cols = terminal.current?.cols || 80;
+          const rows = terminal.current?.rows || 24;
+          
+          // 更新终端大小对象
+          const actualTerminalSize = { columns: cols, rows: rows };
           
           terminal.current?.write('Terminal ready\r\n');
           terminal.current?.write('$ ');
@@ -205,11 +210,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           onConnectionStatusChange?.(true, {
             sessionId: newSessionId,
             shellType: shellType,
-            terminalSize: terminalSize // 使用尺寸对象
+            terminalSize: actualTerminalSize // 使用实际的终端大小
           });
           
           // After successful connection, session and communication have established one-to-one relationship
-          console.log(`🔗 Session ${newSessionId} ↔ ${protocol} connection established`);
+          console.log(`🔗 Session ${newSessionId} ↔ ${selectedProtocol} connection established`);
         });
         
         communication.current.on('message', (data) => {
@@ -433,10 +438,8 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
             foreground: '#cccccc',
             cursor: '#ffffff',
             selection: '#3a3d41'
-          },
-          // 使用与后端一致的默认尺寸，避免连接后终端框变化
-          cols: 80,
-          rows: 24
+          }
+          // 不设置固定尺寸，让终端自动适应容器大小
           // Do not add any special configuration, let xterm.js handle all characters in default way
         });
 
@@ -453,14 +456,15 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     terminal.current.open(terminalRef.current);
 
     // 保持固定的终端大小，不使用fit()方法自动调整
-    // 避免初始化后终端框大小变化
+    // Set fixed terminal size to match backend default (80x24)
     setTimeout(() => {
-      // 确保终端保持固定的80x24大小
+      // 使用固定的80x24大小，与后台保持一致
       terminal.current?.resize(80, 24);
       
-      // 窗口大小改变时，保持终端大小不变，不自动调整
+      // 窗口大小改变时，保持固定大小，不自动调整
       const handleResize = () => {
-        // 保持固定大小，不随窗口变化
+        // 保持固定的80x24大小，与后台保持一致
+        terminal.current?.resize(80, 24);
       };
       
       window.addEventListener('resize', handleResize);

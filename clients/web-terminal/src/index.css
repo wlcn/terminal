@@ -220,8 +220,8 @@
   user-select: none;
   -ms-user-select: none;
   -webkit-user-select: none;
-  /* 确保终端内容清晰可读 */
-  background-color: #1e1e1e;
+  /* 确保终端内容清晰可读，同时让底层CSS效果能够透出来 */
+  background-color: rgba(30, 30, 30, 0.95); /* 半透明背景，让底层效果可见 */
   color: #cccccc;
   /* 确保终端不会遮挡下拉菜单 */
   z-index: 1;
