@@ -186,4 +186,10 @@ impl SessionManager {
         let sessions_read = self.sessions.read().unwrap();
         sessions_read.contains_key(session_id)
     }
+    
+    // 获取所有会话 - 线程安全，只需要&self
+    pub async fn get_all_sessions(&self) -> Vec<String> {
+        let sessions_read = self.sessions.read().unwrap();
+        sessions_read.keys().cloned().collect()
+    }
 }

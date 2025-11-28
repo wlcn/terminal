@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio::process::{Command, Child};
-use tokio::io::{AsyncWriteExt, AsyncReadExt, ChildStdin, ChildStdout, ChildStderr};
+use tokio::process::{Command, Child, ChildStdin, ChildStdout, ChildStderr};
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 use crate::config::ShellConfig;
 
@@ -27,15 +27,23 @@ impl TerminalProcess {
         let shell = std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".to_string());
         
         // 创建终端进程
-        let child = Command::new(shell)
+        let mut child = Command::new(shell)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()?;
         
+        // 提取标准输入输出
+        let stdin = child.stdin.take().unwrap();
+        let stdout = child.stdout.take().unwrap();
+        let stderr = child.stderr.take().unwrap();
+        
         log::info!("Created new terminal process with PID: {}", child.id().unwrap());
         
         Ok(Self {
+            stdin: Arc::new(Mutex::new(stdin)),
+            stdout: Arc::new(Mutex::new(stdout)),
+            stderr: Arc::new(Mutex::new(stderr)),
             child: Arc::new(Mutex::new(child)),
         })
     }
@@ -58,13 +66,12 @@ impl TerminalProcess {
                 ".".to_string()
             } else {
                 // 替换环境变量
-                let mut resolved = working_dir.clone();
-                // 替换 ${USERPROFILE} 为实际用户目录
-                if resolved == "${USERPROFILE}" {
+                let resolved = if working_dir == "${USERPROFILE}" {
                     std::env::var("USERPROFILE").unwrap_or(".".to_string())
                 } else {
-                    resolved
-                }
+                    working_dir.clone()
+                };
+                resolved
             };
             
             log::debug!("Resolved working directory: {:?} -> {:?}", working_dir, resolved_dir);
@@ -77,40 +84,49 @@ impl TerminalProcess {
         }
         
         // 设置标准输入输出
-        let child = command
+        let mut child = command
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()?;
         
+        // 提取标准输入输出
+        let stdin = child.stdin.take().unwrap();
+        let stdout = child.stdout.take().unwrap();
+        let stderr = child.stderr.take().unwrap();
+        
         log::info!("Created new terminal process with PID: {} using command: {:?}", 
                   child.id().unwrap(), shell_config.command);
         
         Ok(Self {
+            stdin: Arc::new(Mutex::new(stdin)),
+            stdout: Arc::new(Mutex::new(stdout)),
+            stderr: Arc::new(Mutex::new(stderr)),
             child: Arc::new(Mutex::new(child)),
         })
     }
     
-    // 写入输入到终端
-    pub async fn write_input(&mut self, data: &str) -> anyhow::Result<()> {
-        let mut child = self.child.lock().await;
+    // 写入输入到终端 - 使用独立的stdin锁，避免死锁
+    pub async fn write_input(&self, data: &str) -> anyhow::Result<()> {
+        // 使用独立的stdin锁，不影响stdout/stderr读取
+        let mut stdin = self.stdin.lock().await;
         
         // 写入数据到终端的标准输入
-        child.stdin.as_mut().unwrap().write_all(data.as_bytes()).await?;
+        stdin.write_all(data.as_bytes()).await?;
         
         Ok(())
     }
     
-    // 读取终端输出 - 异步设计，只在读取时持有锁
+    // 读取终端输出 - 使用独立的stdout锁，避免死锁
     pub async fn read_output(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
-        let mut child = self.child.lock().await;
-        let stdout = child.stdout.as_mut().unwrap();
+        // 使用独立的stdout锁，不影响stdin写入
+        let mut stdout = self.stdout.lock().await;
         
         // 异步读取终端输出
         let read_result = stdout.read(buffer).await;
         
         // 立即释放锁，允许其他任务访问
-        drop(child);
+        drop(stdout);
         
         match read_result {
             Ok(0) => Ok(String::new()), // EOF
