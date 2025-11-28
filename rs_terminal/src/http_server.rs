@@ -141,8 +141,9 @@ pub async fn start_server(session_manager: Arc<SessionManager>, config: Arc<Conf
     
     // 绑定地址并启动服务器
     let addr: std::net::SocketAddr = format!("127.0.0.1:{}", port).parse()?;
-    log::info!("HTTP server started on http://{}", addr);
     
+    // 暂时只支持HTTP，HTTPS支持需要安装cmake和nasm依赖
+    log::info!("HTTP server started on http://{}", addr);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app)
         .await?;

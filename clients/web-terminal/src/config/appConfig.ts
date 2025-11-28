@@ -5,7 +5,7 @@
 const getBaseUrl = () => {
   // 开发环境使用环境变量，生产环境使用相对路径
   if (import.meta.env.DEV) {
-    return 'https://localhost:8080';
+    return 'http://localhost:8080';
   } else {
     // 生产环境使用当前域名，支持前端打包后放在后端static目录下
     return window.location.origin;

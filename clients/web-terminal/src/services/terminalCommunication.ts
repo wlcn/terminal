@@ -6,6 +6,7 @@
 import { APP_CONFIG } from '../config/appConfig';
 
 const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
+const WEBTRANSPORT_SERVER_URL = APP_CONFIG.WEBTRANSPORT_SERVER.URL;
 
 // Communication event types
 export type TerminalEventType = 'open' | 'message' | 'close' | 'error';
@@ -108,10 +109,8 @@ export class WebTransportCommunication implements TerminalCommunication {
   private isReading: boolean = false;
 
   constructor(sessionId: string) {
-    // Convert http/https to https for WebTransport
-    const protocol = WS_SERVER_URL.startsWith('https') ? 'https' : 'http';
-    const baseUrl = WS_SERVER_URL.replace(/^http(s?):\/\//, '');
-    this.url = `${protocol}://${baseUrl}/webtransport/${sessionId}`;
+    // Use WebTransport server URL directly, which already uses https
+    this.url = `${WEBTRANSPORT_SERVER_URL}/webtransport/${sessionId}`;
   }
 
   async connect(): Promise<void> {

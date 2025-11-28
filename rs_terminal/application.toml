@@ -5,6 +5,12 @@
 [http]
 # HTTP服务器端口
 port = 8080
+# 是否使用HTTPS（暂时不支持，需要安装cmake和nasm依赖）
+use_https = false
+# HTTPS证书路径（仅当use_https为true时需要）
+cert_path = ""
+# HTTPS私钥路径（仅当use_https为true时需要）
+key_path = ""
 
 # WebSocket配置
 [websocket]

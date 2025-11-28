@@ -32,6 +32,9 @@ pub struct TerminalConfig {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HttpConfig {
     pub port: u16,
+    pub use_https: bool,
+    pub cert_path: Option<String>,
+    pub key_path: Option<String>,
 }
 
 // WebSocket服务器配置
@@ -172,6 +175,9 @@ impl Default for Config {
             },
             http: HttpConfig {
                 port: 8082,
+                use_https: false,
+                cert_path: None,
+                key_path: None,
             },
             websocket: WebSocketConfig {
                 port: 8081,
