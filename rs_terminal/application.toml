@@ -1,6 +1,21 @@
 # rs_terminal 配置文件
 # 基于 TOML 格式，与 kt-terminal 兼容
 
+# HTTP服务器配置
+[http]
+# HTTP服务器端口
+port = 8080
+
+# WebSocket配置
+[websocket]
+# WebSocket服务器端口
+port = 8081
+
+# WebTransport配置
+[webtransport]
+# WebTransport服务器端口
+port = 8082
+
 # 终端配置
 [terminal]
 # 默认shell类型

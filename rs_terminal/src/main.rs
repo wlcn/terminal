@@ -1,17 +1,20 @@
 
 use std::sync::Arc;
 use std::fs;
-use tokio::sync::Mutex;
 
 mod config;
 mod http_server;
 mod protocol;
+mod protocol_adapter;
 mod session;
 mod terminal;
+mod terminal_service;
 mod transport;
 
 use crate::config::Config;
+use crate::protocol_adapter::{ProtocolAdapter, ProtocolAdapterFactory};
 use crate::session::SessionManager;
+use crate::terminal_service::TerminalService;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,9 +29,15 @@ async fn main() -> anyhow::Result<()> {
     log::info!("Configuration loaded successfully");
     log::debug!("Default shell type: {}", config.terminal.default_shell_type);
     log::debug!("Available shells: {:?}", config.terminal.shells.keys());
+    log::debug!("HTTP port: {}", config.http.port);
+    log::debug!("WebSocket port: {}", config.websocket.port);
+    log::debug!("WebTransport port: {}", config.webtransport.port);
     
-    // 创建会话管理器 - 不再需要Mutex包装，因为SessionManager内部已经是线程安全的
+    // 创建会话管理器
     let session_manager = Arc::new(SessionManager::new(config.clone()));
+    
+    // 创建终端服务
+    let terminal_service = Arc::new(TerminalService::new(session_manager.clone()));
     
     // 启动HTTP服务器
     let http_session_manager = session_manager.clone();
@@ -39,25 +48,30 @@ async fn main() -> anyhow::Result<()> {
         }
     });
     
-    // 启动WebSocket服务器
-    let ws_session_manager = session_manager.clone();
-    let ws_config = config.clone();
+    // 创建并启动WebSocket适配器
+    let websocket_adapter = ProtocolAdapterFactory::create_websocket_adapter(terminal_service.clone(), config.clone());
+    let websocket_config = config.clone();
     tokio::spawn(async move {
-        if let Err(e) = transport::websocket::start_server(ws_session_manager, ws_config).await {
+        if let Err(e) = websocket_adapter.start().await {
             log::error!("WebSocket server error: {}", e);
         }
     });
     
-    // 暂时禁用WebTransport服务器，等待API完善
-    // let wt_session_manager = session_manager.clone();
-    // let wt_config = config.clone();
-    // tokio::spawn(async move {
-    //     if let Err(e) = transport::webtransport::start_server(wt_session_manager, wt_config).await {
-    //         log::error!("WebTransport server error: {}", e);
-    //     }
-    // });
+    // 创建并启动WebTransport适配器
+    let webtransport_adapter = ProtocolAdapterFactory::create_webtransport_adapter(terminal_service.clone(), config.clone());
+    let webtransport_config = config.clone();
+    tokio::spawn(async move {
+        if let Err(e) = webtransport_adapter.start().await {
+            log::error!("WebTransport server error: {}", e);
+        }
+    });
     
-    log::info!("Servers starting: HTTP on http://localhost:8082, WebSocket on ws://localhost:8081");
+    log::info!(
+        "Servers starting: HTTP on http://localhost:{}, WebSocket on ws://localhost:{}, WebTransport on http://localhost:{}",
+        config.http.port,
+        config.websocket.port,
+        config.webtransport.port
+    );
     
     // 保持主线程运行
     tokio::signal::ctrl_c().await?;

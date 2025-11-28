@@ -116,6 +116,9 @@ fn create_default_terminal_session(
 
 // 启动HTTP服务器
 pub async fn start_server(session_manager: Arc<SessionManager>, config: Arc<Config>) -> anyhow::Result<()> {
+    // 保存端口值，因为config会被移动到app状态中
+    let port = config.http.port;
+    
     // 创建CORS配置
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -137,7 +140,7 @@ pub async fn start_server(session_manager: Arc<SessionManager>, config: Arc<Conf
         .with_state((session_manager, config));
     
     // 绑定地址并启动服务器
-    let addr: std::net::SocketAddr = "127.0.0.1:8082".parse()?;
+    let addr: std::net::SocketAddr = format!("127.0.0.1:{}", port).parse()?;
     log::info!("HTTP server started on http://{}", addr);
     
     let listener = tokio::net::TcpListener::bind(&addr).await?;

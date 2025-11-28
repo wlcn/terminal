@@ -28,10 +28,31 @@ pub struct TerminalConfig {
     pub shells: HashMap<String, ShellConfig>,
 }
 
+// HTTP服务器配置
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct HttpConfig {
+    pub port: u16,
+}
+
+// WebSocket服务器配置
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct WebSocketConfig {
+    pub port: u16,
+}
+
+// WebTransport服务器配置
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct WebTransportConfig {
+    pub port: u16,
+}
+
 // 主配置结构
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
     pub terminal: TerminalConfig,
+    pub http: HttpConfig,
+    pub websocket: WebSocketConfig,
+    pub webtransport: WebTransportConfig,
 }
 
 impl Config {
@@ -148,6 +169,15 @@ impl Default for Config {
                 default_working_directory: ".".to_string(),
                 session_timeout: 1800000, // 30分钟
                 shells,
+            },
+            http: HttpConfig {
+                port: 8082,
+            },
+            websocket: WebSocketConfig {
+                port: 8081,
+            },
+            webtransport: WebTransportConfig {
+                port: 8083,
             },
         }
     }

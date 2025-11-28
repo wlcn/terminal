@@ -1,38 +1,66 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
+use std::net::SocketAddr;
+use std::future::Future;
+use std::pin::Pin;
+
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
 use futures_util::{stream::StreamExt, sink::SinkExt};
+use tokio::sync::mpsc;
 
 use crate::config::Config;
-use crate::session::SessionManager;
+use crate::protocol_adapter::ProtocolAdapter;
+use crate::terminal_service::TerminalService;
 
-// 启动WebSocket服务器 - 简洁异步设计
-pub async fn start_server(session_manager: Arc<SessionManager>, _config: Arc<Config>) -> anyhow::Result<()> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8081));
-    let listener = TcpListener::bind(addr).await?;
-    
-    log::info!("WebSocket server started on ws://localhost:8081");
+// WebSocket适配器 - 实现ProtocolAdapter接口
+pub struct WebSocketAdapter {
+    terminal_service: Arc<TerminalService>,
+    config: Arc<Config>,
+}
 
-    // 处理传入的连接 - 每个连接独立处理
-    while let Ok((stream, _)) = listener.accept().await {
-        let session_manager = session_manager.clone();
-        
-        // 为每个连接启动独立任务
-        tokio::spawn(async move {
-            if let Err(e) = handle_connection(stream, session_manager).await {
-                log::error!("WebSocket connection error: {}", e);
-            }
-        });
+impl WebSocketAdapter {
+    // 创建新的WebSocket适配器
+    pub fn new(terminal_service: Arc<TerminalService>, config: Arc<Config>) -> Self {
+        Self {
+            terminal_service,
+            config,
+        }
     }
-    
-    Ok(())
+}
+
+// 实现ProtocolAdapter接口
+impl ProtocolAdapter for WebSocketAdapter {
+    fn start(&self) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + '_>> {
+        let terminal_service = self.terminal_service.clone();
+        let port = self.config.websocket.port;
+        
+        Box::pin(async move {
+            let addr = SocketAddr::from(([127, 0, 0, 1], port));
+            let listener = TcpListener::bind(addr).await?;
+            
+            log::info!("WebSocket server started on ws://localhost:{}", port);
+
+            // 处理传入的连接 - 每个连接独立处理
+            while let Ok((stream, _)) = listener.accept().await {
+                let terminal_service = terminal_service.clone();
+                
+                // 为每个连接启动独立任务
+                tokio::spawn(async move {
+                    if let Err(e) = handle_connection(stream, terminal_service).await {
+                        log::error!("WebSocket connection error: {}", e);
+                    }
+                });
+            }
+            
+            Ok(())
+        })
+    }
 }
 
 // 处理WebSocket连接 - 简洁的中转设计
 async fn handle_connection(
     stream: TcpStream,
-    session_manager: Arc<SessionManager>,
+    terminal_service: Arc<TerminalService>,
 ) -> anyhow::Result<()> {
     // 1. 接受WebSocket连接
     let ws_stream = match accept_async(stream).await {
@@ -46,25 +74,21 @@ async fn handle_connection(
     log::info!("New WebSocket connection established");
     
     // 2. 创建终端会话
-    let session_id = session_manager.create_session().await?;
+    let session_id = terminal_service.create_terminal_session().await?;
     log::info!("Created new session {} for WebSocket connection", session_id);
     
     // 创建终端输出通道
-    let (terminal_output_tx, mut terminal_output_rx) = tokio::sync::mpsc::channel::<String>(100);
+    let (terminal_output_tx, mut terminal_output_rx) = mpsc::channel::<String>(100);
     
-    // 添加客户端发送者到会话
-    session_manager.add_client_sender(&session_id, terminal_output_tx.clone()).await;
+    // 3. 处理终端连接
+    terminal_service.handle_terminal_connection(&session_id, terminal_output_tx.clone()).await?;
     
     // 拆分WebSocket流为读写通道
     let (mut ws_write, mut ws_read) = ws_stream.split();
     
-    // 创建ping-pong通道
-    let (pong_tx, mut pong_rx) = tokio::sync::mpsc::channel::<()>(10);
-    
     // 任务1: WebSocket读 → PTY写
-    let session_manager_clone = session_manager.clone();
+    let terminal_service_clone = terminal_service.clone();
     let session_id_clone = session_id.clone();
-    let pong_tx_clone = pong_tx.clone();
     
     let ws_read_task = tokio::spawn(async move {
         log::debug!("Started WebSocket read task (WebSocket → PTY)");
@@ -86,20 +110,8 @@ async fn handle_connection(
                         log::debug!("WebSocket → PTY: {:?} (session: {})", text, session_id_clone);
                         
                         // 写入到终端 - 异步操作，不阻塞
-                        log::debug!("About to write to terminal: {:?}", text);
-                        match session_manager_clone.write_to_session(&session_id_clone, text).await {
-                            Ok(_) => {
-                                log::debug!("Successfully wrote to terminal: {:?}", text);
-                            },
-                            Err(e) => {
-                                log::error!("Failed to write to terminal: {}", e);
-                                break;
-                            }
-                        }
-                    } else if msg.is_ping() {
-                        // 发送ping到pong处理任务
-                        if pong_tx_clone.send(()).await.is_err() {
-                            log::error!("Failed to send ping to pong task");
+                        if let Err(e) = terminal_service_clone.handle_terminal_input(&session_id_clone, text.to_string()).await {
+                            log::error!("Failed to write to terminal: {}", e);
                             break;
                         }
                     } else if msg.is_close() {
@@ -117,7 +129,7 @@ async fn handle_connection(
         log::debug!("WebSocket read task completed");
     });
     
-    // 任务2: PTY读 + ping-pong → WebSocket写
+    // 任务2: PTY读 → WebSocket写
     let session_id_clone = session_id.clone();
     
     let ws_write_task = tokio::spawn(async move {
@@ -132,14 +144,6 @@ async fn handle_connection(
                     // 发送到WebSocket - 异步操作，不阻塞
                     if let Err(e) = ws_write.send(Message::Text(output.into())).await {
                         log::error!("Failed to send terminal output to WebSocket: {}", e);
-                        break;
-                    }
-                },
-                // 处理ping-pong
-                Some(_) = pong_rx.recv() => {
-                    log::debug!("Received ping, sending pong");
-                    if let Err(e) = ws_write.send(Message::Pong(Vec::new().into())).await {
-                        log::error!("Failed to send pong: {}", e);
                         break;
                     }
                 },
@@ -163,15 +167,6 @@ async fn handle_connection(
             log::info!("WebSocket write task finished");
         }
     }
-    
-    // 清理资源
-    if let Err(e) = session_manager.close_session(&session_id).await {
-        log::error!("Failed to close session {}: {}", session_id, e);
-    } else {
-        log::info!("Closed session {} for WebSocket connection", session_id);
-    }
-    
-    log::info!("WebSocket connection fully closed");
     
     Ok(())
 }
