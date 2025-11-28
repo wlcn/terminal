@@ -3,6 +3,8 @@ use tokio::sync::Mutex;
 use tokio::process::{Command, Child};
 use tokio::io::AsyncWriteExt;
 
+use crate::config::ShellConfig;
+
 // 终端进程
 #[derive(Clone)]
 pub struct TerminalProcess {
@@ -27,6 +29,41 @@ impl TerminalProcess {
             .spawn()?;
         
         log::info!("Created new terminal process with PID: {}", child.id().unwrap());
+        
+        Ok(Self {
+            child: Arc::new(Mutex::new(child)),
+        })
+    }
+    
+    // 根据配置创建终端进程
+    pub async fn new_with_config(shell_config: &ShellConfig) -> anyhow::Result<Self> {
+        // 创建命令
+        let mut command = Command::new(&shell_config.command[0]);
+        
+        // 添加命令参数
+        if shell_config.command.len() > 1 {
+            command.args(&shell_config.command[1..]);
+        }
+        
+        // 设置工作目录
+        if let Some(working_dir) = &shell_config.working_directory {
+            command.current_dir(working_dir);
+        }
+        
+        // 设置环境变量
+        for (key, value) in &shell_config.environment {
+            command.env(key, value);
+        }
+        
+        // 设置标准输入输出
+        let child = command
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()?;
+        
+        log::info!("Created new terminal process with PID: {} using command: {:?}", 
+                  child.id().unwrap(), shell_config.command);
         
         Ok(Self {
             child: Arc::new(Mutex::new(child)),

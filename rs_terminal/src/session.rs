@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
+use crate::config::{Config, ShellConfig};
 use crate::terminal::TerminalProcess;
 
 // 终端会话
@@ -15,13 +17,15 @@ pub(crate) struct Session {
 // 会话管理器
 pub struct SessionManager {
     sessions: HashMap<String, Session>,
+    config: Arc<Config>,
 }
 
 impl SessionManager {
     // 创建新的会话管理器
-    pub fn new() -> Self {
+    pub fn new(config: Arc<Config>) -> Self {
         Self {
             sessions: HashMap::new(),
+            config,
         }
     }
     
@@ -30,8 +34,11 @@ impl SessionManager {
         // 生成会话ID
         let session_id = Uuid::new_v4().to_string();
         
+        // 获取默认shell配置
+        let default_shell_config = self.config.get_default_shell_config();
+        
         // 创建终端进程
-        let terminal = TerminalProcess::new().await?;
+        let terminal = TerminalProcess::new_with_config(default_shell_config).await?;
         
         // 添加到会话映射
         self.sessions.insert(session_id.clone(), Session {
@@ -72,7 +79,8 @@ impl SessionManager {
             }
         });
         
-        log::info!("Created new session with ID: {}", session_id);
+        log::info!("Created new session with ID: {} using shell: {:?}", 
+                  session_id, default_shell_config.command);
         
         Ok(session_id)
     }

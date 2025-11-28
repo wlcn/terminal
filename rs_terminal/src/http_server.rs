@@ -4,6 +4,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
+use crate::config::Config;
+
 use crate::session::SessionManager;
 
 // 响应数据结构
@@ -56,7 +58,7 @@ pub struct TerminalSession {
 }
 
 // 启动HTTP服务器
-pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>) -> anyhow::Result<()> {
+pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>, config: Arc<Config>) -> anyhow::Result<()> {
     // 创建CORS配置
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -67,18 +69,18 @@ pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>) -> anyhow
     let app = Router::new()
         .route("/api/sessions", post(create_session))
         .route("/api/sessions", get(get_all_sessions))
-        .route("/api/sessions/:id", get(get_session_by_id))
-        .route("/api/sessions/:id/resize", post(resize_terminal))
-        .route("/api/sessions/:id/interrupt", post(interrupt_terminal))
-        .route("/api/sessions/:id", delete(terminate_session))
-        .route("/api/sessions/:id/status", get(get_session_status))
-        .route("/api/sessions/:id/execute", post(execute_command))
-        .route("/api/sessions/:id/execute-check", post(execute_command_check))
+        .route("/api/sessions/{id}", get(get_session_by_id))
+        .route("/api/sessions/{id}/resize", post(resize_terminal))
+        .route("/api/sessions/{id}/interrupt", post(interrupt_terminal))
+        .route("/api/sessions/{id}", delete(terminate_session))
+        .route("/api/sessions/{id}/status", get(get_session_status))
+        .route("/api/sessions/{id}/execute", post(execute_command))
+        .route("/api/sessions/{id}/execute-check", post(execute_command_check))
         .layer(cors)
-        .with_state(session_manager);
+        .with_state((session_manager, config));
     
     // 绑定地址并启动服务器
-    let addr: std::net::SocketAddr = "127.0.0.1:8080".parse()?;
+    let addr: std::net::SocketAddr = "127.0.0.1:8082".parse()?;
     log::info!("HTTP server started on http://{}", addr);
     
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -91,7 +93,7 @@ pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>) -> anyhow
 // 创建新会话
 async fn create_session(
     Query(params): Query<CreateSessionParams>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
     // 检查userId是否提供
     let user_id = match params.user_id {
@@ -104,17 +106,20 @@ async fn create_session(
     // 生成会话ID
     match session_manager.create_session().await {
         Ok(session_id) => {
+            // 获取默认shell类型
+            let default_shell_type = config.terminal.default_shell_type.clone();
+            
             // 创建会话响应
             let session = TerminalSession {
                 id: session_id.clone(),
                 userId: user_id,
                 title: params.title,
-                workingDirectory: params.working_directory.unwrap_or(".".to_string()),
-                shellType: params.shell_type.unwrap_or("bash".to_string()),
+                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                shellType: params.shell_type.unwrap_or(default_shell_type),
                 status: "ACTIVE".to_string(),
                 terminalSize: TerminalSize {
-                    columns: params.columns.unwrap_or(80),
-                    rows: params.rows.unwrap_or(24),
+                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
                 },
                 createdAt: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -131,23 +136,26 @@ async fn create_session(
                 expiredAt: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
-                    .as_millis() as u64 + 3600 * 1000,
+                    .as_millis() as u64 + config.terminal.session_timeout,
             };
             
             (StatusCode::CREATED, Json(session))
         },
         Err(e) => {
             log::error!("Failed to create session: {}", e);
+            // 获取默认shell类型
+            let default_shell_type = config.terminal.default_shell_type.clone();
+            
             (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalSession {
                 id: "".to_string(),
                 userId: user_id,
                 title: params.title,
-                workingDirectory: params.working_directory.unwrap_or(".".to_string()),
-                shellType: params.shell_type.unwrap_or("bash".to_string()),
+                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                shellType: params.shell_type.unwrap_or(default_shell_type),
                 status: "ERROR".to_string(),
                 terminalSize: TerminalSize {
-                    columns: params.columns.unwrap_or(80),
-                    rows: params.rows.unwrap_or(24),
+                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
                 },
                 createdAt: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -164,7 +172,7 @@ async fn create_session(
                 expiredAt: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
-                    .as_millis() as u64 + 3600 * 1000,
+                    .as_millis() as u64 + config.terminal.session_timeout,
             }))
         }
     }
@@ -172,7 +180,7 @@ async fn create_session(
 
 // 获取所有会话
 async fn get_all_sessions(
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<Vec<TerminalSession>>) {
     let _session_manager = session_manager.lock().await;
     
@@ -183,17 +191,20 @@ async fn get_all_sessions(
 // 获取会话详情
 async fn get_session_by_id(
     Path(id): Path<String>,
-    State(_session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((_session_manager, config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
     // 后续实现完整逻辑
     (StatusCode::OK, Json(TerminalSession {
         id: id,
         userId: "default_user".to_string(),
         title: None,
-        workingDirectory: ".".to_string(),
-        shellType: "bash".to_string(),
+        workingDirectory: config.terminal.default_working_directory.clone(),
+        shellType: config.terminal.default_shell_type.clone(),
         status: "ACTIVE".to_string(),
-        terminalSize: TerminalSize { columns: 80, rows: 24 },
+        terminalSize: TerminalSize {
+            columns: config.terminal.default_terminal_size.columns,
+            rows: config.terminal.default_terminal_size.rows
+        },
         createdAt: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -209,7 +220,7 @@ async fn get_session_by_id(
         expiredAt: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_millis() as u64 + 3600 * 1000,
+            .as_millis() as u64 + config.terminal.session_timeout,
     }))
 }
 
@@ -217,7 +228,7 @@ async fn get_session_by_id(
 async fn resize_terminal(
     Path(id): Path<String>,
     Query(params): Query<ResizeParams>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalResizeResponse>) {
     // 检查cols和rows参数是否提供
     let cols = match params.cols {
@@ -243,7 +254,7 @@ async fn resize_terminal(
 // 中断终端
 async fn interrupt_terminal(
     Path(id): Path<String>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalInterruptResponse>) {
     let session_manager = session_manager.lock().await;
     
@@ -262,7 +273,7 @@ async fn interrupt_terminal(
 // 终止会话
 async fn terminate_session(
     Path(id): Path<String>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalTerminateResponse>) {
     let mut session_manager = session_manager.lock().await;
     
@@ -283,7 +294,7 @@ async fn terminate_session(
 // 获取会话状态
 async fn get_session_status(
     Path(id): Path<String>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalStatusResponse>) {
     let session_manager = session_manager.lock().await;
     
@@ -302,7 +313,7 @@ async fn get_session_status(
 async fn execute_command(
     Path(id): Path<String>,
     Query(params): Query<ExecuteParams>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, String) {
     // 检查command参数是否提供
     let command = match params.command {
@@ -329,7 +340,7 @@ async fn execute_command(
 async fn execute_command_check(
     Path(id): Path<String>,
     Query(params): Query<ExecuteParams>,
-    State(session_manager): State<Arc<Mutex<SessionManager>>>,
+    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
 ) -> (StatusCode, Json<bool>) {
     // 检查command参数是否提供
     let command = match params.command {

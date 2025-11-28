@@ -1,0 +1,43 @@
+# rs_terminal 配置文件
+# 基于 TOML 格式，与 kt-terminal 兼容
+
+# 终端配置
+[terminal]
+# 默认shell类型
+default_shell_type = "powershell"
+
+# 默认终端尺寸
+default_terminal_size.columns = 80
+default_terminal_size.rows = 24
+
+# 默认工作目录
+default_working_directory = "."
+
+# 会话超时时间（毫秒）
+session_timeout = 1800000
+
+# Shell配置
+
+# Bash配置
+[terminal.shells.bash]
+command = ["bash"]
+working_directory = ""
+environment.TERM = "xterm-256color"
+
+# Sh配置
+[terminal.shells.sh]
+command = ["sh"]
+working_directory = ""
+environment.TERM = "xterm-256color"
+
+# Cmd配置
+[terminal.shells.cmd]
+command = ["cmd.exe"]
+working_directory = ""
+environment.TERM = "xterm-256color"
+
+# PowerShell配置
+[terminal.shells.powershell]
+command = ["powershell.exe"]
+working_directory = "${USERPROFILE}"
+environment.TERM = "xterm-256color"

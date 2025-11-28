@@ -1,0 +1,51 @@
+# log4rs 配置文件
+
+# 配置根日志记录器
+root:
+  level: info
+  appenders: [console, file]
+
+# 配置日志输出器
+appenders:
+  # 控制台输出器
+  console:
+    kind: console
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} [{l}] {t}: {m}{n}"
+  
+  # 文件输出器
+  file:
+    kind: rolling_file
+    path: "logs/rs_terminal.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} [{l}] {t}: {m}{n}"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 10mb
+      roller:
+        kind: fixed_window
+        pattern: "logs/rs_terminal.{}.log"
+        base: 1
+        count: 5
+
+# 配置特定模块的日志级别
+loggers:
+  # 配置rs_terminal模块的日志级别
+  rs_terminal:
+    level: debug
+    appenders: [file]
+    additive: false
+  
+  # 配置tokio模块的日志级别
+  tokio:
+    level: warn
+  
+  # 配置axum模块的日志级别
+  axum:
+    level: warn
+  
+  # 配置tungstenite模块的日志级别
+  tungstenite:
+    level: warn
