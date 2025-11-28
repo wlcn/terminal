@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
     });
     
     log::info!(
-        "Servers starting: HTTP on http://localhost:{}, WebSocket on ws://localhost:{}, WebTransport on http://localhost:{}",
+        "Servers starting: HTTP on http://localhost:{}, WebSocket on ws://localhost:{}, WebTransport on https://localhost:{}",
         config.http.port,
         config.websocket.port,
         config.webtransport.port

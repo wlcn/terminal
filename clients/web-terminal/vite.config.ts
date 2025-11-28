@@ -16,6 +16,12 @@ export default defineConfig({
       '/ws': {
         target: 'ws://localhost:8080',
         ws: true,
+      },
+      '/webtransport': {
+        target: 'https://localhost:8082',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       }
     }
   },
