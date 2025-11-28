@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
@@ -8,7 +6,7 @@ use crate::terminal::TerminalProcess;
 
 // 终端会话
 #[derive(Clone)]
-struct Session {
+pub(crate) struct Session {
     terminal: TerminalProcess,
     // 客户端发送通道
     client_senders: Vec<tokio::sync::mpsc::Sender<String>>,
@@ -121,8 +119,8 @@ impl SessionManager {
         Ok(())
     }
     
-    // 获取会话
-    pub fn get_session(&self, session_id: &str) -> Option<&Session> {
-        self.sessions.get(session_id)
+    // 检查会话是否存在
+    pub fn session_exists(&self, session_id: &str) -> bool {
+        self.sessions.contains_key(session_id)
     }
 }

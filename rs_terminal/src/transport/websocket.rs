@@ -34,8 +34,15 @@ async fn handle_connection(
     stream: TcpStream,
     session_manager: Arc<Mutex<SessionManager>>,
 ) -> anyhow::Result<()> {
-    // 接受WebSocket连接
-    let ws_stream = accept_async(stream).await?;
+    // 接受WebSocket连接，添加错误处理
+    let ws_stream = match accept_async(stream).await {
+        Ok(stream) => stream,
+        Err(e) => {
+            log::warn!("Failed to accept WebSocket connection: {}", e);
+            // 忽略非WebSocket请求，直接返回
+            return Ok(());
+        }
+    };
     
     log::info!("New WebSocket connection established");
     

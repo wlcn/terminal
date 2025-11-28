@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 use crate::session::SessionManager;
 
 // 启动WebTransport服务器
-pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>) -> anyhow::Result<()> {
+pub async fn start_server(_session_manager: Arc<Mutex<SessionManager>>) -> anyhow::Result<()> {
     log::info!("WebTransport server would start on http://localhost:8081 if fully implemented");
     
     // 简化实现，目前只是打印日志
