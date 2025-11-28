@@ -8,6 +8,7 @@ use tokio::sync::mpsc;
 
 // 使用wtransport 0.6.1正确的导入路径
 use wtransport::endpoint::IncomingSession;
+use wtransport::endpoint::endpoint_side;
 use wtransport::Endpoint;
 use wtransport::ServerConfig;
 use wtransport::Identity;
