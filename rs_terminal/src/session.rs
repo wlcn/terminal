@@ -138,8 +138,7 @@ impl SessionManager {
     pub async fn write_to_session(&self, session_id: &str, data: &str) -> anyhow::Result<()> {
         log::debug!("write_to_session called with session_id: {}, data: {:?}", session_id, data);
         
-        // 只持有读锁一小段时间，获取会话引用
-        let mut session = {
+        let session = {
             log::debug!("Acquiring read lock for sessions map");
             let sessions_read = self.sessions.read().unwrap();
             log::debug!("Got read lock for sessions map");
@@ -191,5 +190,24 @@ impl SessionManager {
     pub async fn get_all_sessions(&self) -> Vec<String> {
         let sessions_read = self.sessions.read().unwrap();
         sessions_read.keys().cloned().collect()
+    }
+    
+    // 调整终端大小 - 线程安全，只需要&self
+    pub async fn resize_session(&self, session_id: &str, columns: u32, rows: u32) -> anyhow::Result<()> {
+        // 只持有读锁一小段时间，获取会话引用
+        let session = {
+            let sessions_read = self.sessions.read().unwrap();
+            match sessions_read.get(session_id) {
+                Some(session) => session.clone(),
+                None => anyhow::bail!("Session not found: {}", session_id),
+            }
+        };
+        
+        // 释放会话管理器锁后，执行异步调整大小
+        session.terminal.resize(columns, rows).await?;
+        
+        log::info!("Resized session {} to {} columns x {} rows", session_id, columns, rows);
+        
+        Ok(())
     }
 }

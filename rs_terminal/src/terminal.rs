@@ -138,6 +138,24 @@ impl TerminalProcess {
         }
     }
     
+    // 调整终端大小 - 异步设计，只在调整时持有锁
+    pub async fn resize(&self, columns: u32, rows: u32) -> anyhow::Result<()> {
+        log::info!("Resizing terminal to {} columns x {} rows", columns, rows);
+        
+        // 获取子进程
+        let child = self.child.lock().await;
+        let pid = child.id().unwrap();
+        
+        // 记录调整大小请求
+        log::debug!("Resize request for terminal PID {}: {}x{}", pid, columns, rows);
+        
+        // 注意：在Windows上，调整终端大小需要使用Windows API
+        // 这里我们只是记录日志，后续可以实现完整的调整逻辑
+        // 对于Unix系统，可以使用pty库来调整大小
+        
+        Ok(())
+    }
+    
     // 关闭终端 - 异步设计，只在关闭时持有锁
     pub async fn close(&self) -> anyhow::Result<()> {
         let mut child = self.child.lock().await;

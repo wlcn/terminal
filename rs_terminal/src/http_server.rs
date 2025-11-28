@@ -98,10 +98,38 @@ async fn create_session(
     // 检查userId是否提供
     let user_id = match params.user_id {
         Some(id) => id,
-        None => panic!("Missing userId"),
+        None => {
+            // 返回400 Bad Request
+            return (StatusCode::BAD_REQUEST, Json(TerminalSession {
+                id: "".to_string(),
+                userId: "".to_string(),
+                title: params.title,
+                workingDirectory: params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
+                shellType: params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                status: "ERROR".to_string(),
+                terminalSize: TerminalSize {
+                    columns: params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
+                    rows: params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
+                },
+                createdAt: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                updatedAt: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                lastActiveTime: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                expiredAt: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64 + config.terminal.session_timeout,
+            }));
+        },
     };
-    
-
     
     // 生成会话ID
     match session_manager.create_session().await {
@@ -180,12 +208,44 @@ async fn create_session(
 
 // 获取所有会话
 async fn get_all_sessions(
-    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
+    State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<Vec<TerminalSession>>) {
-
+    // 获取所有会话ID
+    let session_ids = session_manager.get_all_sessions().await;
     
-    // 返回空列表，后续实现完整逻辑
-    (StatusCode::OK, Json(Vec::<TerminalSession>::new()))
+    // 创建会话响应列表
+    let sessions: Vec<TerminalSession> = session_ids.into_iter().map(|session_id| {
+        TerminalSession {
+            id: session_id.clone(),
+            userId: "default_user".to_string(),
+            title: None,
+            workingDirectory: config.terminal.default_working_directory.clone(),
+            shellType: config.terminal.default_shell_type.clone(),
+            status: "ACTIVE".to_string(),
+            terminalSize: TerminalSize {
+                columns: config.terminal.default_terminal_size.columns,
+                rows: config.terminal.default_terminal_size.rows
+            },
+            createdAt: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            updatedAt: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            lastActiveTime: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            expiredAt: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64 + config.terminal.session_timeout,
+        }
+    }).collect();
+    
+    (StatusCode::OK, Json(sessions))
 }
 
 // 获取会话详情
@@ -233,22 +293,57 @@ async fn resize_terminal(
     // 检查cols和rows参数是否提供
     let cols = match params.cols {
         Some(cols) => cols,
-        None => panic!("Missing or invalid columns"),
+        None => {
+            // 返回400 Bad Request
+            return (StatusCode::BAD_REQUEST, Json(TerminalResizeResponse {
+                sessionId: id,
+                terminalSize: TerminalSize { columns: 0, rows: 0 },
+                status: "ERROR".to_string(),
+            }));
+        },
     };
     
     let rows = match params.rows {
         Some(rows) => rows,
-        None => panic!("Missing or invalid rows"),
+        None => {
+            // 返回400 Bad Request
+            return (StatusCode::BAD_REQUEST, Json(TerminalResizeResponse {
+                sessionId: id,
+                terminalSize: TerminalSize { columns: cols, rows: 0 },
+                status: "ERROR".to_string(),
+            }));
+        },
     };
     
-
-    
-    // 后续实现完整逻辑
-    (StatusCode::OK, Json(TerminalResizeResponse {
-        sessionId: id,
-        terminalSize: TerminalSize { columns: cols, rows: rows },
-        status: "ACTIVE".to_string(),
-    }))
+    // 调整终端大小
+    match session_manager.resize_session(&id, cols, rows).await {
+        Ok(_) => {
+            (StatusCode::OK, Json(TerminalResizeResponse {
+                sessionId: id,
+                terminalSize: TerminalSize { columns: cols, rows: rows },
+                status: "ACTIVE".to_string(),
+            }))
+        },
+        Err(e) => {
+            log::error!("Failed to resize session {}: {}", id, e);
+            // 检查是否是因为会话不存在
+            if e.to_string().contains("Session not found") {
+                // 返回404 Not Found
+                (StatusCode::NOT_FOUND, Json(TerminalResizeResponse {
+                    sessionId: id,
+                    terminalSize: TerminalSize { columns: cols, rows: rows },
+                    status: "ERROR".to_string(),
+                }))
+            } else {
+                // 返回500 Internal Server Error
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalResizeResponse {
+                    sessionId: id,
+                    terminalSize: TerminalSize { columns: cols, rows: rows },
+                    status: "ERROR".to_string(),
+                }))
+            }
+        }
+    }
 }
 
 // 中断终端
@@ -256,18 +351,30 @@ async fn interrupt_terminal(
     Path(id): Path<String>,
     State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalInterruptResponse>) {
-
-    
     // 检查会话是否存在
     if !session_manager.session_exists(&id).await {
-        panic!("Session not found");
+        // 返回404 Not Found
+        return (StatusCode::NOT_FOUND, Json(TerminalInterruptResponse {
+            sessionId: id,
+            status: "ERROR".to_string(),
+        }));
     }
     
-    // 后续实现完整逻辑
-    (StatusCode::OK, Json(TerminalInterruptResponse {
-        sessionId: id,
-        status: "interrupted".to_string(),
-    }))
+    // 发送中断信号（Ctrl+C）到终端
+    // 在Windows上，我们可以发送"\x03"（Ctrl+C）
+    // 在Unix系统上，我们可以发送SIGINT信号
+    if session_manager.write_to_session(&id, "\x03").await.is_ok() {
+        (StatusCode::OK, Json(TerminalInterruptResponse {
+            sessionId: id,
+            status: "interrupted".to_string(),
+        }))
+    } else {
+        // 返回500 Internal Server Error
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalInterruptResponse {
+            sessionId: id,
+            status: "ERROR".to_string(),
+        }))
+    }
 }
 
 // 终止会话
@@ -275,18 +382,35 @@ async fn terminate_session(
     Path(id): Path<String>,
     State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalTerminateResponse>) {
-    // 检查会话是否存在
-    if !session_manager.session_exists(&id).await {
-        panic!("Session not found");
+    // 关闭会话
+    match session_manager.close_session(&id).await {
+        Ok(_) => {
+            (StatusCode::OK, Json(TerminalTerminateResponse {
+                sessionId: id,
+                reason: "User terminated".to_string(),
+                status: "TERMINATED".to_string(),
+            }))
+        },
+        Err(e) => {
+            log::error!("Failed to terminate session {}: {}", id, e);
+            // 检查是否是因为会话不存在
+            if e.to_string().contains("Session not found") {
+                // 返回404 Not Found
+                (StatusCode::NOT_FOUND, Json(TerminalTerminateResponse {
+                    sessionId: id,
+                    reason: e.to_string(),
+                    status: "ERROR".to_string(),
+                }))
+            } else {
+                // 返回500 Internal Server Error
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalTerminateResponse {
+                    sessionId: id,
+                    reason: e.to_string(),
+                    status: "ERROR".to_string(),
+                }))
+            }
+        }
     }
-    
-    session_manager.close_session(&id).await.unwrap();
-    
-    (StatusCode::OK, Json(TerminalTerminateResponse {
-        sessionId: id,
-        reason: "User terminated".to_string(),
-        status: "TERMINATED".to_string(),
-    }))
 }
 
 // 获取会话状态
@@ -296,7 +420,10 @@ async fn get_session_status(
 ) -> (StatusCode, Json<TerminalStatusResponse>) {
     // 检查会话是否存在
     if !session_manager.session_exists(&id).await {
-        panic!("Session not found");
+        // 返回404 Not Found
+        return (StatusCode::NOT_FOUND, Json(TerminalStatusResponse {
+            status: "ERROR".to_string(),
+        }));
     }
     
     // 后续实现完整逻辑
@@ -314,14 +441,16 @@ async fn execute_command(
     // 检查command参数是否提供
     let command = match params.command {
         Some(cmd) => cmd,
-        None => panic!("Missing command"),
+        None => {
+            // 返回400 Bad Request
+            return (StatusCode::BAD_REQUEST, "Missing command".to_string());
+        },
     };
-    
-
     
     // 检查会话是否存在
     if !session_manager.session_exists(&id).await {
-        panic!("Session not found");
+        // 返回404 Not Found
+        return (StatusCode::NOT_FOUND, "Session not found".to_string());
     }
     
     // 执行命令
@@ -343,8 +472,6 @@ async fn execute_command_check(
         Some(cmd) => cmd,
         None => return (StatusCode::BAD_REQUEST, Json(false)),
     };
-    
-
     
     // 检查会话是否存在
     if !session_manager.session_exists(&id).await {
