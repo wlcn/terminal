@@ -10,6 +10,8 @@ interface HeaderProps {
     shellType: string;
     terminalSize: { columns: number; rows: number };
   };
+  protocol: 'websocket' | 'webtransport' | 'auto';
+  onProtocolChange: (protocol: 'websocket' | 'webtransport' | 'auto') => void;
   onConnect: () => void;
   onToggleFullscreen: () => void;
   onRefresh: () => void;
@@ -22,6 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   isConnected,
   isFullscreen,
   currentSessionInfo,
+  protocol,
+  onProtocolChange,
   onConnect,
   onToggleFullscreen,
   onRefresh,
@@ -60,6 +64,21 @@ export const Header: React.FC<HeaderProps> = ({
             <h1 className="text-lg font-semibold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               KT Terminal
             </h1>
+          </div>
+          
+          {/* Protocol selection */}
+          <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-border">
+            <span className="text-sm text-muted-foreground">PROTOCOL:</span>
+            <select 
+              className="px-2 py-1 bg-background/80 border border-primary/30 rounded text-sm text-primary focus:border-primary focus:outline-none"
+              value={protocol}
+              onChange={(e) => onProtocolChange(e.target.value as 'websocket' | 'webtransport' | 'auto')}
+              disabled={isConnected}
+            >
+              <option value="auto">Auto</option>
+              <option value="websocket">WebSocket</option>
+              <option value="webtransport">WebTransport</option>
+            </select>
           </div>
           
           {/* Session info display */}

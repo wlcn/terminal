@@ -14,11 +14,12 @@ const WS_SERVER_PATH = APP_CONFIG.WS_SERVER.PATH;
 
 interface TerminalComponentProps {
   className?: string;
+  protocol?: 'websocket' | 'webtransport' | 'auto';
   onConnectionStatusChange?: (connected: boolean, sessionInfo?: { sessionId: string; shellType: string; terminalSize: { columns: number; rows: number } }) => void;
   ref?: React.Ref<any>;
 }
 
-const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, onConnectionStatusChange }, ref) => {
+const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, protocol = 'auto', onConnectionStatusChange }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
@@ -167,12 +168,21 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('🌐 Attempting to establish communication connection for session...');
       
       try {
-        // Check if WebTransport is supported, otherwise use WebSocket
-        const protocol = isWebTransportSupported() ? 'webtransport' : 'websocket';
-        console.log(`📡 Using communication protocol: ${protocol}`);
+        // Determine which protocol to use
+        let selectedProtocol: 'websocket' | 'webtransport';
+        
+        if (protocol === 'auto') {
+          // Auto-detect: use WebTransport if supported, otherwise WebSocket
+          selectedProtocol = isWebTransportSupported() ? 'webtransport' : 'websocket';
+        } else {
+          // Use the protocol specified by the user
+          selectedProtocol = protocol;
+        }
+        
+        console.log(`📡 Using communication protocol: ${selectedProtocol}`);
         
         // Create communication instance
-        communication.current = createTerminalCommunication(newSessionId, protocol);
+        communication.current = createTerminalCommunication(newSessionId, selectedProtocol);
         
         // Set up event handlers
         communication.current.on('open', () => {

@@ -9,6 +9,8 @@ function App() {
   const terminalRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // 协议选择状态
+  const [protocol, setProtocol] = useState<'websocket' | 'webtransport' | 'auto'>('auto');
   
   // 会话信息状态
   const [currentSessionInfo, setCurrentSessionInfo] = useState<{
@@ -143,6 +145,8 @@ function App() {
         isConnected={isConnected}
         isFullscreen={isFullscreen}
         currentSessionInfo={currentSessionInfo}
+        protocol={protocol}
+        onProtocolChange={setProtocol}
         onConnect={handleConnect}
         onToggleFullscreen={toggleFullscreen}
         onRefresh={handleRefresh}
@@ -174,6 +178,7 @@ function App() {
           <TerminalComponent 
             ref={terminalRef}
             className="h-full overflow-hidden" 
+            protocol={protocol}
             onConnectionStatusChange={handleConnectionStatusChange}
           />
         </div>
