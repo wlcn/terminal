@@ -128,7 +128,7 @@ export const terminateSession = async (
 /**
  * Get active session list
  */
-export const listSessions = async (userId?: string): Promise<{ sessions: string[]; count: number }> => {
+export const listSessions = async (userId?: string): Promise<{ sessions: any[]; count: number }> => {
   try {
     const url = `${API_BASE_URL}`;
     
@@ -139,12 +139,10 @@ export const listSessions = async (userId?: string): Promise<{ sessions: string[
     }
     
     const sessions = await response.json();
-    // Convert backend session objects to session IDs
-    const sessionIds = sessions.map((session: any) => session.id);
     
     return {
-      sessions: sessionIds,
-      count: sessionIds.length
+      sessions: sessions,
+      count: sessions.length
     };
   } catch (error) {
     console.error('❌ Failed to list sessions:', error);
