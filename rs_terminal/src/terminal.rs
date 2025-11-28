@@ -19,12 +19,8 @@ pub struct TerminalProcess {
 impl TerminalProcess {
     // 创建新的终端进程
     pub async fn new() -> anyhow::Result<Self> {
-        // 获取默认shell
-        #[cfg(unix)]
+        // 获取默认shell - 只支持Linux
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
-        
-        #[cfg(windows)]
-        let shell = std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".to_string());
         
         // 创建终端进程
         let mut child = Command::new(shell)
@@ -117,8 +113,8 @@ impl TerminalProcess {
         Ok(())
     }
     
-    // 读取终端输出 - 使用独立的stdout锁，避免死锁
-    pub async fn read_output(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+    // 读取终端标准输出 - 使用独立的stdout锁，避免死锁
+    pub async fn read_stdout(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
         // 使用独立的stdout锁，不影响stdin写入
         let mut stdout = self.stdout.lock().await;
         
@@ -135,6 +131,43 @@ impl TerminalProcess {
                 Ok(output)
             },
             Err(e) => Err(e.into()),
+        }
+    }
+    
+    // 读取终端标准错误 - 使用独立的stderr锁，避免死锁
+    pub async fn read_stderr(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+        // 使用独立的stderr锁，不影响其他操作
+        let mut stderr = self.stderr.lock().await;
+        
+        // 异步读取终端错误输出
+        let read_result = stderr.read(buffer).await;
+        
+        // 立即释放锁，允许其他任务访问
+        drop(stderr);
+        
+        match read_result {
+            Ok(0) => Ok(String::new()), // EOF
+            Ok(n) => {
+                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                Ok(output)
+            },
+            Err(e) => Err(e.into()),
+        }
+    }
+    
+    // 读取终端输出（同时读取stdout和stderr）
+    pub async fn read_output(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+        // 首先尝试读取stdout
+        let stdout_result = self.read_stdout(buffer).await;
+        
+        match stdout_result {
+            Ok(stdout_output) if !stdout_output.is_empty() => {
+                Ok(stdout_output)
+            },
+            _ => {
+                // 如果stdout没有输出，尝试读取stderr
+                self.read_stderr(buffer).await
+            }
         }
     }
     
@@ -175,5 +208,14 @@ impl TerminalProcess {
         }
         
         Ok(())
+    }
+    
+    // 检查终端进程是否还在运行
+    pub async fn is_running(&self) -> bool {
+        let mut child = self.child.lock().await;
+        match child.try_wait() {
+            Ok(None) => true, // 进程还在运行
+            _ => false, // 进程已经退出或者发生错误
+        }
     }
 }

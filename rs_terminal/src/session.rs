@@ -5,12 +5,46 @@ use uuid::Uuid;
 use crate::config::{Config, ShellConfig};
 use crate::terminal::TerminalProcess;
 
+// 会话状态枚举
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SessionStatus {
+    Active,
+    Terminated,
+}
+
 // 终端会话
 #[derive(Clone)]
 pub(crate) struct Session {
     terminal: TerminalProcess,
     // 客户端发送通道 - 线程安全的发送者列表
     client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>,
+    // 会话状态 - 使用AtomicU8确保原子更新
+    status: Arc<std::sync::atomic::AtomicU8>,
+}
+
+impl Session {
+    // 创建新会话
+    pub(crate) fn new(terminal: TerminalProcess) -> Self {
+        Self {
+            terminal,
+            client_senders: Arc::new(Mutex::new(Vec::new())),
+            status: Arc::new(std::sync::atomic::AtomicU8::new(SessionStatus::Active as u8)),
+        }
+    }
+    
+    // 获取会话状态
+    pub(crate) fn get_status(&self) -> SessionStatus {
+        match self.status.load(std::sync::atomic::Ordering::SeqCst) {
+            0 => SessionStatus::Active,
+            1 => SessionStatus::Terminated,
+            _ => unreachable!(),
+        }
+    }
+    
+    // 设置会话状态
+    pub(crate) fn set_status(&self, new_status: SessionStatus) {
+        self.status.store(new_status as u8, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 // 会话管理器 - 完全线程安全设计
@@ -49,11 +83,10 @@ impl SessionManager {
         let terminal = TerminalProcess::new_with_config(default_shell_config).await?;
         
         // 创建会话对象
-        let client_senders = Arc::new(Mutex::new(Vec::new()));
-        let session = Session {
-            terminal: terminal.clone(),
-            client_senders: client_senders.clone(),
-        };
+        let session = Session::new(terminal.clone());
+        
+        // 获取会话的client_senders
+        let client_senders = session.client_senders.clone();
         
         // 添加到会话映射 - 只持有写锁一小段时间
         {
@@ -72,44 +105,52 @@ impl SessionManager {
     
     // 启动终端输出监听任务 - 独立异步任务，不阻塞主线程
     async fn spawn_terminal_listener(&self, terminal: TerminalProcess, session_id: String, client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>) {
-        tokio::spawn(async move {
+        tokio::spawn(async move { 
             let mut buffer = [0; 1024];
             
             loop {
+                // 检查终端进程是否还在运行
+                if !terminal.is_running().await {
+                    log::info!("Terminal process for session {} has exited, stopping listener", session_id);
+                    break;
+                }
+                
                 // 读取终端输出 - 只在读取时持有终端锁
                 let output = match terminal.read_output(&mut buffer).await {
                     Ok(output) => output,
                     Err(e) => {
                         log::error!("Error reading terminal output for session {}: {}", session_id, e);
-                        break;
+                        // 继续循环，不要因为一次错误就退出
+                        continue;
                     }
                 };
                 
-                if output.is_empty() {
-                    break;
+                if !output.is_empty() {
+                    log::debug!("Terminal output for session {}: {:?}", session_id, output);
+                    
+                    // 发送输出到所有连接的客户端 - 只持有锁一小段时间
+                    let senders = {
+                        let client_senders_lock = client_senders.lock().unwrap();
+                        client_senders_lock.clone()
+                    };
+                    
+                    // 异步发送，不阻塞主循环
+                    for sender in senders {
+                        let output_clone = output.clone();
+                        let client_senders_clone = client_senders.clone();
+                        tokio::spawn(async move {
+                            if let Err(_e) = sender.send(output_clone).await {
+                                log::debug!("Client sender closed, removing from session");
+                                // 异步移除失效的发送者
+                                let mut client_senders_lock = client_senders_clone.lock().unwrap();
+                                client_senders_lock.retain(|s| !std::ptr::eq(s, &sender));
+                            }
+                        });
+                    }
                 }
                 
-                log::debug!("Terminal output for session {}: {:?}", session_id, output);
-                
-                // 发送输出到所有连接的客户端 - 只持有锁一小段时间
-                let senders = {
-                    let client_senders_lock = client_senders.lock().unwrap();
-                    client_senders_lock.clone()
-                };
-                
-                // 异步发送，不阻塞主循环
-                for sender in senders {
-                    let output_clone = output.clone();
-                    let client_senders_clone = client_senders.clone();
-                    tokio::spawn(async move {
-                        if let Err(_e) = sender.send(output_clone).await {
-                            log::debug!("Client sender closed, removing from session");
-                            // 异步移除失效的发送者
-                            let mut client_senders_lock = client_senders_clone.lock().unwrap();
-                            client_senders_lock.retain(|s| !std::ptr::eq(s, &sender));
-                        }
-                    });
-                }
+                // 短暂休眠，避免CPU占用过高
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
             }
         });
     }
@@ -164,14 +205,17 @@ impl SessionManager {
     
     // 关闭会话 - 线程安全，只需要&self
     pub async fn close_session(&self, session_id: &str) -> anyhow::Result<()> {
-        // 从映射中移除会话 - 只持有写锁一小段时间
+        // 获取会话引用
         let session = {
-            let mut sessions_write = self.sessions.write().unwrap();
-            match sessions_write.remove(session_id) {
-                Some(session) => session,
+            let sessions_read = self.sessions.read().unwrap();
+            match sessions_read.get(session_id) {
+                Some(session) => session.clone(),
                 None => anyhow::bail!("Session not found: {}", session_id),
             }
         };
+        
+        // 更新会话状态为Terminated
+        session.set_status(SessionStatus::Terminated);
         
         // 释放会话管理器锁后，执行异步关闭
         session.terminal.close().await?;
@@ -186,10 +230,27 @@ impl SessionManager {
         sessions_read.contains_key(session_id)
     }
     
-    // 获取所有会话 - 线程安全，只需要&self
-    pub async fn get_all_sessions(&self) -> Vec<String> {
+    // 获取会话状态 - 线程安全，只需要&self
+    pub async fn get_session_status(&self, session_id: &str) -> anyhow::Result<SessionStatus> {
+        let sessions_read = self.sessions.read().unwrap();
+        match sessions_read.get(session_id) {
+            Some(session) => Ok(session.get_status()),
+            None => anyhow::bail!("Session not found: {}", session_id),
+        }
+    }
+    
+    // 获取所有会话ID - 线程安全，只需要&self
+    pub async fn get_all_session_ids(&self) -> Vec<String> {
         let sessions_read = self.sessions.read().unwrap();
         sessions_read.keys().cloned().collect()
+    }
+    
+    // 获取所有会话及其状态 - 线程安全，只需要&self
+    pub async fn get_all_sessions_with_status(&self) -> Vec<(String, SessionStatus)> {
+        let sessions_read = self.sessions.read().unwrap();
+        sessions_read.iter()
+            .map(|(id, session)| (id.clone(), session.get_status()))
+            .collect()
     }
     
     // 调整终端大小 - 线程安全，只需要&self

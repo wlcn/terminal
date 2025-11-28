@@ -215,18 +215,24 @@ async fn create_session(
 async fn get_all_sessions(
     State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<Vec<TerminalSession>>) {
-    // 获取所有会话ID
-    let session_ids = session_manager.get_all_sessions().await;
+    // 获取所有会话及其状态
+    let sessions_with_status = session_manager.get_all_sessions_with_status().await;
     
     // 创建会话响应列表
-    let sessions: Vec<TerminalSession> = session_ids.into_iter().map(|session_id| {
+    let sessions: Vec<TerminalSession> = sessions_with_status.into_iter().map(|(session_id, status)| {
+        // 转换状态为字符串
+        let status_str = match status {
+            crate::session::SessionStatus::Active => "ACTIVE".to_string(),
+            crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
+        };
+        
         create_default_terminal_session(
             session_id.clone(),
             "default_user".to_string(),
             None,
             config.terminal.default_working_directory.clone(),
             config.terminal.default_shell_type.clone(),
-            "ACTIVE".to_string(),
+            status_str,
             config.terminal.default_terminal_size.columns,
             config.terminal.default_terminal_size.rows,
             &config,
@@ -241,22 +247,31 @@ async fn get_session_by_id(
     Path(id): Path<String>,
     State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
-    // 检查会话是否存在
-    if !session_manager.session_exists(&id).await {
-        // 返回404 Not Found
-        let session = create_default_terminal_session(
-            id,
-            "".to_string(),
-            None,
-            config.terminal.default_working_directory.clone(),
-            config.terminal.default_shell_type.clone(),
-            "ERROR".to_string(),
-            config.terminal.default_terminal_size.columns,
-            config.terminal.default_terminal_size.rows,
-            &config,
-        );
-        return (StatusCode::NOT_FOUND, Json(session));
-    }
+    // 获取会话状态
+    let status = match session_manager.get_session_status(&id).await {
+        Ok(status) => status,
+        Err(_) => {
+            // 返回404 Not Found
+            let session = create_default_terminal_session(
+                id,
+                "".to_string(),
+                None,
+                config.terminal.default_working_directory.clone(),
+                config.terminal.default_shell_type.clone(),
+                "ERROR".to_string(),
+                config.terminal.default_terminal_size.columns,
+                config.terminal.default_terminal_size.rows,
+                &config,
+            );
+            return (StatusCode::NOT_FOUND, Json(session));
+        },
+    };
+    
+    // 转换状态为字符串
+    let status_str = match status {
+        crate::session::SessionStatus::Active => "ACTIVE".to_string(),
+        crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
+    };
     
     // 返回会话详情
     let session = create_default_terminal_session(
@@ -265,7 +280,7 @@ async fn get_session_by_id(
         None,
         config.terminal.default_working_directory.clone(),
         config.terminal.default_shell_type.clone(),
-        "ACTIVE".to_string(),
+        status_str,
         config.terminal.default_terminal_size.columns,
         config.terminal.default_terminal_size.rows,
         &config,
@@ -351,8 +366,6 @@ async fn interrupt_terminal(
     }
     
     // 发送中断信号（Ctrl+C）到终端
-    // 在Windows上，我们可以发送"\x03"（Ctrl+C）
-    // 在Unix系统上，我们可以发送SIGINT信号
     match session_manager.write_to_session(&id, "\x03").await {
         Ok(_) => {
             (StatusCode::OK, Json(TerminalInterruptResponse {
@@ -412,18 +425,26 @@ async fn get_session_status(
     Path(id): Path<String>,
     State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalStatusResponse>) {
-    // 检查会话是否存在
-    if !session_manager.session_exists(&id).await {
-        // 返回404 Not Found
-        return (StatusCode::NOT_FOUND, Json(TerminalStatusResponse {
-            status: "ERROR".to_string(),
-        }));
+    // 获取会话状态
+    match session_manager.get_session_status(&id).await {
+        Ok(status) => {
+            // 转换状态为字符串
+            let status_str = match status {
+                crate::session::SessionStatus::Active => "ACTIVE".to_string(),
+                crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
+            };
+            
+            (StatusCode::OK, Json(TerminalStatusResponse {
+                status: status_str,
+            }))
+        },
+        Err(_) => {
+            // 返回404 Not Found
+            (StatusCode::NOT_FOUND, Json(TerminalStatusResponse {
+                status: "ERROR".to_string(),
+            }))
+        },
     }
-    
-    // 返回会话状态
-    (StatusCode::OK, Json(TerminalStatusResponse {
-        status: "ACTIVE".to_string(),
-    }))
 }
 
 // 执行命令
