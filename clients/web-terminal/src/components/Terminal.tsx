@@ -213,7 +213,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           
           setIsConnected(false);
           onConnectionStatusChange?.(false);
-          terminal.current?.writeln('\r\n🔌 WebSocket connection closed');
+          terminal.current?.writeln('\r\nWebSocket connection closed');
           
           // When WebSocket closes, session should also be terminated (one-to-one relationship)
           if (sessionId) {
