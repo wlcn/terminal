@@ -53,6 +53,9 @@ fun Route.terminalSessionRoutes() {
             val title = call.request.queryParameters["title"]
             val requestWorkingDirectory = call.request.queryParameters["workingDirectory"]
             val shellType = call.request.queryParameters["shellType"] ?: terminalConfig.defaultShellType
+            // 获取前端传递的终端尺寸参数
+            val columnsParam = call.request.queryParameters["columns"]
+            val rowsParam = call.request.queryParameters["rows"]
 
             val shellConfig = terminalConfig.shells[shellType.lowercase()]
                 ?: terminalConfig.shells[terminalConfig.defaultShellType.lowercase()]
@@ -62,9 +65,23 @@ fun Route.terminalSessionRoutes() {
                 ?: shellConfig.workingDirectory
                 ?: terminalConfig.defaultWorkingDirectory
             
-            val terminalSize = shellConfig.size?.let {
-                TerminalSize(it.columns, it.rows) 
-            } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
+            // 终端尺寸优先级：前端传递的参数 > shell级别的size配置 > 全局默认size配置
+            val terminalSize = if (columnsParam != null && rowsParam != null) {
+                try {
+                    // 使用前端传递的尺寸参数
+                    TerminalSize(columnsParam.toInt(), rowsParam.toInt())
+                } catch (e: NumberFormatException) {
+                    // 参数格式错误，使用shell级别的size配置或全局默认配置
+                    shellConfig.size?.let {
+                        TerminalSize(it.columns, it.rows) 
+                    } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
+                }
+            } else {
+                // 前端未传递尺寸参数，使用shell级别的size配置或全局默认配置
+                shellConfig.size?.let {
+                    TerminalSize(it.columns, it.rows) 
+                } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
+            }
             
             val session = terminalSessionService.createSession(
                 userId,

@@ -150,10 +150,10 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('📡 Creating new session via API...');
       
       // 获取终端尺寸
-      const columns = 80;
-      const rows = 24;
+      const columns = terminal.current?.cols || 80;
+      const rows = terminal.current?.rows || 24;
       
-      const sessionResponse = await createSession(userId, 'Terminal Session');
+      const sessionResponse = await createSession(userId, 'Terminal Session', undefined, columns, rows);
       const newSessionId = sessionResponse.id; // 后端返回的是id字段，不是sessionId
       const shellType = sessionResponse.shellType; // 后端直接返回shellType字段，不是在configuration中
       setShellType(shellType);

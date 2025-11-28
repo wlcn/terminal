@@ -10,12 +10,15 @@ const API_BASE_URL = `${APP_CONFIG.API_SERVER.URL}${APP_CONFIG.API_SERVER.BASE_P
 /**
  * Create new session
  */
-export const createSession = async (userId: string, title?: string, workingDirectory?: string): Promise<{ id: string; userId: string; title: string | null; workingDirectory: string; shellType: string; status: string; terminalSize: { columns: number; rows: number }; createdAt: number; updatedAt: number }> => {
+export const createSession = async (userId: string, title?: string, workingDirectory?: string, columns?: number, rows?: number): Promise<{ id: string; userId: string; title: string | null; workingDirectory: string; shellType: string; status: string; terminalSize: { columns: number; rows: number }; createdAt: number; updatedAt: number }> => {
   try {
     const params = new URLSearchParams();
     params.append('userId', userId);
     if (title) params.append('title', title);
     if (workingDirectory) params.append('workingDirectory', workingDirectory);
+    // 添加终端尺寸参数
+    if (columns) params.append('columns', columns.toString());
+    if (rows) params.append('rows', rows.toString());
     
     const url = `${API_BASE_URL}?${params.toString()}`;
     
