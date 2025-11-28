@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::process::{Command, Child};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 use crate::config::ShellConfig;
 
@@ -96,11 +96,32 @@ impl TerminalProcess {
         Ok(())
     }
     
-    // 关闭终端
-    pub async fn close(&mut self) -> anyhow::Result<()> {
+    // 读取终端输出 - 异步设计，只在读取时持有锁
+    pub async fn read_output(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+        let mut child = self.child.lock().await;
+        let stdout = child.stdout.as_mut().unwrap();
+        
+        // 异步读取终端输出
+        let read_result = stdout.read(buffer).await;
+        
+        // 立即释放锁，允许其他任务访问
+        drop(child);
+        
+        match read_result {
+            Ok(0) => Ok(String::new()), // EOF
+            Ok(n) => {
+                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                Ok(output)
+            },
+            Err(e) => Err(e.into()),
+        }
+    }
+    
+    // 关闭终端 - 异步设计，只在关闭时持有锁
+    pub async fn close(&self) -> anyhow::Result<()> {
         let mut child = self.child.lock().await;
         
-        // 终止子进程
+        // 终止子进程并等待退出
         child.kill().await?;
         child.wait().await?;
         

@@ -58,7 +58,7 @@ pub struct TerminalSession {
 }
 
 // 启动HTTP服务器
-pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>, config: Arc<Config>) -> anyhow::Result<()> {
+pub async fn start_server(session_manager: Arc<SessionManager>, config: Arc<Config>) -> anyhow::Result<()> {
     // 创建CORS配置
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -93,7 +93,7 @@ pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>, config: A
 // 创建新会话
 async fn create_session(
     Query(params): Query<CreateSessionParams>,
-    State((session_manager, config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
     // 检查userId是否提供
     let user_id = match params.user_id {
@@ -101,7 +101,7 @@ async fn create_session(
         None => panic!("Missing userId"),
     };
     
-    let mut session_manager = session_manager.lock().await;
+
     
     // 生成会话ID
     match session_manager.create_session().await {
@@ -180,9 +180,9 @@ async fn create_session(
 
 // 获取所有会话
 async fn get_all_sessions(
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<Vec<TerminalSession>>) {
-    let _session_manager = session_manager.lock().await;
+
     
     // 返回空列表，后续实现完整逻辑
     (StatusCode::OK, Json(Vec::<TerminalSession>::new()))
@@ -191,7 +191,7 @@ async fn get_all_sessions(
 // 获取会话详情
 async fn get_session_by_id(
     Path(id): Path<String>,
-    State((_session_manager, config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((_session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalSession>) {
     // 后续实现完整逻辑
     (StatusCode::OK, Json(TerminalSession {
@@ -228,7 +228,7 @@ async fn get_session_by_id(
 async fn resize_terminal(
     Path(id): Path<String>,
     Query(params): Query<ResizeParams>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalResizeResponse>) {
     // 检查cols和rows参数是否提供
     let cols = match params.cols {
@@ -241,7 +241,7 @@ async fn resize_terminal(
         None => panic!("Missing or invalid rows"),
     };
     
-    let mut session_manager = session_manager.lock().await;
+
     
     // 后续实现完整逻辑
     (StatusCode::OK, Json(TerminalResizeResponse {
@@ -254,12 +254,12 @@ async fn resize_terminal(
 // 中断终端
 async fn interrupt_terminal(
     Path(id): Path<String>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalInterruptResponse>) {
-    let session_manager = session_manager.lock().await;
+
     
     // 检查会话是否存在
-    if !session_manager.session_exists(&id) {
+    if !session_manager.session_exists(&id).await {
         panic!("Session not found");
     }
     
@@ -273,12 +273,10 @@ async fn interrupt_terminal(
 // 终止会话
 async fn terminate_session(
     Path(id): Path<String>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalTerminateResponse>) {
-    let mut session_manager = session_manager.lock().await;
-    
     // 检查会话是否存在
-    if !session_manager.session_exists(&id) {
+    if !session_manager.session_exists(&id).await {
         panic!("Session not found");
     }
     
@@ -294,12 +292,10 @@ async fn terminate_session(
 // 获取会话状态
 async fn get_session_status(
     Path(id): Path<String>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalStatusResponse>) {
-    let session_manager = session_manager.lock().await;
-    
     // 检查会话是否存在
-    if !session_manager.session_exists(&id) {
+    if !session_manager.session_exists(&id).await {
         panic!("Session not found");
     }
     
@@ -313,7 +309,7 @@ async fn get_session_status(
 async fn execute_command(
     Path(id): Path<String>,
     Query(params): Query<ExecuteParams>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, String) {
     // 检查command参数是否提供
     let command = match params.command {
@@ -321,10 +317,10 @@ async fn execute_command(
         None => panic!("Missing command"),
     };
     
-    let mut session_manager = session_manager.lock().await;
+
     
     // 检查会话是否存在
-    if !session_manager.session_exists(&id) {
+    if !session_manager.session_exists(&id).await {
         panic!("Session not found");
     }
     
@@ -340,7 +336,7 @@ async fn execute_command(
 async fn execute_command_check(
     Path(id): Path<String>,
     Query(params): Query<ExecuteParams>,
-    State((session_manager, _config)): State<(Arc<Mutex<SessionManager>>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<bool>) {
     // 检查command参数是否提供
     let command = match params.command {
@@ -348,10 +344,10 @@ async fn execute_command_check(
         None => return (StatusCode::BAD_REQUEST, Json(false)),
     };
     
-    let mut session_manager = session_manager.lock().await;
+
     
     // 检查会话是否存在
-    if !session_manager.session_exists(&id) {
+    if !session_manager.session_exists(&id).await {
         return (StatusCode::NOT_FOUND, Json(false));
     }
     

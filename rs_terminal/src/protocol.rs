@@ -40,7 +40,7 @@ pub async fn handle_message(
     // 处理消息
     let response = match client_msg.r#type {
         MessageType::CreateSession => {
-            let mut session_manager = session_manager.lock().await;
+            let session_manager = session_manager.lock().await;
             let session_id = session_manager.create_session().await?;
             
             ServerMessage {
@@ -52,7 +52,7 @@ pub async fn handle_message(
         },
         MessageType::WriteData => {
             if let (Some(session_id), Some(data)) = (client_msg.session_id, client_msg.data) {
-                let mut session_manager = session_manager.lock().await;
+                let session_manager = session_manager.lock().await;
                 session_manager.write_to_session(&session_id, &data).await?;
                 
                 ServerMessage {
@@ -72,7 +72,7 @@ pub async fn handle_message(
         },
         MessageType::CloseSession => {
             if let Some(session_id) = client_msg.session_id {
-                let mut session_manager = session_manager.lock().await;
+                let session_manager = session_manager.lock().await;
                 session_manager.close_session(&session_id).await?;
                 
                 ServerMessage {

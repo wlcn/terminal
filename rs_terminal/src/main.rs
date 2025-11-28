@@ -27,8 +27,8 @@ async fn main() -> anyhow::Result<()> {
     log::debug!("Default shell type: {}", config.terminal.default_shell_type);
     log::debug!("Available shells: {:?}", config.terminal.shells.keys());
     
-    // 创建会话管理器
-    let session_manager = Arc::new(Mutex::new(SessionManager::new(config.clone())));
+    // 创建会话管理器 - 不再需要Mutex包装，因为SessionManager内部已经是线程安全的
+    let session_manager = Arc::new(SessionManager::new(config.clone()));
     
     // 启动HTTP服务器
     let http_session_manager = session_manager.clone();
