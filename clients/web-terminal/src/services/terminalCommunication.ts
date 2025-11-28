@@ -109,7 +109,9 @@ export class WebTransportCommunication implements TerminalCommunication {
   private isReading: boolean = false;
 
   constructor(sessionId: string) {
-    // Use WebTransport server URL directly, which already uses https
+    // WebTransport requires a full URL with https scheme
+    // We'll use the WebTransport server URL directly, bypassing the proxy
+    // This avoids potential proxy issues with WebTransport
     this.url = `${WEBTRANSPORT_SERVER_URL}/webtransport/${sessionId}`;
   }
 
@@ -120,26 +122,40 @@ export class WebTransportCommunication implements TerminalCommunication {
         throw new Error('WebTransport is not supported in this browser');
       }
 
+      console.log(`Attempting to connect to WebTransport server at: ${this.url}`);
+      
+      // Create WebTransport connection
       this.transport = new WebTransport(this.url);
       
       // Wait for the connection to be established
+      console.log('Waiting for WebTransport connection to be ready...');
       await this.transport.ready;
+      console.log('WebTransport connection established successfully');
       this.emit('open', {});
       
       // Create a bidirectional stream
+      console.log('Creating WebTransport bidirectional stream...');
       const stream = await this.transport.createBidirectionalStream();
+      console.log('WebTransport bidirectional stream created');
       
       // Set up writer
       this.writer = stream.writable.getWriter();
+      console.log('WebTransport writer created');
       
       // Set up reader
       this.reader = stream.readable
         .pipeThrough(new TextDecoderStream())
         .getReader();
+      console.log('WebTransport reader created');
       
       // Start reading messages
       this.readMessages();
-    } catch (error) {
+      console.log('WebTransport message reading started');
+    } catch (error: any) {
+      console.error('WebTransport connection error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       this.emit('error', error);
     }
   }

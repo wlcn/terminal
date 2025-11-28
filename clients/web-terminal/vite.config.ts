@@ -6,24 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    host: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/ws': {
-        target: 'ws://localhost:8080',
-        ws: true,
-      },
-      '/webtransport': {
-        target: 'https://localhost:8082',
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-      }
-    }
+    host: true
   },
   resolve: {
     alias: {
