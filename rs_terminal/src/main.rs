@@ -2,6 +2,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+mod http_server;
 mod protocol;
 mod session;
 mod terminal;
@@ -16,6 +17,14 @@ async fn main() -> anyhow::Result<()> {
     
     // 创建会话管理器
     let session_manager = Arc::new(Mutex::new(SessionManager::new()));
+    
+    // 启动HTTP服务器
+    let http_session_manager = session_manager.clone();
+    tokio::spawn(async move {
+        if let Err(e) = crate::http_server::start_server(http_session_manager).await {
+            log::error!("HTTP server error: {}", e);
+        }
+    });
     
     // 启动WebSocket服务器
     let ws_session_manager = session_manager.clone();
@@ -33,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     //     }
     // });
     
-    log::info!("Servers starting: WebSocket on ws://localhost:8080");
+    log::info!("Servers starting: HTTP on http://localhost:8080, WebSocket on ws://localhost:8081");
     
     // 保持主线程运行
     tokio::signal::ctrl_c().await?;

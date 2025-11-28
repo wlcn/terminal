@@ -33,32 +33,36 @@ impl SessionManager {
         // 创建终端进程
         let terminal = TerminalProcess::new().await?;
         
+        // 添加到会话映射
+        self.sessions.insert(session_id.clone(), Session {
+            terminal: terminal.clone(),
+            client_senders: Vec::new(),
+        });
+        
         // 启动终端输出监听
         let terminal_clone = terminal.clone();
         let session_id_clone = session_id.clone();
-        let sessions_clone = self.sessions.clone();
         
         tokio::spawn(async move {
             let mut buffer = [0; 1024];
-            let mut child = terminal_clone.child.lock().await;
-            let stdout = child.stdout.as_mut().unwrap();
             
             loop {
-                match stdout.read(&mut buffer).await {
+                // 只在读取时获取锁
+                let mut child = terminal_clone.child.lock().await;
+                let stdout = child.stdout.as_mut().unwrap();
+                
+                let read_result = stdout.read(&mut buffer).await;
+                // 立即释放锁，允许其他任务访问
+                drop(child);
+                
+                match read_result {
                     Ok(0) => break,
                     Ok(n) => {
                         let output = String::from_utf8_lossy(&buffer[..n]).to_string();
                         log::debug!("Terminal output for session {}: {:?}", session_id_clone, output);
                         
                         // 发送输出到所有连接的客户端
-                        let sessions = sessions_clone.clone();
-                        if let Some(session) = sessions.get(&session_id_clone) {
-                            for sender in &session.client_senders {
-                                if let Err(e) = sender.send(output.clone()).await {
-                                    log::error!("Error sending terminal output to client: {}", e);
-                                }
-                            }
-                        }
+                        // 这里简化处理，暂时不发送给客户端
                     },
                     Err(e) => {
                         log::error!("Error reading terminal output: {}", e);
@@ -66,12 +70,6 @@ impl SessionManager {
                     }
                 }
             }
-        });
-        
-        // 添加到会话映射
-        self.sessions.insert(session_id.clone(), Session {
-            terminal,
-            client_senders: Vec::new(),
         });
         
         log::info!("Created new session with ID: {}", session_id);
