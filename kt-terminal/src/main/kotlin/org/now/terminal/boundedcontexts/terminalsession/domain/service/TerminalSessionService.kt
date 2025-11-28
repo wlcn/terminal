@@ -13,7 +13,8 @@ class TerminalSessionService(private val defaultShellType: String = "bash") {
         userId: String,
         title: String?,
         workingDirectory: String,
-        shellType: String = defaultShellType
+        shellType: String = defaultShellType,
+        size: TerminalSize? = null
     ): TerminalSession {
         val session = TerminalSession(
             id = UUID.randomUUID().toString(),
@@ -21,7 +22,8 @@ class TerminalSessionService(private val defaultShellType: String = "bash") {
             title = title,
             workingDirectory = workingDirectory,
             shellType = shellType,
-            status = TerminalSessionStatus.ACTIVE
+            status = TerminalSessionStatus.ACTIVE,
+            terminalSize = size
         )
         sessions[session.id] = session
         return session

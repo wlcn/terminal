@@ -38,7 +38,9 @@ class TerminalSizeConfig(
 // Shell配置
 class ShellConfig(
     val command: List<String>,
-    val environment: Map<String, String>
+    val environment: Map<String, String>,
+    val workingDirectory: String? = null,
+    val size: TerminalSizeConfig? = null
 )
 
 object TerminalConfigManager {
@@ -77,7 +79,26 @@ object TerminalConfigManager {
             envConfig.keys().forEach { key ->
                 environment[key] = envConfig.property(key).getString()
             }
-            shells[shellName] = ShellConfig(command, environment)
+            
+            // 读取shell级别的工作目录（可选）
+            val workingDirectory = try {
+                shellConfig.property("workingDirectory").getString()
+            } catch (e: Exception) {
+                null
+            }
+            
+            // 读取shell级别的终端尺寸（可选）
+            val size = try {
+                val sizeConfig = shellConfig.config("size")
+                TerminalSizeConfig(
+                    sizeConfig.property("columns").getString().toInt(),
+                    sizeConfig.property("rows").getString().toInt()
+                )
+            } catch (e: Exception) {
+                null
+            }
+            
+            shells[shellName] = ShellConfig(command, environment, workingDirectory, size)
         }
 
         return TerminalConfig(defaultShellType, defaultSize, defaultWorkingDirectory, shells)
