@@ -149,6 +149,9 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       // 1. Create new session via API
       console.log('📡 Creating new session via API...');
       
+      // 使用fitAddon获取当前终端的实际尺寸
+      fitAddon.current?.fit();
+      
       // 获取终端尺寸
       const columns = terminal.current?.cols || 80;
       const rows = terminal.current?.rows || 24;
@@ -158,7 +161,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const shellType = sessionResponse.shellType; // 后端直接返回shellType字段，不是在configuration中
       setShellType(shellType);
       
-      // 使用默认的终端尺寸数据
+      // 使用实际的终端尺寸数据
       const terminalSize = { columns, rows };
       
       console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
@@ -455,16 +458,14 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     // Mount to DOM
     terminal.current.open(terminalRef.current);
 
-    // 保持固定的终端大小，不使用fit()方法自动调整
-    // Set fixed terminal size to match backend default (80x24)
+    // 使用fitAddon获取实际终端尺寸，而不是固定的80x24
     setTimeout(() => {
-      // 使用固定的80x24大小，与后台保持一致
-      terminal.current?.resize(80, 24);
+      // 使用fitAddon让终端自动适应容器大小，获取实际尺寸
+      fitAddon.current?.fit();
       
-      // 窗口大小改变时，保持固定大小，不自动调整
+      // 窗口大小改变时，重新调整终端大小
       const handleResize = () => {
-        // 保持固定的80x24大小，与后台保持一致
-        terminal.current?.resize(80, 24);
+        fitAddon.current?.fit();
       };
       
       window.addEventListener('resize', handleResize);
