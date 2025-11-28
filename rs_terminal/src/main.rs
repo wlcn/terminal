@@ -5,6 +5,8 @@ use tokio::sync::Mutex;
 mod protocol;
 mod session;
 mod terminal;
+mod websocket;
+mod webtransport;
 
 use crate::session::SessionManager;
 
@@ -16,11 +18,26 @@ async fn main() -> anyhow::Result<()> {
     // 创建会话管理器
     let session_manager = Arc::new(Mutex::new(SessionManager::new()));
     
-    log::info!("WebTransport server starting on http://localhost:8080");
+    // 启动WebSocket服务器
+    let ws_session_manager = session_manager.clone();
+    tokio::spawn(async move {
+        if let Err(e) = websocket::start_server(ws_session_manager).await {
+            log::error!("WebSocket server error: {}", e);
+        }
+    });
     
-    // 简化实现，使用wtransport的基本API
-    // 由于wtransport 0.6.1的API与预期不同，我们先实现一个简单的服务器
-    // 后续可以根据实际API调整
+    // 启动WebTransport服务器
+    let wt_session_manager = session_manager.clone();
+    tokio::spawn(async move {
+        if let Err(e) = webtransport::start_server(wt_session_manager).await {
+            log::error!("WebTransport server error: {}", e);
+        }
+    });
+    
+    log::info!("Servers starting: WebSocket on ws://localhost:8080, WebTransport on http://localhost:8081");
+    
+    // 保持主线程运行
+    tokio::signal::ctrl_c().await?;
     
     Ok(())
 }
