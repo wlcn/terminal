@@ -12,7 +12,9 @@ class TerminalSession(
     var status: TerminalSessionStatus,
     var terminalSize: TerminalSize = TerminalSize(80, 24),
     val createdAt: Long = System.currentTimeMillis(),
-    var updatedAt: Long = System.currentTimeMillis()
+    var updatedAt: Long = System.currentTimeMillis(),
+    var lastActiveTime: Long = System.currentTimeMillis(),
+    var expiredAt: Long? = null
 )
 
 @Serializable

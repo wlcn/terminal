@@ -1,0 +1,240 @@
+/**
+ * Terminal Communication Service
+ * Handles WebSocket and WebTransport communication for terminal sessions
+ */
+
+import { APP_CONFIG } from '../config/appConfig';
+
+const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
+
+// Communication event types
+export type TerminalEventType = 'open' | 'message' | 'close' | 'error';
+
+// Communication event handler type
+export type TerminalEventHandler = (event: any) => void;
+
+// Terminal communication interface
+export interface TerminalCommunication {
+  connect(): void;
+  disconnect(): void;
+  send(data: string): void;
+  on(event: TerminalEventType, handler: TerminalEventHandler): void;
+  off(event: TerminalEventType, handler: TerminalEventHandler): void;
+  isConnected(): boolean;
+}
+
+// WebSocket implementation
+export class WebSocketCommunication implements TerminalCommunication {
+  private ws: WebSocket | null = null;
+  private eventHandlers: Map<TerminalEventType, Set<TerminalEventHandler>> = new Map();
+  private url: string;
+
+  constructor(sessionId: string) {
+    this.url = `${WS_SERVER_URL}/ws/${sessionId}`;
+  }
+
+  connect(): void {
+    try {
+      this.ws = new WebSocket(this.url);
+      
+      this.ws.onopen = (event) => {
+        this.emit('open', event);
+      };
+      
+      this.ws.onmessage = (event) => {
+        this.emit('message', event.data);
+      };
+      
+      this.ws.onclose = (event) => {
+        this.emit('close', event);
+      };
+      
+      this.ws.onerror = (event) => {
+        this.emit('error', event);
+      };
+    } catch (error) {
+      this.emit('error', error);
+    }
+  }
+
+  disconnect(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    // Clear all event handlers
+    this.eventHandlers.clear();
+  }
+
+  send(data: string): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(data);
+    }
+  }
+
+  on(event: TerminalEventType, handler: TerminalEventHandler): void {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+    }
+    this.eventHandlers.get(event)?.add(handler);
+  }
+
+  off(event: TerminalEventType, handler: TerminalEventHandler): void {
+    this.eventHandlers.get(event)?.delete(handler);
+  }
+
+  isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  private emit(event: TerminalEventType, data: any): void {
+    this.eventHandlers.get(event)?.forEach(handler => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`Error in ${event} handler:`, error);
+      }
+    });
+  }
+}
+
+// WebTransport implementation
+export class WebTransportCommunication implements TerminalCommunication {
+  private transport: WebTransport | null = null;
+  private writer: WritableStreamDefaultWriter<string> | null = null;
+  private reader: ReadableStreamDefaultReader<string> | null = null;
+  private eventHandlers: Map<TerminalEventType, Set<TerminalEventHandler>> = new Map();
+  private url: string;
+  private isReading: boolean = false;
+
+  constructor(sessionId: string) {
+    // Convert http/https to https for WebTransport
+    const protocol = WS_SERVER_URL.startsWith('https') ? 'https' : 'http';
+    const baseUrl = WS_SERVER_URL.replace(/^http(s?):\/\//, '');
+    this.url = `${protocol}://${baseUrl}/webtransport/${sessionId}`;
+  }
+
+  async connect(): Promise<void> {
+    try {
+      // Check if WebTransport is supported
+      if (!('WebTransport' in window)) {
+        throw new Error('WebTransport is not supported in this browser');
+      }
+
+      this.transport = new WebTransport(this.url);
+      
+      // Wait for the connection to be established
+      await this.transport.ready;
+      this.emit('open', {});
+      
+      // Create a bidirectional stream
+      const stream = await this.transport.createBidirectionalStream();
+      
+      // Set up writer
+      this.writer = stream.writable.getWriter();
+      
+      // Set up reader
+      this.reader = stream.readable
+        .pipeThrough(new TextDecoderStream())
+        .getReader();
+      
+      // Start reading messages
+      this.readMessages();
+    } catch (error) {
+      this.emit('error', error);
+    }
+  }
+
+  disconnect(): void {
+    // Close writer
+    if (this.writer) {
+      this.writer.close();
+      this.writer = null;
+    }
+    
+    // Close reader
+    if (this.reader) {
+      this.reader.cancel();
+      this.reader = null;
+    }
+    
+    // Close transport
+    if (this.transport) {
+      this.transport.close();
+      this.transport = null;
+    }
+    
+    this.isReading = false;
+    // Clear all event handlers
+    this.eventHandlers.clear();
+    
+    this.emit('close', {});
+  }
+
+  async send(data: string): Promise<void> {
+    if (this.writer && this.transport?.ready) {
+      try {
+        await this.writer.write(data);
+      } catch (error) {
+        this.emit('error', error);
+      }
+    }
+  }
+
+  on(event: TerminalEventType, handler: TerminalEventHandler): void {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+    }
+    this.eventHandlers.get(event)?.add(handler);
+  }
+
+  off(event: TerminalEventType, handler: TerminalEventHandler): void {
+    this.eventHandlers.get(event)?.delete(handler);
+  }
+
+  isConnected(): boolean {
+    return this.transport?.readyState === 'connected';
+  }
+
+  private async readMessages(): Promise<void> {
+    if (this.isReading || !this.reader) return;
+    
+    this.isReading = true;
+    
+    try {
+      while (true) {
+        const { done, value } = await this.reader.read();
+        if (done) break;
+        this.emit('message', value);
+      }
+    } catch (error) {
+      this.emit('error', error);
+    } finally {
+      this.isReading = false;
+    }
+  }
+
+  private emit(event: TerminalEventType, data: any): void {
+    this.eventHandlers.get(event)?.forEach(handler => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`Error in ${event} handler:`, error);
+      }
+    });
+  }
+}
+
+// Factory function to create terminal communication instance
+export const createTerminalCommunication = (sessionId: string, protocol: 'websocket' | 'webtransport' = 'websocket'): TerminalCommunication => {
+  if (protocol === 'webtransport') {
+    return new WebTransportCommunication(sessionId);
+  } else {
+    return new WebSocketCommunication(sessionId);
+  }
+};
+
+// Check if WebTransport is supported
+export const isWebTransportSupported = (): boolean => {
+  return 'WebTransport' in window;
+};

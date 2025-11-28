@@ -6,6 +6,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
 import { createSession, resizeTerminal, interruptTerminal, terminateSession } from '../services/terminalApi';
 import { APP_CONFIG } from '../config/appConfig';
+import { createTerminalCommunication, TerminalCommunication, isWebTransportSupported } from '../services/terminalCommunication';
 
 // WebSocket服务器配置
 const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
@@ -24,7 +25,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [shellType, setShellType] = useState<string>('bash');
-  const ws = useRef<WebSocket | null>(null);
+  const communication = useRef<TerminalCommunication | null>(null);
   const isInitialized = useRef(false);
 
   // Expose methods to parent component
@@ -33,13 +34,13 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     disconnect: () => {
       if (sessionId) {
         handleTerminate('USER_DISCONNECTED');
-      } else if (ws.current) {
-        ws.current.close();
+      } else if (communication.current) {
+        communication.current.disconnect();
       }
     },
     send: (data: string) => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(data);
+      if (communication.current && communication.current.isConnected()) {
+        communication.current.send(data);
       }
     },
     resize: handleResize,
@@ -162,17 +163,22 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
       setSessionId(newSessionId);
       
-      // 2. Try to establish WebSocket connection (one-to-one binding)
-      console.log('🌐 Attempting to establish WebSocket connection for session...');
+      // 2. Try to establish communication connection (one-to-one binding)
+      console.log('🌐 Attempting to establish communication connection for session...');
       
-      // Use sessionId to establish WebSocket connection
       try {
-        ws.current = new WebSocket(`${WS_SERVER_URL}/ws/${newSessionId}`);
+        // Check if WebTransport is supported, otherwise use WebSocket
+        const protocol = isWebTransportSupported() ? 'webtransport' : 'websocket';
+        console.log(`📡 Using communication protocol: ${protocol}`);
         
-        ws.current.onopen = () => {
-          console.log('✅ WebSocket connection established successfully');
+        // Create communication instance
+        communication.current = createTerminalCommunication(newSessionId, protocol);
+        
+        // Set up event handlers
+        communication.current.on('open', () => {
+          console.log('✅ Communication connection established successfully');
           
-          // Configure terminal parameters after WebSocket connection is successful
+          // Configure terminal parameters after connection is successful
           configureTerminalForShell(shellType);
           
           // 直接使用尺寸对象调整xterm.js
@@ -192,53 +198,56 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
             terminalSize: terminalSize // 使用尺寸对象
           });
           
-          // After successful connection, session and WebSocket have established one-to-one relationship
-          console.log(`🔗 Session ${newSessionId} ↔ WebSocket connection established`);
-        };
+          // After successful connection, session and communication have established one-to-one relationship
+          console.log(`🔗 Session ${newSessionId} ↔ ${protocol} connection established`);
+        });
         
-        ws.current.onmessage = (event) => {
-          console.log('📨 Received terminal output:', event.data);
+        communication.current.on('message', (data) => {
+          console.log('📨 Received terminal output:', data);
           
-          // WebSocket is only used for command line output, display directly
-          if (typeof event.data === 'string') {
+          // Communication is only used for command line output, display directly
+          if (typeof data === 'string') {
             // xterm.js is specifically designed to handle terminal escape sequences, no manual escaping needed
             // Write data directly, let xterm.js handle all ANSI escape sequences
-            terminal.current?.write(event.data);
+            terminal.current?.write(data);
           }
-        };
+        });
         
-        ws.current.onclose = (event) => {
-          console.log('🔌 WebSocket connection closed');
-          console.log(`📊 Close code: ${event.code}, reason: ${event.reason}`);
+        communication.current.on('close', (event) => {
+          console.log('🔌 Communication connection closed');
+          console.log(`📊 Close event:`, event);
           
           setIsConnected(false);
           onConnectionStatusChange?.(false);
-          terminal.current?.writeln('\r\nWebSocket connection closed');
+          terminal.current?.writeln('\r\nCommunication connection closed');
           
-          // When WebSocket closes, session should also be terminated (one-to-one relationship)
+          // When connection closes, session should also be terminated (one-to-one relationship)
           if (sessionId) {
-            console.log(`🛑 Terminating session ${sessionId} due to WebSocket closure`);
-            handleTerminate('WEBSOCKET_CLOSED');
+            console.log(`🛑 Terminating session ${sessionId} due to communication closure`);
+            handleTerminate('COMMUNICATION_CLOSED');
           }
-        };
+        });
         
-        ws.current.onerror = (error) => {
-          console.error('❌ WebSocket connection error:', error);
-          terminal.current?.writeln('❌ WebSocket connection error');
+        communication.current.on('error', (error) => {
+          console.error('❌ Communication connection error:', error);
+          terminal.current?.writeln('❌ Communication connection error');
           
           setIsConnected(false);
           onConnectionStatusChange?.(false);
           
-          // When WebSocket error occurs, session should also be terminated (one-to-one relationship)
+          // When communication error occurs, session should also be terminated (one-to-one relationship)
           if (sessionId) {
-            console.log(`🛑 Terminating session ${sessionId} due to WebSocket error`);
-            handleTerminate('WEBSOCKET_ERROR');
+            console.log(`🛑 Terminating session ${sessionId} due to communication error`);
+            handleTerminate('COMMUNICATION_ERROR');
           }
-        };
+        });
+        
+        // Connect to the server
+        communication.current.connect();
       } catch (error) {
-        console.warn('⚠️ WebSocket connection failed, using fallback mode:', error);
+        console.warn('⚠️ Communication connection failed, using fallback mode:', error);
         
-        // Configure terminal parameters even without WebSocket
+        // Configure terminal parameters even without communication
         configureTerminalForShell(shellType);
         
         // 直接使用尺寸对象调整xterm.js
@@ -322,7 +331,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     }
   };
   
-  // Terminate session - also close WebSocket connection (one-to-one relationship)
+  // Terminate session - also close communication connection (one-to-one relationship)
   const handleTerminate = async (reason?: string) => {
     if (!sessionId) {
       console.warn('⚠️ No active session to terminate');
@@ -332,10 +341,10 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     try {
       console.log(`🛑 Terminating session: ${reason || 'USER_REQUESTED'}`);
       
-      // First close WebSocket connection
-      if (ws.current) {
-        ws.current.close();
-        console.log('🔌 WebSocket connection closed');
+      // First close communication connection
+      if (communication.current) {
+        communication.current.disconnect();
+        console.log('🔌 Communication connection closed');
       }
       
       // Then terminate session
@@ -350,9 +359,9 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     } catch (error) {
       console.error('❌ Failed to terminate session:', error);
       
-      // Even if API call fails, ensure WebSocket is closed
-      if (ws.current) {
-        ws.current.close();
+      // Even if API call fails, ensure communication is closed
+      if (communication.current) {
+        communication.current.disconnect();
       }
     }
   };
@@ -448,15 +457,15 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     }, 100);
 
     // Listen for keyboard input - using the simplest processing method
-    terminal.current.onData((data) => {
-      console.log('⌨️ Terminal input:', data);
-      
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        // Do not perform any local echo, let backend handle all output
-        // Send all input to backend, backend is responsible for complete command processing and echo
-        ws.current.send(data);
-      }
-    });
+        terminal.current.onData((data) => {
+          console.log('⌨️ Terminal input:', data);
+          
+          if (communication.current && communication.current.isConnected()) {
+            // Do not perform any local echo, let backend handle all output
+            // Send all input to backend, backend is responsible for complete command processing and echo
+            communication.current.send(data);
+          }
+        });
 
     isInitialized.current = true;
     console.log('✅ Terminal initialized with official best practices');
