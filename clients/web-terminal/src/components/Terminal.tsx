@@ -52,6 +52,68 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         // 提示符会在用户输入时由终端自动显示
       }
     },
+    updateSettings: (settings: any) => {
+      if (terminal.current) {
+        // Update font size
+        if (settings.fontSize) {
+          terminal.current.options.fontSize = settings.fontSize;
+        }
+        
+        // Update font family
+        if (settings.fontFamily) {
+          terminal.current.options.fontFamily = settings.fontFamily;
+        }
+        
+        // Update theme
+        if (settings.theme) {
+          switch (settings.theme) {
+            case 'light':
+              terminal.current.options.theme = {
+                background: '#ffffff',
+                foreground: '#000000',
+                cursor: '#000000',
+                selection: '#cce7ff'
+              };
+              break;
+            case 'high-contrast':
+              terminal.current.options.theme = {
+                background: '#000000',
+                foreground: '#ffffff',
+                cursor: '#ffffff',
+                selection: '#00ff00'
+              };
+              break;
+            case 'dark':
+            default:
+              terminal.current.options.theme = {
+                background: '#1e1e1e',
+                foreground: '#cccccc',
+                cursor: '#ffffff',
+                selection: '#3a3d41'
+              };
+              break;
+          }
+        }
+        
+        // Update cursor style
+        if (settings.cursorStyle) {
+          terminal.current.options.cursorStyle = settings.cursorStyle as any;
+        }
+        
+        // Update scrollback
+        if (settings.scrollback) {
+          terminal.current.options.scrollback = settings.scrollback;
+        }
+        
+        // Update auto wrap
+        if (settings.autoWrap !== undefined) {
+          terminal.current.options.wrap = settings.autoWrap;
+        }
+        
+        // Refresh terminal to apply changes
+        terminal.current.refresh(0, terminal.current.rows - 1);
+      }
+    },
     isConnected: () => isConnected,
     getSessionId: () => sessionId
   }));
@@ -60,7 +122,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   const connectTerminal = async () => {
     try {
       console.log('🔄 Starting terminal connection process...');
-      terminal.current?.writeln('🔄 Starting terminal connection...');
       
       // Get or generate user ID
       let userId = localStorage.getItem('terminal_user_id');
@@ -85,7 +146,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       // 1. Create new session via API
       console.log('📡 Creating new session via API...');
-      terminal.current?.writeln('📡 Creating new session...');
       
       // 获取终端尺寸
       const columns = 80;
@@ -100,14 +160,10 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const terminalSize = { columns, rows };
       
       console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
-      terminal.current?.writeln(`✅ Session created: ${newSessionId}`);
-      terminal.current?.writeln(`🐚 Shell type: ${shellType}`);
-      terminal.current?.writeln(`📏 Terminal size: ${terminalSize.columns}×${terminalSize.rows}`);
       setSessionId(newSessionId);
       
       // 2. Try to establish WebSocket connection (one-to-one binding)
       console.log('🌐 Attempting to establish WebSocket connection for session...');
-      terminal.current?.writeln('🌐 Attempting WebSocket connection...');
       
       // Use sessionId to establish WebSocket connection
       try {
@@ -115,7 +171,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         
         ws.current.onopen = () => {
           console.log('✅ WebSocket connection established successfully');
-          terminal.current?.writeln('✅ WebSocket connected');
           
           // Configure terminal parameters after WebSocket connection is successful
           configureTerminalForShell(shellType);
@@ -125,8 +180,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
             terminal.current?.resize(terminalSize.columns, terminalSize.rows);
           }
           
-          terminal.current?.writeln('🚀 Terminal ready for command line interaction');
-          terminal.current?.writeln('');
+          terminal.current?.write('Terminal ready\r\n');
           terminal.current?.write('$ ');
           
           setIsConnected(true);
@@ -183,7 +237,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         };
       } catch (error) {
         console.warn('⚠️ WebSocket connection failed, using fallback mode:', error);
-        terminal.current?.writeln('⚠️ WebSocket connection failed, using fallback mode');
         
         // Configure terminal parameters even without WebSocket
         configureTerminalForShell(shellType);
@@ -193,10 +246,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
           terminal.current?.resize(terminalSize.columns, terminalSize.rows);
         }
         
-        terminal.current?.writeln('🚀 Terminal session created successfully');
-        terminal.current?.writeln('⚠️ Note: Real-time terminal interaction requires WebSocket support');
-        terminal.current?.writeln('💡 You can use command execution APIs instead');
-        terminal.current?.writeln('');
         terminal.current?.write('$ ');
         
         setIsConnected(true);
@@ -327,14 +376,12 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         // Windows environment: enable Windows mode, handle carriage return correctly
         terminal.current.options.windowsMode = true;
         terminal.current.options.convertEol = true; // Convert \n to \r\n
-        terminal.current.writeln('🔧 Terminal configured for Windows environment');
         break;
         
       case 'UNIX':
         // Unix/Linux environment: use Unix-style line endings
         terminal.current.options.windowsMode = false;
         terminal.current.options.convertEol = false; // Keep \n unchanged
-        terminal.current.writeln('🔧 Terminal configured for Unix/Linux environment');
         break;
         
       case 'AUTO':
@@ -343,7 +390,6 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
         const isWindows = navigator.userAgent.includes('Windows');
         terminal.current.options.windowsMode = isWindows;
         terminal.current.options.convertEol = isWindows;
-        terminal.current.writeln(`🔧 Terminal configured for ${isWindows ? 'Windows' : 'Unix/Linux'} environment (auto-detected)`);
         break;
     }
     
@@ -416,7 +462,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     console.log('✅ Terminal initialized with official best practices');
     
     // Display welcome message
-    terminal.current.writeln('🚀 Web Terminal Ready');
+    // terminal.current.writeln('🚀 Web Terminal Ready');
     terminal.current.writeln('Click the "Connect" button to start a session');
     terminal.current.write('$ ');
 

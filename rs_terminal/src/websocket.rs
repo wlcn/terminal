@@ -10,10 +10,10 @@ use crate::protocol::ClientMessage;
 
 // 启动WebSocket服务器
 pub async fn start_server(session_manager: Arc<Mutex<SessionManager>>) -> anyhow::Result<()> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8082));
     let listener = TcpListener::bind(addr).await?;
     
-    log::info!("WebSocket server started on ws://localhost:8080");
+    log::info!("WebSocket server started on ws://localhost:8082");
     
     // 处理传入的连接
     while let Ok((stream, _)) = listener.accept().await {

@@ -5,10 +5,39 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus
+import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
+
+// 响应数据类
+
+@Serializable
+data class TerminalResizeResponse(
+    val sessionId: String,
+    val terminalSize: TerminalSize,
+    val status: String
+)
+
+@Serializable
+data class TerminalInterruptResponse(
+    val sessionId: String,
+    val status: String
+)
+
+@Serializable
+data class TerminalTerminateResponse(
+    val sessionId: String,
+    val reason: String,
+    val status: String
+)
+
+@Serializable
+data class TerminalStatusResponse(
+    val status: String
+)
 
 fun Route.terminalSessionRoutes() {
     val terminalSessionService by inject<TerminalSessionService>()
@@ -46,11 +75,14 @@ fun Route.terminalSessionRoutes() {
             
             val session = terminalSessionService.resizeTerminal(id, columns, rows) ?: return@post call.respond(HttpStatusCode.NotFound, "Session not found")
             terminalProcessService.resizeProcess(id, columns, rows)
-            call.respond(HttpStatusCode.OK, mapOf(
-                "sessionId" to session.id,
-                "terminalSize" to session.terminalSize,
-                "status" to session.status
-            ))
+            
+            // 使用专门的数据类响应，直接使用TerminalSize对象
+            val response = TerminalResizeResponse(
+                sessionId = session.id,
+                terminalSize = session.terminalSize,
+                status = session.status.name
+            )
+            call.respond(HttpStatusCode.OK, response)
         }
         
         // Interrupt terminal (send Ctrl+C signal)
@@ -60,10 +92,11 @@ fun Route.terminalSessionRoutes() {
             
             val success = terminalProcessService.interruptProcess(id)
             if (success) {
-                call.respond(HttpStatusCode.OK, mapOf(
-                    "sessionId" to session.id,
-                    "status" to "interrupted"
-                ))
+                val response = TerminalInterruptResponse(
+                    sessionId = session.id,
+                    status = "interrupted"
+                )
+                call.respond(HttpStatusCode.OK, response)
             } else {
                 call.respond(HttpStatusCode.InternalServerError, "Failed to interrupt session")
             }
@@ -74,18 +107,24 @@ fun Route.terminalSessionRoutes() {
             val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.terminateSession(id) ?: return@delete call.respond(HttpStatusCode.NotFound, "Session not found")
             terminalProcessService.terminateProcess(id)
-            call.respond(HttpStatusCode.OK, mapOf(
-                "sessionId" to session.id,
-                "reason" to "User terminated",
-                "status" to session.status
-            ))
+            
+            val response = TerminalTerminateResponse(
+                sessionId = session.id,
+                reason = "User terminated",
+                status = session.status.name
+            )
+            call.respond(HttpStatusCode.OK, response)
         }
         
         // Get session status
         get("/{id}/status") { 
             val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid session ID")
             val session = terminalSessionService.getSessionById(id) ?: return@get call.respond(HttpStatusCode.NotFound, "Session not found")
-            call.respond(HttpStatusCode.OK, mapOf("status" to session.status))
+            
+            val response = TerminalStatusResponse(
+                status = session.status.name
+            )
+            call.respond(HttpStatusCode.OK, response)
         }
         
         // Execute command

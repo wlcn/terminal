@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
-import { Settings, Maximize2, Minimize2, Power, RefreshCw, Monitor, List, Trash2, X, Maximize } from 'lucide-react';
+import { Settings, Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize } from 'lucide-react';
 import { listSessions } from './services/terminalApi';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -15,7 +15,10 @@ function App() {
     fontFamily: "Consolas, 'Courier New', monospace",
     theme: 'dark',
     autoConnect: false,
-    showLineNumbers: false
+    showLineNumbers: false,
+    cursorStyle: 'block',
+    scrollback: 1000,
+    autoWrap: true
   });
   
   // 会话信息状态
@@ -26,7 +29,7 @@ function App() {
   }>({
     sessionId: '',
     shellType: 'bash',
-    terminalSize: { columns: 120, rows: 30 }
+    terminalSize: { columns: 80, rows: 24 }
   });
 
   const toggleFullscreen = () => {
@@ -93,11 +96,7 @@ function App() {
     }
   };
 
-  const handleClear = () => {
-    if (terminalRef.current && terminalRef.current.clear) {
-      terminalRef.current.clear();
-    }
-  };
+
 
   const handleListSessions = async () => {
     try {
@@ -129,8 +128,9 @@ function App() {
   };
 
   const [showResizeModal, setShowResizeModal] = useState(false);
-  const [resizeColumns, setResizeColumns] = useState(120);
-  const [resizeRows, setResizeRows] = useState(30);
+  const [resizeColumns, setResizeColumns] = useState(80);
+  const [resizeRows, setResizeRows] = useState(24);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const handleResizeTerminal = () => {
     setShowResizeModal(true);
@@ -172,7 +172,7 @@ function App() {
   return (
     <div className="h-screen bg-gradient-to-br from-tech-bg-darker via-tech-bg-dark to-tech-secondary text-foreground font-sans overflow-hidden">
       {/* Enhanced Futuristic Header */}
-      <header className="glass border-b border-border/50 px-4 py-3 relative overflow-hidden">
+      <header className="glass border-b border-border/50 px-4 py-3 fixed top-0 left-0 right-0 overflow-hidden z-50">
         {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse"></div>
         
@@ -232,91 +232,78 @@ function App() {
               </Button>
             </div>
             
-            {/* Enhanced Session management buttons - 会话管理放在中间，保持位置稳定 */}
-            <div className="flex items-center space-x-2 border-r border-border/30 pr-3 mr-3 relative">
-              {/* Subtle glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-transparent rounded-lg blur-sm"></div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleListSessions}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-purple-500/20 hover:bg-purple-500/30 border-purple-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "List sessions" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <List size={16} className={isConnected ? "text-purple-500" : "text-muted-foreground"} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTerminateSession}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Terminate session" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <X size={16} className={isConnected ? "text-red-500" : "text-muted-foreground"} />
-              </Button>
-            </div>
-            
-            {/* Enhanced Control buttons - 控制按钮放在右侧，保持位置稳定 */}
+            {/* Enhanced Control Menu - 合并次要功能到下拉菜单 */}
             <div className="flex items-center space-x-2 border-r border-border/30 pr-3 mr-3 relative">
               {/* Subtle glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-lg blur-sm"></div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Refresh terminal" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <RefreshCw size={16} className={isConnected ? "text-orange-500" : "text-muted-foreground"} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClear}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-gray-500/20 hover:bg-gray-500/30 border-gray-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Clear terminal" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <Trash2 size={16} className={isConnected ? "text-gray-500" : "text-muted-foreground"} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResizeTerminal}
-                className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${
-                  isConnected 
-                    ? 'bg-teal-500/20 hover:bg-teal-500/30 border-teal-500/30' 
-                    : 'bg-background/80 opacity-50 cursor-not-allowed'
-                }`}
-                title={isConnected ? "Resize terminal" : "Connect to enable"}
-                disabled={!isConnected}
-              >
-                <Maximize size={16} className={isConnected ? "text-teal-500" : "text-muted-foreground"} />
-              </Button>
+              {/* Dropdown menu for secondary functions */}
+              <div className="relative">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className={`h-9 w-9 p-0 relative transition-all duration-200 hover:scale-105 shadow-sm ${isConnected ? 'bg-primary/20 hover:bg-primary/30 border-primary/30' : 'bg-background/80 opacity-50 cursor-not-allowed'}`}
+                    title={isConnected ? "More options" : "Connect to enable"}
+                    disabled={!isConnected}
+                    onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isConnected ? "text-primary" : "text-muted-foreground"}>
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="19" cy="12" r="1"></circle>
+                      <circle cx="5" cy="12" r="1"></circle>
+                    </svg>
+                  </Button>
+                
+                {/* Dropdown content */}
+                {isConnected && showMoreMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-100 py-1">
+                    <button
+                      onClick={() => {
+                        handleRefresh();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                    >
+                      <RefreshCw size={14} className="text-orange-500" />
+                      <span>Refresh Terminal</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+R</kbd>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleListSessions();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                    >
+                      <List size={14} className="text-purple-500" />
+                      <span>List Sessions</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+L</kbd>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleTerminateSession();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <X size={14} className="text-red-500" />
+                      <span>Terminate Session</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+Shift+T</kbd>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleResizeTerminal();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                    >
+                      <Maximize size={14} className="text-teal-500" />
+                      <span>Resize Terminal</span>
+                      <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+Shift+R</kbd>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Settings button - 设置按钮放在最右侧 */}
@@ -334,96 +321,240 @@ function App() {
                 <Settings size={16} className="text-primary" />
               </Button>
             </div>
+          </div>
+        </div>
 
-            {showSettings && (
-              <div className="absolute top-12 right-4 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl p-4 w-72 z-50 glass">
-                {/* Header with gradient */}
-                <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-                  <h3 className="text-md font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Terminal Settings</h3>
-                  <Button 
-                    onClick={handleSettings}
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive transition-colors"
+        {/* Dropdowns and Modals - 确保这些元素在header内部，作为header的直接子元素 */}
+        
+        {/* More Options Dropdown */}
+        {isConnected && showMoreMenu && (
+          <div className="absolute right-8 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-100 py-1">
+            <button
+              onClick={() => {
+                handleRefresh();
+                setShowMoreMenu(false);
+              }}
+              className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+            >
+              <RefreshCw size={14} className="text-orange-500" />
+              <span>Refresh Terminal</span>
+              <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+R</kbd>
+            </button>
+            <button
+              onClick={() => {
+                handleListSessions();
+                setShowMoreMenu(false);
+              }}
+              className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+            >
+              <List size={14} className="text-purple-500" />
+              <span>List Sessions</span>
+              <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+L</kbd>
+            </button>
+            <button
+              onClick={() => {
+                handleTerminateSession();
+                setShowMoreMenu(false);
+              }}
+              className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <X size={14} className="text-red-500" />
+              <span>Terminate Session</span>
+              <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+Shift+T</kbd>
+            </button>
+            <button
+              onClick={() => {
+                handleResizeTerminal();
+                setShowMoreMenu(false);
+              }}
+              className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+            >
+              <Maximize size={14} className="text-teal-500" />
+              <span>Resize Terminal</span>
+              <kbd className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">Ctrl+Shift+R</kbd>
+            </button>
+          </div>
+        )}
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="absolute right-4 top-full mt-1 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl p-4 w-72 z-100 glass">
+            {/* Header with gradient */}
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
+              <h3 className="text-md font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Terminal Settings</h3>
+              <Button 
+                onClick={handleSettings}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive transition-colors"
+              >
+                ×
+              </Button>
+            </div>
+            
+            {/* Enhanced Version info */}
+            <div className="mb-4 p-3 bg-gradient-to-br from-primary/10 to-accent/5 rounded-lg border border-primary/20 relative overflow-hidden">
+              {/* Animated background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse"></div>
+              <div className="relative z-10">
+                <div className="text-xs text-primary font-mono font-semibold">Version: v1.0.0</div>
+                <div className="text-xs text-muted-foreground mt-1">KT Terminal Platform</div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Display Settings */}
+              <div className="border-b border-border/30 pb-3">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Display</h4>
+                
+                <div className="relative">
+                  <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Size</label>
+                  <input
+                    type="number"
+                    value={terminalSettings.fontSize}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      fontSize: parseInt(e.target.value) || 14
+                    })}
+                    className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
+                    min="8"
+                    max="24"
+                  />
+                </div>
+                
+                <div className="relative mt-4">
+                  <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Family</label>
+                  <select
+                    value={terminalSettings.fontFamily}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      fontFamily: e.target.value
+                    })}
+                    className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
                   >
-                    ×
-                  </Button>
-                </div>
-                
-                {/* Enhanced Version info */}
-                <div className="mb-4 p-3 bg-gradient-to-br from-primary/10 to-accent/5 rounded-lg border border-primary/20 relative overflow-hidden">
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs text-primary font-mono font-semibold">Version: v1.0.0</div>
-                    <div className="text-xs text-muted-foreground mt-1">KT Terminal Platform</div>
+                    <option value="Consolas, 'Courier New', monospace">Consolas</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Monaco, 'Menlo', monospace">Monaco</option>
+                  </select>
+                  {/* Custom dropdown arrow */}
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="relative">
-                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Size</label>
-                    <input
-                      type="number"
-                      value={terminalSettings.fontSize}
-                      onChange={(e) => updateTerminalSettings({
-                        ...terminalSettings,
-                        fontSize: parseInt(e.target.value) || 14
-                      })}
-                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
-                      min="8"
-                      max="24"
-                    />
-                  </div>
-                  
-                  <div className="relative">
-                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Family</label>
-                    <select
-                      value={terminalSettings.fontFamily}
-                      onChange={(e) => updateTerminalSettings({
-                        ...terminalSettings,
-                        fontFamily: e.target.value
-                      })}
-                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
-                    >
-                      <option value="Consolas, 'Courier New', monospace">Consolas</option>
-                      <option value="'Courier New', monospace">Courier New</option>
-                      <option value="Monaco, 'Menlo', monospace">Monaco</option>
-                    </select>
-                    {/* Custom dropdown arrow */}
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <div className="relative">
-                    <label className="block text-sm text-muted-foreground mb-2 font-medium">Theme</label>
-                    <select
-                      value={terminalSettings.theme}
-                      onChange={(e) => updateTerminalSettings({
-                        ...terminalSettings,
-                        theme: e.target.value
-                      })}
-                      className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
-                    >
-                      <option value="dark">Dark</option>
-                      <option value="light">Light</option>
-                      <option value="high-contrast">High Contrast</option>
-                    </select>
-                    {/* Custom dropdown arrow */}
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                <div className="relative mt-4">
+                  <label className="block text-sm text-muted-foreground mb-2 font-medium">Theme</label>
+                  <select
+                    value={terminalSettings.theme}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      theme: e.target.value
+                    })}
+                    className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
+                  >
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                    <option value="high-contrast">High Contrast</option>
+                  </select>
+                  {/* Custom dropdown arrow */}
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
               </div>
-            )}
+              
+              {/* Cursor Settings */}
+              <div className="border-b border-border/30 pb-3">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Cursor</h4>
+                
+                <div className="relative">
+                  <label className="block text-sm text-muted-foreground mb-2 font-medium">Cursor Style</label>
+                  <select
+                    value={terminalSettings.cursorStyle}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      cursorStyle: e.target.value
+                    })}
+                    className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
+                  >
+                    <option value="block">Block</option>
+                    <option value="underline">Underline</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                  {/* Custom dropdown arrow */}
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Behavior Settings */}
+              <div className="border-b border-border/30 pb-3">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Behavior</h4>
+                
+                <div className="flex items-center justify-between py-2">
+                  <label className="text-sm text-foreground font-medium">Auto Connect</label>
+                  <input
+                    type="checkbox"
+                    checked={terminalSettings.autoConnect}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      autoConnect: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between py-2">
+                  <label className="text-sm text-foreground font-medium">Auto Wrap</label>
+                  <input
+                    type="checkbox"
+                    checked={terminalSettings.autoWrap}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      autoWrap: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between py-2">
+                  <label className="text-sm text-foreground font-medium">Show Line Numbers</label>
+                  <input
+                    type="checkbox"
+                    checked={terminalSettings.showLineNumbers}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      showLineNumbers: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
+                  />
+                </div>
+                
+                <div className="relative mt-4">
+                  <label className="block text-sm text-muted-foreground mb-2 font-medium">Scrollback Lines</label>
+                  <input
+                    type="number"
+                    value={terminalSettings.scrollback}
+                    onChange={(e) => updateTerminalSettings({
+                      ...terminalSettings,
+                      scrollback: parseInt(e.target.value) || 1000
+                    })}
+                    className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
+                    min="100"
+                    max="10000"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Resize Terminal Modal */}
@@ -523,16 +654,16 @@ function App() {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={() => {
-                    setResizeColumns(120);
-                    setResizeRows(30);
-                  }}
-                  variant="outline" 
-                  className="flex-1"
-                  title="Reset to default size (120×30)"
-                >
-                  Reset
-                </Button>
+                    onClick={() => {
+                      setResizeColumns(80);
+                      setResizeRows(24);
+                    }}
+                    variant="outline" 
+                    className="flex-1"
+                    title="Reset to default size (80×24)"
+                  >
+                    Reset
+                  </Button>
                 <Button 
                   onClick={applyResize}
                   className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
@@ -546,14 +677,14 @@ function App() {
       )}
 
       {/* Main Content - Terminal Focus with Enhanced Tech Design */}
-      <main className="flex-1 p-0 overflow-hidden relative">
+      <main className="flex-1 p-0 overflow-hidden relative z-10 mt-16">
         {/* Animated Background Grid */}
         <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
         
         {/* Subtle Glow Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none"></div>
         
-        <div className="h-full flex flex-col relative z-10">
+        <div className="h-full flex flex-col relative">
           {/* Enhanced Terminal Container - Enterprise Tech Design */}
            <Card className="flex-1 m-6 mb-0 border-0 bg-gradient-to-br from-card/95 via-card/80 to-card/90 backdrop-blur-2xl overflow-hidden shadow-2xl relative group rounded-none">
              {/* Advanced Border Glow System */}
@@ -620,7 +751,7 @@ function App() {
               </div>
               <div className="flex items-center space-x-2">
                 <a 
-                  href="https://github.com/wlcn/kt-terminal" 
+                  href="https://github.com/wlcn/terminal" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"

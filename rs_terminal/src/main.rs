@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
         }
     });
     
-    log::info!("Servers starting: WebSocket on ws://localhost:8080, WebTransport on http://localhost:8081");
+    log::info!("Servers starting: WebSocket on ws://localhost:8082, WebTransport on http://localhost:8081");
     
     // 保持主线程运行
     tokio::signal::ctrl_c().await?;
