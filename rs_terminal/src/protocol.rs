@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::session::SessionManager;
 
 // 协议消息类型
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub enum MessageType {
     CreateSession,
     WriteData,
@@ -14,7 +14,7 @@ pub enum MessageType {
 }
 
 // 客户端请求消息
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ClientMessage {
     pub r#type: MessageType,
     pub session_id: Option<String>,

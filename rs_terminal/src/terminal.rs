@@ -6,7 +6,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 // 终端进程
 #[derive(Clone)]
 pub struct TerminalProcess {
-    child: Arc<Mutex<Child>>,
+    pub child: Arc<Mutex<Child>>,
     output_tx: Arc<Mutex<Option<tokio::sync::mpsc::Sender<String>>>>,
 }
 
@@ -49,10 +49,10 @@ impl TerminalProcess {
     pub async fn read_output(&self, session_id: String) -> anyhow::Result<()> {
         // 简化实现，直接读取输出而不使用异步任务
         // 避免生命周期问题
-        let mut child = self.child.lock().await;
         let mut buffer = [0; 1024];
         
         // 只读取stdout，简化实现
+        let mut child = self.child.lock().await;
         let stdout = child.stdout.as_mut().unwrap();
         
         loop {

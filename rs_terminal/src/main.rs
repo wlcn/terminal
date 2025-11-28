@@ -5,8 +5,7 @@ use tokio::sync::Mutex;
 mod protocol;
 mod session;
 mod terminal;
-mod websocket;
-mod webtransport;
+mod transport;
 
 use crate::session::SessionManager;
 
@@ -21,20 +20,20 @@ async fn main() -> anyhow::Result<()> {
     // 启动WebSocket服务器
     let ws_session_manager = session_manager.clone();
     tokio::spawn(async move {
-        if let Err(e) = websocket::start_server(ws_session_manager).await {
+        if let Err(e) = transport::websocket::start_server(ws_session_manager).await {
             log::error!("WebSocket server error: {}", e);
         }
     });
     
-    // 启动WebTransport服务器
-    let wt_session_manager = session_manager.clone();
-    tokio::spawn(async move {
-        if let Err(e) = webtransport::start_server(wt_session_manager).await {
-            log::error!("WebTransport server error: {}", e);
-        }
-    });
+    // 暂时禁用WebTransport服务器，等待API完善
+    // let wt_session_manager = session_manager.clone();
+    // tokio::spawn(async move {
+    //     if let Err(e) = transport::webtransport::start_server(wt_session_manager).await {
+    //         log::error!("WebTransport server error: {}", e);
+    //     }
+    // });
     
-    log::info!("Servers starting: WebSocket on ws://localhost:8082, WebTransport on http://localhost:8081");
+    log::info!("Servers starting: WebSocket on ws://localhost:8080");
     
     // 保持主线程运行
     tokio::signal::ctrl_c().await?;
