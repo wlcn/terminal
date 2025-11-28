@@ -1,7 +1,0 @@
-2025-11-28 15:10:41 [INFO] rs_terminal::config: Loading configuration from: "./application.toml"
-2025-11-28 15:10:41 [INFO] rs_terminal: Configuration loaded successfully
-2025-11-28 15:10:41 [DEBUG] rs_terminal: Default shell type: powershell
-2025-11-28 15:10:41 [DEBUG] rs_terminal: Available shells: ["bash", "powershell", "cmd", "sh"]
-2025-11-28 15:10:41 [INFO] rs_terminal: Servers starting: HTTP on http://localhost:8082, WebSocket on ws://localhost:8081
-2025-11-28 15:10:41 [INFO] rs_terminal::http_server: HTTP server started on http://127.0.0.1:8082
-2025-11-28 15:10:41 [INFO] rs_terminal::transport::websocket: WebSocket server started on ws://localhost:8081

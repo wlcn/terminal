@@ -45,9 +45,25 @@ impl TerminalProcess {
             command.args(&shell_config.command[1..]);
         }
         
-        // 设置工作目录
+        // 设置工作目录，解析环境变量
         if let Some(working_dir) = &shell_config.working_directory {
-            command.current_dir(working_dir);
+            // 解析环境变量
+            let resolved_dir = if working_dir.is_empty() {
+                // 使用当前目录
+                ".".to_string()
+            } else {
+                // 替换环境变量
+                let mut resolved = working_dir.clone();
+                // 替换 ${USERPROFILE} 为实际用户目录
+                if resolved == "${USERPROFILE}" {
+                    std::env::var("USERPROFILE").unwrap_or(".".to_string())
+                } else {
+                    resolved
+                }
+            };
+            
+            log::debug!("Resolved working directory: {:?} -> {:?}", working_dir, resolved_dir);
+            command.current_dir(resolved_dir);
         }
         
         // 设置环境变量

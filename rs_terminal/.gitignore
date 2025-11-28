@@ -39,3 +39,4 @@ target/
 static/
 
 Cargo.lock
+logs/
