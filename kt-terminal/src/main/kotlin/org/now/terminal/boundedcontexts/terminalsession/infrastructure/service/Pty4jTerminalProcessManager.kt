@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcess
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 
@@ -108,8 +109,8 @@ object TerminalConfigManager {
 class Pty4jTerminalProcessManager : TerminalProcessManager {
     private val processes = ConcurrentHashMap<String, TerminalProcess>()
 
-    override fun createProcess(sessionId: String, workingDirectory: String, shellType: String): TerminalProcess {
-        val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType)
+    override fun createProcess(sessionId: String, workingDirectory: String, shellType: String, terminalSize: TerminalSize): TerminalProcess {
+        val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType, terminalSize)
         processes[sessionId] = process
         process.startReading()
         return process
@@ -147,7 +148,8 @@ class Pty4jTerminalProcessManager : TerminalProcessManager {
 class Pty4jTerminalProcess(
     private val sessionId: String,
     workingDirectory: String,
-    shellType: String
+    shellType: String,
+    terminalSize: TerminalSize
 ) : TerminalProcess {
     private val process: PtyProcess
     private val inputStream: InputStream
@@ -173,6 +175,8 @@ class Pty4jTerminalProcess(
             .setCommand(command)
             .setDirectory(workingDirectory)
             .setEnvironment(environment)
+            .setInitialColumns(terminalSize.columns)
+            .setInitialRows(terminalSize.rows)
             .start()
 
         inputStream = process.inputStream

@@ -49,7 +49,7 @@ class TerminalCommunicationHandler(
         // Get or create terminal process
         var process = terminalProcessService.getProcess(sessionId)
         if (process == null) {
-            process = terminalProcessService.createProcess(sessionId, session.workingDirectory, session.shellType)
+            process = terminalProcessService.createProcess(sessionId, session.workingDirectory, session.shellType, session.terminalSize)
         }
         
         // Add output listener to send data to client
