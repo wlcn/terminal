@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSession
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -15,6 +16,8 @@ class SessionExpiryManager(
     private val sessionTimeoutMs: Long,
     private val terminalProcessManager: TerminalProcessManager? = null
 ) {
+    private val logger = LoggerFactory.getLogger(SessionExpiryManager::class.java)
+    
     // 使用协程作用域和SupervisorJob来管理协程生命周期
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     
@@ -44,7 +47,7 @@ class SessionExpiryManager(
                     now > session.expiredAt!!) {
                     
                     try {
-                        println("Cleaning up expired session: ${session.id}, expired at: ${Date(session.expiredAt!!)}")
+                        logger.info("Cleaning up expired session: {}, expired at: {}", session.id, Date(session.expiredAt!!))
                         
                         // 更新session状态
                         session.status = TerminalSessionStatus.TERMINATED
@@ -59,7 +62,7 @@ class SessionExpiryManager(
                         // 从map中移除
                         sessionExpiryJobs.remove(session.id)
                     } catch (e: Exception) {
-                        println("Error cleaning up session ${session.id}: ${e.message}")
+                        logger.error("Error cleaning up session {}: {}", session.id, e.message)
                     }
                 }
             } else {
@@ -90,7 +93,7 @@ class SessionExpiryManager(
             now > session.expiredAt!!) {
             
             try {
-                println("Cleaning up expired session: ${session.id}, expired at: ${Date(session.expiredAt!!)}")
+                logger.info("Cleaning up expired session: ${session.id}, expired at: ${Date(session.expiredAt!!)}")
                 
                 // 更新session状态
                 session.status = TerminalSessionStatus.TERMINATED
@@ -105,7 +108,7 @@ class SessionExpiryManager(
                 // 从map中移除
                 sessionExpiryJobs.remove(session.id)
             } catch (e: Exception) {
-                println("Error cleaning up session ${session.id}: ${e.message}")
+                logger.error("Error cleaning up session ${session.id}: ${e.message}")
             }
         }
     }

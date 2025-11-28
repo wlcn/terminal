@@ -69,16 +69,24 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Protocol selection */}
           <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-border">
             <span className="text-sm text-muted-foreground">PROTOCOL:</span>
-            <select 
-              className="px-2 py-1 bg-background/80 border border-primary/30 rounded text-sm text-primary focus:border-primary focus:outline-none"
-              value={protocol}
-              onChange={(e) => onProtocolChange(e.target.value as 'websocket' | 'webtransport' | 'auto')}
-              disabled={isConnected}
-            >
-              <option value="auto">Auto</option>
-              <option value="websocket">WebSocket</option>
-              <option value="webtransport">WebTransport</option>
-            </select>
+            <div className="relative">
+              <select 
+                className="appearance-none px-4 py-2 bg-background/80 border border-primary/30 rounded-lg text-sm text-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all duration-200 shadow-sm hover:border-primary/50 disabled:opacity-70 disabled:cursor-not-allowed pr-8"
+                value={protocol}
+                onChange={(e) => onProtocolChange(e.target.value as 'websocket' | 'webtransport' | 'auto')}
+                disabled={isConnected}
+              >
+                <option value="auto" className="bg-background text-foreground">Auto</option>
+                <option value="websocket" className="bg-background text-foreground">WebSocket</option>
+                <option value="webtransport" className="bg-background text-foreground">WebTransport</option>
+              </select>
+              {/* Custom dropdown arrow */}
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-4 w-4 text-primary/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
           
           {/* Session info display */}
