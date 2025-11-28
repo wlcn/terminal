@@ -10,7 +10,7 @@ import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.P
 val terminalSessionModule = module {
     single { 
         val application = get<io.ktor.server.application.Application>()
-        val defaultShellType = application.environment.config.property("terminal.shellType").getString()
+        val defaultShellType = application.environment.config.property("terminal.defaultShellType").getString()
         TerminalSessionService(defaultShellType)
     }
     single<TerminalProcessManager> { Pty4jTerminalProcessManager() }

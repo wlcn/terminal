@@ -62,9 +62,6 @@ object TerminalConfigManager {
         
         val shells = mutableMapOf<String, ShellConfig>()
         
-        // 获取shells配置的所有子配置名称
-        val shellsConfigNames = terminalConfig.propertyOrNull("shells")?.getList() ?: emptyList()
-        
         // 遍历所有shell配置
         terminalConfig.config("shells").keys().forEach { shellName ->
             val shellConfig = terminalConfig.config("shells").config(shellName)

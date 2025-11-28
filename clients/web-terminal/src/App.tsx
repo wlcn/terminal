@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { TerminalComponent } from './components/Terminal';
-import { Settings, Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize } from 'lucide-react';
+import { Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize } from 'lucide-react';
 import { listSessions } from './services/terminalApi';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -9,17 +9,6 @@ function App() {
   const terminalRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [terminalSettings, setTerminalSettings] = useState({
-    fontSize: 14,
-    fontFamily: "Consolas, 'Courier New', monospace",
-    theme: 'dark',
-    autoConnect: false,
-    showLineNumbers: false,
-    cursorStyle: 'block',
-    scrollback: 1000,
-    autoWrap: true
-  });
   
   // 会话信息状态
   const [currentSessionInfo, setCurrentSessionInfo] = useState<{
@@ -157,18 +146,6 @@ function App() {
     }
   };
 
-  const handleSettings = () => {
-    setShowSettings(!showSettings);
-  };
-
-  const updateTerminalSettings = (newSettings: any) => {
-    setTerminalSettings(newSettings);
-    // Apply settings to terminal if connected
-    if (isConnected && terminalRef.current && terminalRef.current.updateSettings) {
-      terminalRef.current.updateSettings(newSettings);
-    }
-  };
-
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-tech-bg-darker via-tech-bg-dark to-tech-secondary text-foreground font-sans overflow-hidden">
       {/* Simple and Reliable Header */}
@@ -293,189 +270,7 @@ function App() {
               )}
             </div>
             
-            {/* Settings button with dropdown - 作为按钮的直接子元素 */}
-            <div className="relative">
-              <Button
-                onClick={handleSettings}
-                variant="outline"
-                size="sm"
-                className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
-                title="Settings"
-              >
-                <Settings size={16} className="text-primary" />
-              </Button>
-              
-              {/* Settings panel - 直接作为按钮的子元素，使用absolute定位 */}
-              {showSettings && (
-                <div className="absolute right-0 top-full mt-1 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl p-4 w-72 z-50 glass">
-                  <div className="flex justify-between items-center mb-4 pb-3 border-b border-border/30">
-                    <h3 className="text-md font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Terminal Settings</h3>
-                    <Button 
-                      onClick={handleSettings}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-destructive/20 hover:text-destructive transition-colors"
-                    >
-                      ×
-                    </Button>
-                  </div>
-                  
-                  <div className="mb-4 p-3 bg-gradient-to-br from-primary/10 to-accent/5 rounded-lg border border-primary/20">
-                    <div className="text-xs text-primary font-mono font-semibold">Version: v1.0.0</div>
-                    <div className="text-xs text-muted-foreground mt-1">KT Terminal Platform</div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Display Settings */}
-                    <div className="border-b border-border/30 pb-3">
-                      <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Display</h4>
-                      
-                      <div className="relative">
-                        <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Size</label>
-                        <input
-                          type="number"
-                          value={terminalSettings.fontSize}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            fontSize: parseInt(e.target.value) || 14
-                          })}
-                          className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
-                          min="8"
-                          max="24"
-                        />
-                      </div>
-                      
-                      <div className="relative mt-4">
-                        <label className="block text-sm text-muted-foreground mb-2 font-medium">Font Family</label>
-                        <select
-                          value={terminalSettings.fontFamily}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            fontFamily: e.target.value
-                          })}
-                          className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
-                        >
-                          <option value="Consolas, 'Courier New', monospace">Consolas</option>
-                          <option value="'Courier New', monospace">Courier New</option>
-                          <option value="Monaco, 'Menlo', monospace">Monaco</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                      
-                      <div className="relative mt-4">
-                        <label className="block text-sm text-muted-foreground mb-2 font-medium">Theme</label>
-                        <select
-                          value={terminalSettings.theme}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            theme: e.target.value
-                          })}
-                          className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
-                        >
-                          <option value="dark">Dark</option>
-                          <option value="light">Light</option>
-                          <option value="high-contrast">High Contrast</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Cursor Settings */}
-                    <div className="border-b border-border/30 pb-3">
-                      <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Cursor</h4>
-                      
-                      <div className="relative">
-                        <label className="block text-sm text-muted-foreground mb-2 font-medium">Cursor Style</label>
-                        <select
-                          value={terminalSettings.cursorStyle}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            cursorStyle: e.target.value
-                          })}
-                          className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm appearance-none"
-                        >
-                          <option value="block">Block</option>
-                          <option value="underline">Underline</option>
-                          <option value="bar">Bar</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Behavior Settings */}
-                    <div className="border-b border-border/30 pb-3">
-                      <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Behavior</h4>
-                      
-                      <div className="flex items-center justify-between py-2">
-                        <label className="text-sm text-foreground font-medium">Auto Connect</label>
-                        <input
-                          type="checkbox"
-                          checked={terminalSettings.autoConnect}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            autoConnect: e.target.checked
-                          })}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between py-2">
-                        <label className="text-sm text-foreground font-medium">Auto Wrap</label>
-                        <input
-                          type="checkbox"
-                          checked={terminalSettings.autoWrap}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            autoWrap: e.target.checked
-                          })}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between py-2">
-                        <label className="text-sm text-foreground font-medium">Show Line Numbers</label>
-                        <input
-                          type="checkbox"
-                          checked={terminalSettings.showLineNumbers}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            showLineNumbers: e.target.checked
-                          })}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary transition-colors"
-                        />
-                      </div>
-                      
-                      <div className="relative mt-4">
-                        <label className="block text-sm text-muted-foreground mb-2 font-medium">Scrollback Lines</label>
-                        <input
-                          type="number"
-                          value={terminalSettings.scrollback}
-                          onChange={(e) => updateTerminalSettings({
-                            ...terminalSettings,
-                            scrollback: parseInt(e.target.value) || 1000
-                          })}
-                          className="w-full px-3 py-2 bg-background/80 border border-input/50 rounded-lg text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 backdrop-blur-sm"
-                          min="100"
-                          max="10000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+
           </div>
         </div>
       </header>
