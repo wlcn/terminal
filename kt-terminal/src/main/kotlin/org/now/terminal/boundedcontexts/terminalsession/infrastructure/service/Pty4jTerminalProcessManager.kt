@@ -41,15 +41,20 @@ class ShellConfig(
     val environment: Map<String, String>
 )
 
-// 配置管理器，用于读取application.conf中的终端配置
 object TerminalConfigManager {
     private lateinit var config: ApplicationConfig
+    private var cachedConfig: TerminalConfig? = null
 
     fun init(config: ApplicationConfig) {
         this.config = config
+        this.cachedConfig = loadTerminalConfig()
     }
 
     fun getTerminalConfig(): TerminalConfig {
+        return cachedConfig ?: throw IllegalStateException("Config not initialized")
+    }
+
+    private fun loadTerminalConfig(): TerminalConfig {
         val terminalConfig = config.config("terminal")
 
         val defaultShellType = terminalConfig.property("defaultShellType").getString()
@@ -67,7 +72,11 @@ object TerminalConfigManager {
         shellsKeys.forEach { shellName ->
             val shellConfig = shellsConfig.config(shellName)
             val command = shellConfig.property("command").getList()
-            val environment = shellConfig.config("environment").toMap() as Map<String, String>
+            val environment = mutableMapOf<String, String>()
+            val envConfig = shellConfig.config("environment")
+            envConfig.keys().forEach { key ->
+                environment[key] = envConfig.property(key).getString()
+            }
             shells[shellName] = ShellConfig(command, environment)
         }
 
