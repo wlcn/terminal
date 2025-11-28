@@ -1,6 +1,7 @@
 package org.now.terminal
 
 import io.ktor.server.application.*
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.configureTerminalSessionRoutes
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.configureTerminalWebSocketRoutes
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.api.configureTerminalWebTransportRoutes
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.TerminalConfigManager
@@ -25,6 +26,7 @@ fun Application.module() {
     configureSerialization()
     installWebSockets()
     configureRouting()
+    configureTerminalSessionRoutes()
     configureTerminalWebSocketRoutes()
     configureTerminalWebTransportRoutes()
 }
