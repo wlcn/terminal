@@ -46,33 +46,28 @@ fun Route.terminalSessionRoutes() {
     
     route("/sessions") {
         // Create a new session
-        post { 
+        post {
+            val terminalConfig = TerminalConfigManager.getTerminalConfig()
+
             val userId = call.request.queryParameters["userId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing userId")
             val title = call.request.queryParameters["title"]
             val requestWorkingDirectory = call.request.queryParameters["workingDirectory"]
-            val shellType = call.request.queryParameters["shellType"] ?: "bash"
-            
-            // 获取终端配置
-            val terminalConfig = TerminalConfigManager.getTerminalConfig()
-            
-            // 获取shell配置
+            val shellType = call.request.queryParameters["shellType"] ?: terminalConfig.defaultShellType
+
             val shellConfig = terminalConfig.shells[shellType.lowercase()]
                 ?: terminalConfig.shells[terminalConfig.defaultShellType.lowercase()]
                 ?: throw IllegalArgumentException("No shell configuration found for type: $shellType")
             
-            // 确定最终的工作目录：请求参数 > shell级配置 > 默认配置
             val workingDirectory = requestWorkingDirectory
                 ?: shellConfig.workingDirectory
                 ?: terminalConfig.defaultWorkingDirectory
             
-            // 确定终端大小：shell级配置 > 全局默认配置
-            val terminalSize = shellConfig.size?.let { 
+            val terminalSize = shellConfig.size?.let {
                 TerminalSize(it.columns, it.rows) 
             } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
             
-            // 直接创建带有正确大小的会话
             val session = terminalSessionService.createSession(
-                userId, 
+                userId,
                 title, 
                 workingDirectory, 
                 shellType,

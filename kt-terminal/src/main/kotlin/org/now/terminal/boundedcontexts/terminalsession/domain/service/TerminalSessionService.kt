@@ -23,7 +23,7 @@ class TerminalSessionService(private val defaultShellType: String = "bash") {
             workingDirectory = workingDirectory,
             shellType = shellType,
             status = TerminalSessionStatus.ACTIVE,
-            terminalSize = size
+            terminalSize = size ?: TerminalSize(80, 24) // 确保传递非空的TerminalSize
         )
         sessions[session.id] = session
         return session

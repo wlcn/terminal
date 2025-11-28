@@ -80,7 +80,6 @@ object TerminalConfigManager {
                 environment[key] = envConfig.property(key).getString()
             }
             
-            // 读取shell级别的工作目录（可选）
             val workingDirectory = try {
                 shellConfig.property("workingDirectory").getString()
             } catch (e: Exception) {

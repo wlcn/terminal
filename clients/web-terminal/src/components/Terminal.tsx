@@ -151,7 +151,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       const columns = 80;
       const rows = 24;
       
-      const sessionResponse = await createSession(userId, 'Web Terminal Session', '/');
+      const sessionResponse = await createSession(userId, 'Terminal Session');
       const newSessionId = sessionResponse.id; // 后端返回的是id字段，不是sessionId
       const shellType = sessionResponse.shellType; // 后端直接返回shellType字段，不是在configuration中
       setShellType(shellType);
