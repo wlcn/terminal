@@ -21,3 +21,7 @@ http = "1.4.0"
 tower = "0.5.2"
 tower-http = { version = "0.5.2", features = ["cors"] }
 config = { version = "0.15.0", features = ["json", "toml", "yaml"] }
+
+# Unix-specific dependencies
+[target.'cfg(unix)'.dependencies]
+tokio-pty-process = "0.4.0"

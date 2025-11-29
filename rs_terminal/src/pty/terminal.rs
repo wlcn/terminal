@@ -1,17 +1,35 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio::process::{Command, Child, ChildStdin, ChildStdout, ChildStderr};
 use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 use crate::config::ShellConfig;
 
+// 平台特定的导入
+#[cfg(unix)]
+use tokio::process::Command;
+#[cfg(unix)]
+use tokio_pty_process::{PtyMaster, PtyProcess};
+
+#[cfg(windows)]
+use tokio::process::{Command, Child, ChildStdin, ChildStdout, ChildStderr};
+
 // 终端进程 - 细粒度锁设计，避免死锁
 #[derive(Clone)]
 pub struct TerminalProcess {
-    // 分别使用不同的锁保护stdin、stdout和stderr，避免死锁
+    #[cfg(unix)]
+    // Unix: 使用PTY主设备和进程
+    pty_master: Arc<Mutex<PtyMaster>>,
+    #[cfg(unix)]
+    pty_process: Arc<Mutex<PtyProcess>>,
+    
+    #[cfg(windows)]
+    // Windows: 分别使用不同的锁保护stdin、stdout和stderr，避免死锁
     stdin: Arc<Mutex<ChildStdin>>,
+    #[cfg(windows)]
     stdout: Arc<Mutex<ChildStdout>>,
+    #[cfg(windows)]
     stderr: Arc<Mutex<ChildStderr>>,
+    #[cfg(windows)]
     // 保留child用于关闭终端
     child: Arc<Mutex<Child>>,
 }
@@ -52,79 +70,143 @@ impl TerminalProcess {
             command.env(key, value);
         }
         
-        // 设置标准输入输出
-        let mut child = command
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn()?;
+        #[cfg(unix)]
+        {
+            // Unix: 使用PTY创建进程
+            let (pty_master, pty_process) = tokio_pty_process::forkpty(&mut command)?;
+            
+            log::info!("Created new PTY terminal process with PID: {} using command: {:?}", 
+                      pty_process.id(), shell_config.command);
+            
+            Ok(Self {
+                pty_master: Arc::new(Mutex::new(pty_master)),
+                pty_process: Arc::new(Mutex::new(pty_process)),
+            })
+        }
         
-        // 提取标准输入输出
-        let stdin = child.stdin.take().unwrap();
-        let stdout = child.stdout.take().unwrap();
-        let stderr = child.stderr.take().unwrap();
-        
-        log::info!("Created new terminal process with PID: {} using command: {:?}", 
-                  child.id().unwrap(), shell_config.command);
-        
-        Ok(Self {
-            stdin: Arc::new(Mutex::new(stdin)),
-            stdout: Arc::new(Mutex::new(stdout)),
-            stderr: Arc::new(Mutex::new(stderr)),
-            child: Arc::new(Mutex::new(child)),
-        })
-    }
-    
-    // 写入输入到终端 - 使用独立的stdin锁，避免死锁
-    pub async fn write_input(&self, data: &str) -> anyhow::Result<()> {
-        // 使用独立的stdin锁，不影响stdout/stderr读取
-        let mut stdin = self.stdin.lock().await;
-        
-        // 写入数据到终端的标准输入
-        stdin.write_all(data.as_bytes()).await?;
-        
-        Ok(())
-    }
-    
-    // 读取终端标准输出 - 使用独立的stdout锁，避免死锁
-    pub async fn read_stdout(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
-        // 使用独立的stdout锁，不影响stdin写入
-        let mut stdout = self.stdout.lock().await;
-        
-        // 异步读取终端输出
-        let read_result = stdout.read(buffer).await;
-        
-        // 立即释放锁，允许其他任务访问
-        drop(stdout);
-        
-        match read_result {
-            Ok(0) => Ok(String::new()), // EOF
-            Ok(n) => {
-                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                Ok(output)
-            },
-            Err(e) => Err(e.into()),
+        #[cfg(windows)]
+        {
+            // Windows: 设置标准输入输出
+            let mut child = command
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn()?;
+            
+            // 提取标准输入输出
+            let stdin = child.stdin.take().unwrap();
+            let stdout = child.stdout.take().unwrap();
+            let stderr = child.stderr.take().unwrap();
+            
+            log::info!("Created new terminal process with PID: {} using command: {:?}", 
+                      child.id().unwrap(), shell_config.command);
+            
+            Ok(Self {
+                stdin: Arc::new(Mutex::new(stdin)),
+                stdout: Arc::new(Mutex::new(stdout)),
+                stderr: Arc::new(Mutex::new(stderr)),
+                child: Arc::new(Mutex::new(child)),
+            })
         }
     }
     
-    // 读取终端标准错误 - 使用独立的stderr锁，避免死锁
+    // 写入输入到终端 - 使用独立的锁，避免死锁
+    pub async fn write_input(&self, data: &str) -> anyhow::Result<()> {
+        #[cfg(unix)]
+        {
+            // Unix: 使用独立的PTY主设备锁，不影响读取操作
+            let mut pty_master = self.pty_master.lock().await;
+            
+            // 写入数据到PTY主设备
+            pty_master.write_all(data.as_bytes()).await?;
+            
+            Ok(())
+        }
+        
+        #[cfg(windows)]
+        {
+            // Windows: 使用独立的stdin锁，不影响stdout/stderr读取
+            let mut stdin = self.stdin.lock().await;
+            
+            // 写入数据到终端的标准输入
+            stdin.write_all(data.as_bytes()).await?;
+            
+            Ok(())
+        }
+    }
+    
+    // 读取终端标准输出 - 使用独立的锁，避免死锁
+    pub async fn read_stdout(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+        #[cfg(unix)]
+        {
+            // Unix: 使用独立的PTY主设备锁，不影响写入操作
+            let mut pty_master = self.pty_master.lock().await;
+            
+            // 异步读取终端输出
+            let read_result = pty_master.read(buffer).await;
+            
+            // 立即释放锁，允许其他任务访问
+            drop(pty_master);
+            
+            match read_result {
+                Ok(0) => Ok(String::new()), // EOF
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    Ok(output)
+                },
+                Err(e) => Err(e.into()),
+            }
+        }
+        
+        #[cfg(windows)]
+        {
+            // Windows: 使用独立的stdout锁，不影响stdin写入
+            let mut stdout = self.stdout.lock().await;
+            
+            // 异步读取终端输出
+            let read_result = stdout.read(buffer).await;
+            
+            // 立即释放锁，允许其他任务访问
+            drop(stdout);
+            
+            match read_result {
+                Ok(0) => Ok(String::new()), // EOF
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    Ok(output)
+                },
+                Err(e) => Err(e.into()),
+            }
+        }
+    }
+    
+    // 读取终端标准错误 - 使用独立的锁，避免死锁
     pub async fn read_stderr(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
-        // 使用独立的stderr锁，不影响其他操作
-        let mut stderr = self.stderr.lock().await;
+        #[cfg(unix)]
+        {
+            // Unix: PTY模式下stdout和stderr合并，所以直接返回空字符串
+            Ok(String::new())
+        }
         
-        // 异步读取终端错误输出
-        let read_result = stderr.read(buffer).await;
-        
-        // 立即释放锁，允许其他任务访问
-        drop(stderr);
-        
-        match read_result {
-            Ok(0) => Ok(String::new()), // EOF
-            Ok(n) => {
-                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                Ok(output)
-            },
-            Err(e) => Err(e.into()),
+        #[cfg(windows)]
+        {
+            // Windows: 使用独立的stderr锁，不影响其他操作
+            let mut stderr = self.stderr.lock().await;
+            
+            // 异步读取终端错误输出
+            let read_result = stderr.read(buffer).await;
+            
+            // 立即释放锁，允许其他任务访问
+            drop(stderr);
+            
+            match read_result {
+                Ok(0) => Ok(String::new()), // EOF
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    Ok(output)
+                },
+                Err(e) => Err(e.into()),
+            }
         }
     }
     
@@ -148,36 +230,71 @@ impl TerminalProcess {
     pub async fn resize(&self, columns: u32, rows: u32) -> anyhow::Result<()> {
         log::info!("Resizing terminal to {} columns x {} rows", columns, rows);
         
-        // 获取子进程
-        let child = self.child.lock().await;
-        let pid = child.id().unwrap();
+        #[cfg(unix)]
+        {
+            // Unix: 获取PTY主设备
+            let mut pty_master = self.pty_master.lock().await;
+            
+            // 调用PTY主设备的resize方法调整终端大小
+            pty_master.resize(columns, rows)?;
+            
+            log::debug!("Successfully resized terminal to {}x{}", columns, rows);
+        }
         
-        // 记录调整大小请求
-        log::debug!("Resize request for terminal PID {}: {}x{}", pid, columns, rows);
-        
-        // 注意：在Windows上，调整终端大小需要使用Windows API
-        // 这里我们只是记录日志，后续可以实现完整的调整逻辑
-        // 对于Unix系统，可以使用pty库来调整大小
+        #[cfg(windows)]
+        {
+            // Windows: 获取子进程
+            let child = self.child.lock().await;
+            let pid = child.id().unwrap();
+            
+            // 记录调整大小请求
+            log::debug!("Resize request for terminal PID {}: {}x{}", pid, columns, rows);
+            
+            // 注意：在Windows上，调整终端大小需要使用Windows API
+            // 这里我们只是记录日志，后续可以实现完整的调整逻辑
+        }
         
         Ok(())
     }
     
     // 关闭终端 - 异步设计，只在关闭时持有锁
     pub async fn close(&self) -> anyhow::Result<()> {
-        let mut child = self.child.lock().await;
+        #[cfg(unix)]
+        {
+            let mut pty_process = self.pty_process.lock().await;
+            
+            // 获取进程ID
+            let pid = pty_process.id();
+            
+            // 终止子进程并等待退出
+            pty_process.kill().await?;
+            pty_process.wait().await?;
+            
+            // 记录关闭日志
+            if let Some(pid_value) = pid {
+                log::info!("Closed PTY terminal process with PID: {}", pid_value);
+            } else {
+                log::info!("Closed PTY terminal process");
+            }
+        }
         
-        // 获取进程ID（可能为None）
-        let pid = child.id();
-        
-        // 终止子进程并等待退出
-        child.kill().await?;
-        child.wait().await?;
-        
-        // 记录关闭日志，处理PID可能为None的情况
-        if let Some(pid_value) = pid {
-            log::info!("Closed terminal process with PID: {}", pid_value);
-        } else {
-            log::info!("Closed terminal process");
+        #[cfg(windows)]
+        {
+            let mut child = self.child.lock().await;
+            
+            // 获取进程ID（可能为None）
+            let pid = child.id();
+            
+            // 终止子进程并等待退出
+            child.kill().await?;
+            child.wait().await?;
+            
+            // 记录关闭日志，处理PID可能为None的情况
+            if let Some(pid_value) = pid {
+                log::info!("Closed terminal process with PID: {}", pid_value);
+            } else {
+                log::info!("Closed terminal process");
+            }
         }
         
         Ok(())
@@ -185,10 +302,22 @@ impl TerminalProcess {
     
     // 检查终端进程是否还在运行
     pub async fn is_running(&self) -> bool {
-        let mut child = self.child.lock().await;
-        match child.try_wait() {
-            Ok(None) => true, // 进程还在运行
-            _ => false, // 进程已经退出或者发生错误
+        #[cfg(unix)]
+        {
+            let mut pty_process = self.pty_process.lock().await;
+            match pty_process.try_wait() {
+                Ok(None) => true, // 进程还在运行
+                _ => false, // 进程已经退出或者发生错误
+            }
+        }
+        
+        #[cfg(windows)]
+        {
+            let mut child = self.child.lock().await;
+            match child.try_wait() {
+                Ok(None) => true, // 进程还在运行
+                _ => false, // 进程已经退出或者发生错误
+            }
         }
     }
 }
