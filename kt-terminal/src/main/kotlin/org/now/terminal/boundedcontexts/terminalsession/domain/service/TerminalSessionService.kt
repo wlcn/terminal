@@ -10,8 +10,7 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalCon
 
 class TerminalSessionService(
     private val terminalConfig: TerminalConfig,
-    private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository(),
-    private val terminalProcessManager: TerminalProcessManager? = null,
+    private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository()
 ) {
     private val defaultShellType = terminalConfig.defaultShellType
     private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
@@ -39,8 +38,6 @@ class TerminalSessionService(
             expiredAt = now + sessionTimeoutMs
         )
         terminalSessionRepository.save(session)
-
-
 
         return session
     }
@@ -71,9 +68,6 @@ class TerminalSessionService(
             // 使用领域模型的terminate方法
             it.terminate()
 
-            // 清理相关资源
-            terminalProcessManager?.terminateProcess(id)
-
             // 从存储中移除
             terminalSessionRepository.deleteById(id)
         }
@@ -89,10 +83,6 @@ class TerminalSessionService(
 
     fun deleteSession(id: String): Boolean {
         val session = terminalSessionRepository.deleteById(id)
-        if (session != null) {
-            // 清理相关资源
-            terminalProcessManager?.terminateProcess(id)
-        }
         return session != null
     }
 

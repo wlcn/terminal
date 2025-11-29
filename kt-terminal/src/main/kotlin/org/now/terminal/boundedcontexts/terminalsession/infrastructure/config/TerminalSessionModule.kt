@@ -42,20 +42,22 @@ val terminalSessionModule = module {
         val terminalConfig = get<TerminalConfig>()
         val terminalProcessManager = get<TerminalProcessManager>()
         val terminalSessionRepository = get<TerminalSessionRepository>()
-        TerminalSessionExpiryManager(terminalProcessManager, terminalSessionRepository)
+        TerminalSessionExpiryManager(
+            sessionTimeoutMs = terminalConfig.sessionTimeoutMs,
+            terminalProcessManager = terminalProcessManager,
+            terminalSessionRepository = terminalSessionRepository
+        )
     }
 
     // Terminal session service
     single {
         val terminalConfig = get<TerminalConfig>()
         val terminalSessionRepository = get<TerminalSessionRepository>()
-        val terminalProcessManager = get<TerminalProcessManager>()
         val monitoringService = get<TerminalMonitoringService>()
 
         val sessionService = TerminalSessionService(
             terminalConfig = terminalConfig,
-            terminalSessionRepository = terminalSessionRepository,
-            terminalProcessManager = terminalProcessManager,
+            terminalSessionRepository = terminalSessionRepository
         )
 
         // Initialize gauges
