@@ -17,33 +17,6 @@ pub struct TerminalProcess {
 }
 
 impl TerminalProcess {
-    // 创建新的终端进程
-    pub async fn new() -> anyhow::Result<Self> {
-        // 获取默认shell - 只支持Linux
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
-        
-        // 创建终端进程
-        let mut child = Command::new(shell)
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn()?;
-        
-        // 提取标准输入输出
-        let stdin = child.stdin.take().unwrap();
-        let stdout = child.stdout.take().unwrap();
-        let stderr = child.stderr.take().unwrap();
-        
-        log::info!("Created new terminal process with PID: {}", child.id().unwrap());
-        
-        Ok(Self {
-            stdin: Arc::new(Mutex::new(stdin)),
-            stdout: Arc::new(Mutex::new(stdout)),
-            stderr: Arc::new(Mutex::new(stderr)),
-            child: Arc::new(Mutex::new(child)),
-        })
-    }
-    
     // 根据配置创建终端进程
     pub async fn new_with_config(shell_config: &ShellConfig) -> anyhow::Result<Self> {
         // 创建命令

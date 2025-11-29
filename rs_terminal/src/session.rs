@@ -58,6 +58,7 @@ impl Session {
     }
     
     // 获取最后活动时间
+    #[allow(dead_code)]
     pub(crate) fn get_last_active_time(&self) -> u64 {
         self.last_active_time.load(std::sync::atomic::Ordering::SeqCst)
     }
@@ -339,9 +340,12 @@ impl SessionManager {
                     }
                 };
                 
+                // 获取会话的最后活动时间
+                let last_active_time = session.get_last_active_time();
+                
                 // 检查会话是否过期
                 if session.is_expired() {
-                    log::info!("Session {} has expired, closing it", session_id);
+                    log::info!("Session {} has expired (last active: {}), closing it", session_id, last_active_time);
                     
                     // 关闭会话
                     if let Err(e) = self.close_session(&session_id).await {
@@ -352,12 +356,16 @@ impl SessionManager {
                         sessions_write.remove(&session_id);
                         log::info!("Removed expired session {}", session_id);
                     }
+                } else {
+                    log::debug!("Session {} is active (last active: {})
+", session_id, last_active_time);
                 }
             }
         }
     }
     
     // 更新会话最后活动时间
+    #[allow(dead_code)]
     pub async fn update_session_activity(&self, session_id: &str) -> anyhow::Result<()> {
         // 获取会话引用
         let session = {

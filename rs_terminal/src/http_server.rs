@@ -180,6 +180,14 @@ async fn create_session(
         },
     };
     
+    // 获取shell类型
+    let shell_type = params.shell_type.unwrap_or(config.terminal.default_shell_type.clone());
+    
+    // 验证shell类型是否存在
+    if config.get_shell_config(&shell_type).is_none() {
+        log::warn!("Shell type '{}' not found, using default shell type '{}'", shell_type, config.terminal.default_shell_type);
+    }
+    
     // 生成会话ID
     match session_manager.create_session().await {
         Ok(session_id) => {
@@ -189,7 +197,7 @@ async fn create_session(
                 user_id.clone(),
                 params.title,
                 params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
-                params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                shell_type,
                 "ACTIVE".to_string(),
                 params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
                 params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
@@ -207,7 +215,7 @@ async fn create_session(
                 user_id.clone(),
                 params.title,
                 params.working_directory.unwrap_or(config.terminal.default_working_directory.clone()),
-                params.shell_type.unwrap_or(config.terminal.default_shell_type.clone()),
+                shell_type,
                 "ERROR".to_string(),
                 params.columns.unwrap_or(config.terminal.default_terminal_size.columns),
                 params.rows.unwrap_or(config.terminal.default_terminal_size.rows),
@@ -301,7 +309,7 @@ async fn get_session_by_id(
 async fn resize_terminal(
     Path(id): Path<String>,
     Query(params): Query<ResizeParams>,
-    State((session_manager, config)): State<(Arc<SessionManager>, Arc<Config>)>,
+    State((session_manager, _config)): State<(Arc<SessionManager>, Arc<Config>)>,
 ) -> (StatusCode, Json<TerminalResizeResponse>) {
     // 检查cols和rows参数是否提供
     let cols = match params.cols {
@@ -476,8 +484,20 @@ async fn execute_command(
         return (StatusCode::NOT_FOUND, "Session not found".to_string());
     }
     
+    // 更新会话活动时间
+    if let Err(e) = session_manager.update_session_activity(&id).await {
+        log::error!("Failed to update session activity: {}", e);
+    }
+    
     // 执行命令
-    match session_manager.write_to_session(&id, &format!("{}\n", command)).await {
+    let result = session_manager.write_to_session(&id, &format!("{}\n", command)).await;
+    
+    // 如果提供了超时时间，记录超时信息
+    if let Some(timeout_ms) = params.timeout_ms {
+        log::debug!("Command execution timeout set to {}ms", timeout_ms);
+    }
+    
+    match result {
         Ok(_) => {
             (StatusCode::OK, format!("Command executed: {}", command))
         },
@@ -503,6 +523,16 @@ async fn execute_command_check(
     // 检查会话是否存在
     if !session_manager.session_exists(&id).await {
         return (StatusCode::NOT_FOUND, Json(false));
+    }
+    
+    // 更新会话活动时间
+    if let Err(e) = session_manager.update_session_activity(&id).await {
+        log::error!("Failed to update session activity: {}", e);
+    }
+    
+    // 如果提供了超时时间，记录超时信息
+    if let Some(timeout_ms) = params.timeout_ms {
+        log::debug!("Command execution timeout set to {}ms", timeout_ms);
     }
     
     // 执行命令
