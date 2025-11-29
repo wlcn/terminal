@@ -121,12 +121,20 @@ class TerminalCommunicationHandler(
             log.debug("Cleaning up terminal communication for session: {}", sessionId)
             process.removeOutputListener(outputListener)
 
-            // Update session status to inactive
+            // Terminate the terminal process
             try {
-                terminalSessionService.updateSessionStatus(sessionId, TerminalSessionStatus.INACTIVE)
-                log.debug("Updated session {} status to INACTIVE", sessionId)
+                terminalProcessService.terminateProcess(sessionId)
+                log.debug("Terminated terminal process for session: {}", sessionId)
             } catch (e: Exception) {
-                log.error("Failed to update session status for session {}: {}", sessionId, e.message)
+                log.error("Failed to terminate terminal process for session {}: {}", sessionId, e.message)
+            }
+
+            // Terminate the session
+            try {
+                terminalSessionService.terminateSession(sessionId, "Connection closed")
+                log.debug("Terminated session: {}", sessionId)
+            } catch (e: Exception) {
+                log.error("Failed to terminate session {}: {}", sessionId, e.message)
             }
 
             log.debug("Cleanup completed for session: {}", sessionId)

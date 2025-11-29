@@ -11,13 +11,13 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalCon
 class TerminalSessionService(
     private val terminalConfig: TerminalConfig,
     private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository(),
-    private val terminalProcessManager: TerminalProcessManager? = null
+    private val terminalProcessManager: TerminalProcessManager? = null,
+    private val terminalSessionExpiryManager: TerminalSessionExpiryManager
 ) {
     private val defaultShellType = terminalConfig.defaultShellType
     private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
 
-    // 会话过期管理器
-    private val terminalSessionExpiryManager = TerminalSessionExpiryManager(sessionTimeoutMs, terminalProcessManager)
+
 
     fun createSession(
         userId: String,
@@ -53,7 +53,6 @@ class TerminalSessionService(
 
     fun getSessionById(id: String): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            // 调用updateSessionActivity方法，避免重复代码
             updateSessionActivity(it)
         }
     }
@@ -68,7 +67,6 @@ class TerminalSessionService(
 
     fun resizeTerminal(id: String, columns: Int, rows: Int): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            // 使用领域模型的resize方法
             it.resize(columns, rows)
             terminalSessionRepository.update(it)
         }

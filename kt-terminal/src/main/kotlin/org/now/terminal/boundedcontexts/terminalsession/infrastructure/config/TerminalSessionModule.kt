@@ -8,6 +8,7 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionRe
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
+import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionExpiryManager
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.Pty4jTerminalProcessManager
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.TerminalConfigService
@@ -36,17 +37,26 @@ val terminalSessionModule = module {
     // Terminal process service
     single { TerminalProcessService(get()) }
 
+    // Terminal session expiry manager - global singleton
+    single { 
+        val terminalConfig = get<TerminalConfig>()
+        val terminalProcessManager = get<TerminalProcessManager>()
+        TerminalSessionExpiryManager(terminalConfig.sessionTimeoutMs, terminalProcessManager)
+    }
+
     // Terminal session service
     single {
         val terminalConfig = get<TerminalConfig>()
         val terminalSessionRepository = get<TerminalSessionRepository>()
         val terminalProcessManager = get<TerminalProcessManager>()
+        val terminalSessionExpiryManager = get<TerminalSessionExpiryManager>()
         val monitoringService = get<TerminalMonitoringService>()
 
         val sessionService = TerminalSessionService(
             terminalConfig = terminalConfig,
             terminalSessionRepository = terminalSessionRepository,
-            terminalProcessManager = terminalProcessManager
+            terminalProcessManager = terminalProcessManager,
+            terminalSessionExpiryManager = terminalSessionExpiryManager
         )
 
         // Initialize gauges
