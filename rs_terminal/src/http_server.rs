@@ -8,21 +8,24 @@ use crate::session::SessionManager;
 
 // 响应数据结构
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalResizeResponse {
-    pub sessionId: String,
-    pub terminalSize: TerminalSize,
+    pub session_id: String,
+    pub terminal_size: TerminalSize,
     pub status: String,
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalInterruptResponse {
-    pub sessionId: String,
+    pub session_id: String,
     pub status: String,
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalTerminateResponse {
-    pub sessionId: String,
+    pub session_id: String,
     pub reason: String,
     pub status: String,
 }
@@ -41,18 +44,19 @@ pub struct TerminalSize {
 
 // 终端会话
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalSession {
     pub id: String,
-    pub userId: String,
+    pub user_id: String,
     pub title: Option<String>,
-    pub workingDirectory: String,
-    pub shellType: String,
+    pub working_directory: String,
+    pub shell_type: String,
     pub status: String,
-    pub terminalSize: TerminalSize,
-    pub createdAt: u64,
-    pub updatedAt: u64,
-    pub lastActiveTime: u64,
-    pub expiredAt: u64,
+    pub terminal_size: TerminalSize,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub last_active_time: u64,
+    pub expired_at: u64,
 }
 
 // 请求参数
@@ -101,16 +105,16 @@ fn create_default_terminal_session(
     
     TerminalSession {
         id,
-        userId: user_id,
+        user_id,
         title,
-        workingDirectory: working_directory,
-        shellType: shell_type,
+        working_directory,
+        shell_type,
         status,
-        terminalSize: TerminalSize { columns, rows },
-        createdAt: now,
-        updatedAt: now,
-        lastActiveTime: now,
-        expiredAt: now + config.terminal.session_timeout,
+        terminal_size: TerminalSize { columns, rows },
+        created_at: now,
+        updated_at: now,
+        last_active_time: now,
+        expired_at: now + config.terminal.session_timeout,
     }
 }
 
@@ -305,8 +309,8 @@ async fn resize_terminal(
         None => {
             // 返回400 Bad Request
             return (StatusCode::BAD_REQUEST, Json(TerminalResizeResponse {
-                sessionId: id,
-                terminalSize: TerminalSize { columns: 0, rows: 0 },
+                session_id: id,
+                terminal_size: TerminalSize { columns: 0, rows: 0 },
                 status: "ERROR".to_string(),
             }));
         },
@@ -317,8 +321,8 @@ async fn resize_terminal(
         None => {
             // 返回400 Bad Request
             return (StatusCode::BAD_REQUEST, Json(TerminalResizeResponse {
-                sessionId: id,
-                terminalSize: TerminalSize { columns: cols, rows: 0 },
+                session_id: id,
+                terminal_size: TerminalSize { columns: cols, rows: 0 },
                 status: "ERROR".to_string(),
             }));
         },
@@ -328,8 +332,8 @@ async fn resize_terminal(
     match session_manager.resize_session(&id, cols, rows).await {
         Ok(_) => {
             (StatusCode::OK, Json(TerminalResizeResponse {
-                sessionId: id,
-                terminalSize: TerminalSize { columns: cols, rows: rows },
+                session_id: id,
+                terminal_size: TerminalSize { columns: cols, rows: rows },
                 status: "ACTIVE".to_string(),
             }))
         },
@@ -339,15 +343,15 @@ async fn resize_terminal(
             if e.to_string().contains("Session not found") {
                 // 返回404 Not Found
                 (StatusCode::NOT_FOUND, Json(TerminalResizeResponse {
-                    sessionId: id,
-                    terminalSize: TerminalSize { columns: cols, rows: rows },
+                    session_id: id,
+                    terminal_size: TerminalSize { columns: cols, rows: rows },
                     status: "ERROR".to_string(),
                 }))
             } else {
                 // 返回500 Internal Server Error
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalResizeResponse {
-                    sessionId: id,
-                    terminalSize: TerminalSize { columns: cols, rows: rows },
+                    session_id: id,
+                    terminal_size: TerminalSize { columns: cols, rows: rows },
                     status: "ERROR".to_string(),
                 }))
             }
@@ -364,7 +368,7 @@ async fn interrupt_terminal(
     if !session_manager.session_exists(&id).await {
         // 返回404 Not Found
         return (StatusCode::NOT_FOUND, Json(TerminalInterruptResponse {
-            sessionId: id,
+            session_id: id,
             status: "ERROR".to_string(),
         }));
     }
@@ -373,7 +377,7 @@ async fn interrupt_terminal(
     match session_manager.write_to_session(&id, "\x03").await {
         Ok(_) => {
             (StatusCode::OK, Json(TerminalInterruptResponse {
-                sessionId: id,
+                session_id: id,
                 status: "interrupted".to_string(),
             }))
         },
@@ -381,7 +385,7 @@ async fn interrupt_terminal(
             log::error!("Failed to interrupt session {}: {}", id, e);
             // 返回500 Internal Server Error
             (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalInterruptResponse {
-                sessionId: id,
+                session_id: id,
                 status: "ERROR".to_string(),
             }))
         }
@@ -397,7 +401,7 @@ async fn terminate_session(
     match session_manager.close_session(&id).await {
         Ok(_) => {
             (StatusCode::OK, Json(TerminalTerminateResponse {
-                sessionId: id,
+                session_id: id,
                 reason: "User terminated".to_string(),
                 status: "TERMINATED".to_string(),
             }))
@@ -408,14 +412,14 @@ async fn terminate_session(
             if e.to_string().contains("Session not found") {
                 // 返回404 Not Found
                 (StatusCode::NOT_FOUND, Json(TerminalTerminateResponse {
-                    sessionId: id,
+                    session_id: id,
                     reason: e.to_string(),
                     status: "ERROR".to_string(),
                 }))
             } else {
                 // 返回500 Internal Server Error
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(TerminalTerminateResponse {
-                    sessionId: id,
+                    session_id: id,
                     reason: e.to_string(),
                     status: "ERROR".to_string(),
                 }))

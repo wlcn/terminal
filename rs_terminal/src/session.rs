@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use uuid::Uuid;
 
-use crate::config::{Config, ShellConfig};
+use crate::config::Config;
 use crate::terminal::TerminalProcess;
 
 // 会话状态枚举
@@ -20,15 +20,26 @@ pub(crate) struct Session {
     client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>,
     // 会话状态 - 使用AtomicU8确保原子更新
     status: Arc<std::sync::atomic::AtomicU8>,
+    // 会话过期时间
+    expired_at: u64,
+    // 最后活动时间
+    last_active_time: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl Session {
     // 创建新会话
-    pub(crate) fn new(terminal: TerminalProcess) -> Self {
+    pub(crate) fn new(terminal: TerminalProcess, session_timeout: u64) -> Self {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        
         Self {
             terminal,
             client_senders: Arc::new(Mutex::new(Vec::new())),
             status: Arc::new(std::sync::atomic::AtomicU8::new(SessionStatus::Active as u8)),
+            expired_at: now + session_timeout,
+            last_active_time: Arc::new(std::sync::atomic::AtomicU64::new(now)),
         }
     }
     
@@ -45,9 +56,33 @@ impl Session {
     pub(crate) fn set_status(&self, new_status: SessionStatus) {
         self.status.store(new_status as u8, std::sync::atomic::Ordering::SeqCst);
     }
+    
+    // 获取最后活动时间
+    pub(crate) fn get_last_active_time(&self) -> u64 {
+        self.last_active_time.load(std::sync::atomic::Ordering::SeqCst)
+    }
+    
+    // 更新最后活动时间
+    pub(crate) fn update_last_active_time(&self) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        self.last_active_time.store(now, std::sync::atomic::Ordering::SeqCst);
+    }
+    
+    // 检查会话是否过期
+    pub(crate) fn is_expired(&self) -> bool {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        now > self.expired_at
+    }
 }
 
 // 会话管理器 - 完全线程安全设计
+#[derive(Clone)]
 pub struct SessionManager {
     // 使用RwLock保护会话映射，允许多读单写
     sessions: Arc<RwLock<HashMap<String, Session>>>,
@@ -57,19 +92,21 @@ pub struct SessionManager {
 impl SessionManager {
     // 创建新的会话管理器
     pub fn new(config: Arc<Config>) -> Self {
-        Self {
+        let session_manager = Self {
             sessions: Arc::new(RwLock::new(HashMap::new())),
-            config,
-        }
+            config: config.clone(),
+        };
+        
+        // 启动会话过期检查任务
+        let session_manager_clone = session_manager.clone();
+        tokio::spawn(async move {
+            session_manager_clone.session_expiry_checker().await;
+        });
+        
+        session_manager
     }
     
-    // 获取共享引用
-    pub fn clone_arc(&self) -> Arc<Self> {
-        Arc::new(Self {
-            sessions: self.sessions.clone(),
-            config: self.config.clone(),
-        })
-    }
+
     
     // 创建新会话 - 线程安全，只需要&self
     pub async fn create_session(&self) -> anyhow::Result<String> {
@@ -83,7 +120,7 @@ impl SessionManager {
         let terminal = TerminalProcess::new_with_config(default_shell_config).await?;
         
         // 创建会话对象
-        let session = Session::new(terminal.clone());
+        let session = Session::new(terminal.clone(), self.config.terminal.session_timeout);
         
         // 获取会话的client_senders
         let client_senders = session.client_senders.clone();
@@ -195,6 +232,9 @@ impl SessionManager {
             }
         };
         
+        // 更新最后活动时间
+        session.update_last_active_time();
+        
         log::debug!("Got session clone, about to call write_input");
         // 释放会话管理器锁后，执行异步写入
         session.terminal.write_input(data).await?;
@@ -239,11 +279,7 @@ impl SessionManager {
         }
     }
     
-    // 获取所有会话ID - 线程安全，只需要&self
-    pub async fn get_all_session_ids(&self) -> Vec<String> {
-        let sessions_read = self.sessions.read().unwrap();
-        sessions_read.keys().cloned().collect()
-    }
+
     
     // 获取所有会话及其状态 - 线程安全，只需要&self
     pub async fn get_all_sessions_with_status(&self) -> Vec<(String, SessionStatus)> {
@@ -264,10 +300,76 @@ impl SessionManager {
             }
         };
         
+        // 更新最后活动时间
+        session.update_last_active_time();
+        
         // 释放会话管理器锁后，执行异步调整大小
         session.terminal.resize(columns, rows).await?;
         
         log::info!("Resized session {} to {} columns x {} rows", session_id, columns, rows);
+        
+        Ok(())
+    }
+    
+    // 会话过期检查器 - 定期检查并关闭过期会话
+    async fn session_expiry_checker(&self) {
+        log::info!("Starting session expiry checker");
+        
+        // 每60秒检查一次会话过期
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+        
+        loop {
+            interval.tick().await;
+            log::debug!("Running session expiry check");
+            
+            // 获取所有会话ID
+            let session_ids = {
+                let sessions_read = self.sessions.read().unwrap();
+                sessions_read.keys().cloned().collect::<Vec<String>>()
+            };
+            
+            // 检查每个会话是否过期
+            for session_id in session_ids {
+                // 获取会话引用
+                let session = {
+                    let sessions_read = self.sessions.read().unwrap();
+                    match sessions_read.get(&session_id) {
+                        Some(session) => session.clone(),
+                        None => continue,
+                    }
+                };
+                
+                // 检查会话是否过期
+                if session.is_expired() {
+                    log::info!("Session {} has expired, closing it", session_id);
+                    
+                    // 关闭会话
+                    if let Err(e) = self.close_session(&session_id).await {
+                        log::error!("Failed to close expired session {}: {}", session_id, e);
+                    } else {
+                        // 从会话映射中移除
+                        let mut sessions_write = self.sessions.write().unwrap();
+                        sessions_write.remove(&session_id);
+                        log::info!("Removed expired session {}", session_id);
+                    }
+                }
+            }
+        }
+    }
+    
+    // 更新会话最后活动时间
+    pub async fn update_session_activity(&self, session_id: &str) -> anyhow::Result<()> {
+        // 获取会话引用
+        let session = {
+            let sessions_read = self.sessions.read().unwrap();
+            match sessions_read.get(session_id) {
+                Some(session) => session.clone(),
+                None => anyhow::bail!("Session not found: {}", session_id),
+            }
+        };
+        
+        // 更新最后活动时间
+        session.update_last_active_time();
         
         Ok(())
     }

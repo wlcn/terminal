@@ -2,7 +2,6 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 
 use crate::session::SessionManager;
-use crate::terminal::TerminalProcess;
 
 // 终端服务 - 处理PTY交互的核心逻辑
 pub struct TerminalService {

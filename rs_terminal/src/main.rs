@@ -4,7 +4,6 @@ use std::fs;
 
 mod config;
 mod http_server;
-mod protocol;
 mod protocol_adapter;
 mod session;
 mod terminal;
@@ -12,7 +11,7 @@ mod terminal_service;
 mod transport;
 
 use crate::config::Config;
-use crate::protocol_adapter::{ProtocolAdapter, ProtocolAdapterFactory};
+use crate::protocol_adapter::ProtocolAdapterFactory;
 use crate::session::SessionManager;
 use crate::terminal_service::TerminalService;
 
@@ -50,7 +49,6 @@ async fn main() -> anyhow::Result<()> {
     
     // 创建并启动WebSocket适配器
     let websocket_adapter = ProtocolAdapterFactory::create_websocket_adapter(terminal_service.clone(), config.clone());
-    let websocket_config = config.clone();
     tokio::spawn(async move {
         if let Err(e) = websocket_adapter.start().await {
             log::error!("WebSocket server error: {}", e);
@@ -59,7 +57,6 @@ async fn main() -> anyhow::Result<()> {
     
     // 创建并启动WebTransport适配器
     let webtransport_adapter = ProtocolAdapterFactory::create_webtransport_adapter(terminal_service.clone(), config.clone());
-    let webtransport_config = config.clone();
     tokio::spawn(async move {
         if let Err(e) = webtransport_adapter.start().await {
             log::error!("WebTransport server error: {}", e);

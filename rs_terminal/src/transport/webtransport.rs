@@ -8,7 +8,6 @@ use tokio::sync::mpsc;
 
 // 使用wtransport 0.6.1正确的导入路径
 use wtransport::endpoint::IncomingSession;
-use wtransport::endpoint::endpoint_side;
 use wtransport::Endpoint;
 use wtransport::ServerConfig;
 use wtransport::Identity;
@@ -113,7 +112,7 @@ async fn handle_connection(
     session_id: String,
 ) -> anyhow::Result<()> {
     // 创建终端输出通道
-    let (terminal_output_tx, mut terminal_output_rx) = mpsc::channel::<String>(100);
+    let (terminal_output_tx, terminal_output_rx) = mpsc::channel::<String>(100);
     
     // 添加客户端发送者到会话
     terminal_service.handle_terminal_connection(&session_id, terminal_output_tx.clone()).await?;
@@ -133,7 +132,7 @@ async fn handle_connection(
 
 // 处理终端输出，发送到WebTransport客户端
 async fn handle_terminal_output(
-    mut connection: wtransport::Connection,
+    connection: wtransport::Connection,
     mut terminal_output_rx: mpsc::Receiver<String>,
 ) -> anyhow::Result<()> {
     while let Some(output) = terminal_output_rx.recv().await {
@@ -149,7 +148,7 @@ async fn handle_terminal_output(
 
 // 处理客户端输入，写入到终端
 async fn handle_client_input(
-    mut connection: wtransport::Connection,
+    connection: wtransport::Connection,
     terminal_service: Arc<TerminalService>,
     session_id: String,
 ) -> anyhow::Result<()> {
