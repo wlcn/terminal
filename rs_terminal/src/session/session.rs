@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use uuid::Uuid;
 
 use crate::config::Config;
-use crate::terminal::TerminalProcess;
+use crate::pty::terminal::TerminalProcess;
 
 // 会话状态枚举
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

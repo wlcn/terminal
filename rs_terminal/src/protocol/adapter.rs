@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::future::Future;
 use std::pin::Pin;
 
-use crate::terminal_service::TerminalService;
 use crate::config::Config;
+use crate::pty::terminal_service::TerminalService;
 
 // 协议适配器接口 - 定义通讯协议的通用接口
 pub trait ProtocolAdapter {
@@ -21,7 +21,7 @@ impl ProtocolAdapterFactory {
         config: Arc<Config>
     ) -> Arc<dyn ProtocolAdapter + Send + Sync> {
         Arc::new(
-            crate::transport::websocket::WebSocketAdapter::new(terminal_service, config)
+            crate::transport::websocket::websocket::WebSocketAdapter::new(terminal_service, config)
         )
     }
     
@@ -31,7 +31,7 @@ impl ProtocolAdapterFactory {
         config: Arc<Config>
     ) -> Arc<dyn ProtocolAdapter + Send + Sync> {
         Arc::new(
-            crate::transport::webtransport::WebTransportAdapter::new(terminal_service, config)
+            crate::transport::webtransport::webtransport::WebTransportAdapter::new(terminal_service, config)
         )
     }
 }

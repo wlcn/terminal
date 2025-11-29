@@ -13,8 +13,8 @@ use wtransport::ServerConfig;
 use wtransport::Identity;
 
 use crate::config::Config;
-use crate::protocol_adapter::ProtocolAdapter;
-use crate::terminal_service::TerminalService;
+use crate::protocol::adapter::ProtocolAdapter;
+use crate::pty::terminal_service::TerminalService;
 
 // WebTransport适配器 - 实现ProtocolAdapter接口
 pub struct WebTransportAdapter {

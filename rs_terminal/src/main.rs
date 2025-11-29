@@ -3,17 +3,15 @@ use std::sync::Arc;
 use std::fs;
 
 mod config;
-mod http_server;
-mod protocol_adapter;
+mod pty;
+mod protocol;
 mod session;
-mod terminal;
-mod terminal_service;
 mod transport;
 
 use crate::config::Config;
-use crate::protocol_adapter::ProtocolAdapterFactory;
-use crate::session::SessionManager;
-use crate::terminal_service::TerminalService;
+use crate::protocol::adapter::ProtocolAdapterFactory;
+use crate::session::session::SessionManager;
+use crate::pty::terminal_service::TerminalService;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -42,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     let http_session_manager = session_manager.clone();
     let http_config = config.clone();
     tokio::spawn(async move {
-        if let Err(e) = crate::http_server::start_server(http_session_manager, http_config).await {
+        if let Err(e) = crate::transport::http::http_server::start_server(http_session_manager, http_config).await {
             log::error!("HTTP server error: {}", e);
         }
     });

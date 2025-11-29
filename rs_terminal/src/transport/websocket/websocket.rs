@@ -9,8 +9,8 @@ use futures_util::{stream::StreamExt, sink::SinkExt};
 use tokio::sync::mpsc;
 
 use crate::config::Config;
-use crate::protocol_adapter::ProtocolAdapter;
-use crate::terminal_service::TerminalService;
+use crate::protocol::adapter::ProtocolAdapter;
+use crate::pty::terminal_service::TerminalService;
 
 // WebSocket适配器 - 实现ProtocolAdapter接口
 pub struct WebSocketAdapter {

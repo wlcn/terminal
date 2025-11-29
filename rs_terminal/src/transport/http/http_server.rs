@@ -4,7 +4,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::config::Config;
-use crate::session::SessionManager;
+use crate::session::session::{SessionManager, SessionStatus};
 
 // 响应数据结构
 #[derive(Serialize)]
@@ -237,10 +237,10 @@ async fn get_all_sessions(
     // 创建会话响应列表
     let sessions: Vec<TerminalSession> = sessions_with_status.into_iter().map(|(session_id, status)| {
         // 转换状态为字符串
-        let status_str = match status {
-            crate::session::SessionStatus::Active => "ACTIVE".to_string(),
-            crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
-        };
+            let status_str = match status {
+                SessionStatus::Active => "ACTIVE".to_string(),
+                SessionStatus::Terminated => "TERMINATED".to_string(),
+            };
         
         create_default_terminal_session(
             session_id.clone(),
@@ -285,8 +285,8 @@ async fn get_session_by_id(
     
     // 转换状态为字符串
     let status_str = match status {
-        crate::session::SessionStatus::Active => "ACTIVE".to_string(),
-        crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
+        SessionStatus::Active => "ACTIVE".to_string(),
+        SessionStatus::Terminated => "TERMINATED".to_string(),
     };
     
     // 返回会话详情
@@ -446,8 +446,8 @@ async fn get_session_status(
         Ok(status) => {
             // 转换状态为字符串
             let status_str = match status {
-                crate::session::SessionStatus::Active => "ACTIVE".to_string(),
-                crate::session::SessionStatus::Terminated => "TERMINATED".to_string(),
+                SessionStatus::Active => "ACTIVE".to_string(),
+                SessionStatus::Terminated => "TERMINATED".to_string(),
             };
             
             (StatusCode::OK, Json(TerminalStatusResponse {
