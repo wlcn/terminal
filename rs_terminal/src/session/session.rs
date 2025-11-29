@@ -58,7 +58,6 @@ impl Session {
     }
     
     // 获取最后活动时间
-    #[allow(dead_code)]
     pub(crate) fn get_last_active_time(&self) -> u64 {
         self.last_active_time.load(std::sync::atomic::Ordering::SeqCst)
     }
@@ -244,19 +243,20 @@ impl SessionManager {
         Ok(())
     }
     
-    // 关闭会话 - 线程安全，只需要&self
+    // 关闭会话 - 线程安全，只需要&self，幂等设计
     pub async fn close_session(&self, session_id: &str) -> anyhow::Result<()> {
-        // 获取会话引用
+        // 先从映射中移除会话，避免竞争条件
         let session = {
-            let sessions_read = self.sessions.read().unwrap();
-            match sessions_read.get(session_id) {
-                Some(session) => session.clone(),
+            let mut sessions_write = self.sessions.write().unwrap();
+            match sessions_write.remove(session_id) {
+                Some(session) => {
+                    // 更新会话状态为Terminated
+                    session.set_status(SessionStatus::Terminated);
+                    session
+                },
                 None => anyhow::bail!("Session not found: {}", session_id),
             }
         };
-        
-        // 更新会话状态为Terminated
-        session.set_status(SessionStatus::Terminated);
         
         // 释放会话管理器锁后，执行异步关闭
         session.terminal.close().await?;
@@ -347,14 +347,9 @@ impl SessionManager {
                 if session.is_expired() {
                     log::info!("Session {} has expired (last active: {}), closing it", session_id, last_active_time);
                     
-                    // 关闭会话
+                    // 关闭会话 - close_session方法已经包含了从映射中移除的逻辑
                     if let Err(e) = self.close_session(&session_id).await {
                         log::error!("Failed to close expired session {}: {}", session_id, e);
-                    } else {
-                        // 从会话映射中移除
-                        let mut sessions_write = self.sessions.write().unwrap();
-                        sessions_write.remove(&session_id);
-                        log::info!("Removed expired session {}", session_id);
                     }
                 } else {
                     log::debug!("Session {} is active (last active: {})
@@ -365,7 +360,6 @@ impl SessionManager {
     }
     
     // 更新会话最后活动时间
-    #[allow(dead_code)]
     pub async fn update_session_activity(&self, session_id: &str) -> anyhow::Result<()> {
         // 获取会话引用
         let session = {
