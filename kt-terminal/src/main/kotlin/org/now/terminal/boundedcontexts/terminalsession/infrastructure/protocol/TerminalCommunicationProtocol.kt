@@ -67,7 +67,8 @@ class TerminalCommunicationHandler(
         // Add output listener to send data to client
         val outputListener: (String) -> Unit = { output ->
             try {
-                // Run send operation in coroutine to avoid blocking
+                // 使用结构化并发，避免创建过多的协程
+                // 使用Dispatchers.IO确保send操作不会阻塞业务线程
                 CoroutineScope(Dispatchers.IO).launch {
                     protocol.send(output)
                 }

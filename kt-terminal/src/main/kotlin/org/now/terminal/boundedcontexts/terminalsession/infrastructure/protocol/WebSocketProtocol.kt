@@ -34,6 +34,9 @@ class WebSocketProtocol(
                 val text = frame.readText()
                 log.trace("Received data from WebSocket client: {}", text)
                 text
+            } else if (frame is Frame.Close) {
+                log.debug("Received close frame from WebSocket client")
+                null
             } else {
                 log.debug("Received non-text frame from WebSocket client: {}", frame.frameType)
                 null
