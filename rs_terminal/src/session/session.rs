@@ -142,8 +142,10 @@ impl SessionManager {
     
     // 启动终端输出监听任务 - 独立异步任务，不阻塞主线程
     async fn spawn_terminal_listener(&self, terminal: TerminalProcess, session_id: String, client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>) {
+        let session_id_clone = session_id.clone();
         tokio::spawn(async move { 
             let mut buffer = [0; 1024];
+            let session_id = session_id_clone;
             
             loop {
                 // 检查终端进程是否还在运行
@@ -152,13 +154,25 @@ impl SessionManager {
                     break;
                 }
                 
-                // 读取终端输出 - 只在读取时持有终端锁
-                let output = match terminal.read_output(&mut buffer).await {
-                    Ok(output) => output,
-                    Err(e) => {
-                        log::error!("Error reading terminal output for session {}: {}", session_id, e);
-                        // 继续循环，不要因为一次错误就退出
-                        continue;
+                // 读取终端输出 - 使用非阻塞方式，避免长时间等待
+                let output = tokio::select! {
+                    // 尝试读取终端输出，超时时间为50毫秒
+                    output_result = tokio::time::timeout(
+                        tokio::time::Duration::from_millis(50),
+                        terminal.read_output(&mut buffer)
+                    ) => {
+                        match output_result {
+                            Ok(Ok(output)) => output,
+                            Ok(Err(e)) => {
+                                log::error!("Error reading terminal output for session {}: {}", session_id, e);
+                                // 继续循环，不要因为一次错误就退出
+                                continue;
+                            },
+                            Err(_) => {
+                                // 超时，没有数据可读，继续循环
+                                String::new()
+                            }
+                        }
                     }
                 };
                 
@@ -175,12 +189,15 @@ impl SessionManager {
                     for sender in senders {
                         let output_clone = output.clone();
                         let client_senders_clone = client_senders.clone();
+                        let session_id_clone = session_id.clone();
                         tokio::spawn(async move {
                             if let Err(_e) = sender.send(output_clone).await {
                                 log::debug!("Client sender closed, removing from session");
                                 // 异步移除失效的发送者
                                 let mut client_senders_lock = client_senders_clone.lock().unwrap();
                                 client_senders_lock.retain(|s| !std::ptr::eq(s, &sender));
+                            } else {
+                                log::debug!("Sent terminal output to client for session {}", session_id_clone);
                             }
                         });
                     }

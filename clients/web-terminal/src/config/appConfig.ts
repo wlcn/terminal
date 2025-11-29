@@ -15,7 +15,7 @@ const getBaseUrl = () => {
 // 动态获取WebSocket URL
 const getWsUrl = () => {
   if (import.meta.env.DEV) {
-    return 'ws://localhost:8080';
+    return 'ws://localhost:8081';
   } else {
     // 生产环境根据当前协议生成正确的WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
