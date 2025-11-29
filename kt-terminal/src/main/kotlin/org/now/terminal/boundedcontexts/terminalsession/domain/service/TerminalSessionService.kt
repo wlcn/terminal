@@ -53,8 +53,11 @@ class TerminalSessionService(
 
     fun getSessionById(id: String): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            // 更新活动时间
-            updateSessionActivity(it)
+            // 使用领域模型的方法更新活动时间和过期时间
+            val now = System.currentTimeMillis()
+            it.updateActivity(now)
+            it.updateExpiryTime(sessionTimeoutMs, now)
+            terminalSessionRepository.update(it)
         }
     }
 
@@ -68,8 +71,8 @@ class TerminalSessionService(
 
     fun resizeTerminal(id: String, columns: Int, rows: Int): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            it.terminalSize = TerminalSize(columns, rows)
-            updateSessionActivity(it)
+            // 使用领域模型的resize方法
+            it.resize(columns, rows)
             terminalSessionRepository.update(it)
         }
     }
@@ -79,8 +82,8 @@ class TerminalSessionService(
             // 取消过期检查
             terminalSessionExpiryManager.cancelExpiryCheck(id)
 
-            it.status = TerminalSessionStatus.TERMINATED
-            it.updatedAt = System.currentTimeMillis()
+            // 使用领域模型的terminate方法
+            it.terminate()
 
             // 清理相关资源
             terminalProcessManager?.terminateProcess(id)
@@ -92,8 +95,8 @@ class TerminalSessionService(
 
     fun updateSessionStatus(id: String, status: TerminalSessionStatus): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            it.status = status
-            updateSessionActivity(it)
+            // 使用领域模型的updateStatus方法
+            it.updateStatus(status)
             terminalSessionRepository.update(it)
         }
     }
@@ -115,17 +118,18 @@ class TerminalSessionService(
      */
     fun updateSessionActivity(session: TerminalSession) {
         val now = System.currentTimeMillis()
-        session.lastActiveTime = now
-        session.updatedAt = now
-        session.expiredAt = now + sessionTimeoutMs
+        
+        // 使用领域模型的方法更新活动时间和过期时间
+        session.updateActivity(now)
+        session.updateExpiryTime(sessionTimeoutMs, now)
 
         // 更新存储中的会话
         terminalSessionRepository.update(session)
 
         // 重新启动过期检查
-        terminalSessionExpiryManager.restartExpiryCheck(session) { expiredSession ->
+        terminalSessionExpiryManager.restartExpiryCheck(session) {
             // 会话过期回调，从存储中移除
-            terminalSessionRepository.deleteById(expiredSession.id)
+            terminalSessionRepository.deleteById(session.id)
         }
     }
 
