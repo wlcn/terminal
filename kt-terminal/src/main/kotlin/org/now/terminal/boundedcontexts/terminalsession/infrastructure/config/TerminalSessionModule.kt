@@ -26,12 +26,8 @@ val terminalSessionModule = module {
     // Terminal configuration service
     single { TerminalConfigService(get()) }
 
-    // Terminal configuration - 使用异步加载，提高启动速度
-    single { 
-        runBlocking { 
-            get<TerminalConfigService>().loadConfigAsync() 
-        } 
-    }
+    // Terminal configuration
+    single { get<TerminalConfigService>().loadConfig() }
 
     // Session storage
     single<TerminalSessionRepository> { InMemoryTerminalSessionRepository() }
