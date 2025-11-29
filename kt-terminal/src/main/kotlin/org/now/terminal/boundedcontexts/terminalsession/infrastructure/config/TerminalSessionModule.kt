@@ -2,6 +2,7 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.config
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import kotlinx.coroutines.runBlocking
 import org.koin.dsl.module
 import org.now.terminal.boundedcontexts.terminalsession.domain.InMemoryTerminalSessionRepository
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionRepository
@@ -25,8 +26,12 @@ val terminalSessionModule = module {
     // Terminal configuration service
     single { TerminalConfigService(get()) }
 
-    // Terminal configuration
-    single { get<TerminalConfigService>().loadConfig() }
+    // Terminal configuration - 使用异步加载，提高启动速度
+    single { 
+        runBlocking { 
+            get<TerminalConfigService>().loadConfigAsync() 
+        } 
+    }
 
     // Session storage
     single<TerminalSessionRepository> { InMemoryTerminalSessionRepository() }

@@ -139,10 +139,13 @@ class Pty4jTerminalProcess(
 
         try {
             while (process.isAlive && !isTerminated) {
-                // 使用异步IO读取终端输出，避免阻塞线程
+                // 使用readNBytes()读取终端输出，配合flowOn(Dispatchers.IO)避免阻塞主线程
+                // readNBytes()是Java 11+的方法，比read()更高效，一次读取多个字节
                 len = inputStream.readNBytes(buffer, 0, buffer.size)
-                val output = String(buffer, 0, len)
-                emit(output)
+                if (len > 0) {
+                    val output = String(buffer, 0, len)
+                    emit(output)
+                }
             }
         } catch (e: Exception) {
             // Process closed or error occurred

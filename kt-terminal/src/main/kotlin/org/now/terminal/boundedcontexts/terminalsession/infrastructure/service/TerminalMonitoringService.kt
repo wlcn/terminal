@@ -6,6 +6,9 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
@@ -13,7 +16,9 @@ import kotlinx.coroutines.launch
  * Collects metrics about terminal sessions and processes
  */
 class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
-
+    // 使用共享的协程作用域，避免每次记录指标都创建新协程
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
     // Counters
     private val sessionCreatedCounter: Counter = meterRegistry.counter("terminal.sessions.created")
     private val sessionTerminatedCounter: Counter = meterRegistry.counter("terminal.sessions.terminated")
@@ -21,7 +26,7 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
     private val processTerminatedCounter: Counter = meterRegistry.counter("terminal.processes.terminated")
     private val bytesWrittenCounter: Counter = meterRegistry.counter("terminal.bytes.written")
     private val bytesReadCounter: Counter = meterRegistry.counter("terminal.bytes.read")
-
+    
     // Gauges
     private var activeSessionsGauge: Gauge? = null
     private var activeProcessesGauge: Gauge? = null
@@ -74,52 +79,60 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
      * Record bytes written to terminal
      */
     fun recordBytesWritten(bytes: Int) {
-        // 使用异步方式记录指标，避免阻塞业务线程
-        CoroutineScope(Dispatchers.Default).launch {
+        // 使用共享的协程作用域记录指标，避免阻塞业务线程
+        scope.launch {
             bytesWrittenCounter.increment(bytes.toDouble())
         }
     }
-
+    
     /**
      * Record bytes read from terminal
      */
     fun recordBytesRead(bytes: Int) {
-        // 使用异步方式记录指标，避免阻塞业务线程
-        CoroutineScope(Dispatchers.Default).launch {
+        // 使用共享的协程作用域记录指标，避免阻塞业务线程
+        scope.launch {
             bytesReadCounter.increment(bytes.toDouble())
         }
     }
-
+    
     /**
      * Record session duration
      */
     fun recordSessionDuration(durationMs: Long) {
-        // 使用异步方式记录指标，避免阻塞业务线程
-        CoroutineScope(Dispatchers.Default).launch {
+        // 使用共享的协程作用域记录指标，避免阻塞业务线程
+        scope.launch {
             meterRegistry.timer("terminal.sessions.duration")
                 .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
         }
     }
-
+    
     /**
      * Record process duration
      */
     fun recordProcessDuration(durationMs: Long) {
-        // 使用异步方式记录指标，避免阻塞业务线程
-        CoroutineScope(Dispatchers.Default).launch {
+        // 使用共享的协程作用域记录指标，避免阻塞业务线程
+        scope.launch {
             meterRegistry.timer("terminal.processes.duration")
                 .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
         }
     }
-
+    
     /**
      * Record error count
      */
     fun recordError(errorType: String) {
-        // 使用异步方式记录指标，避免阻塞业务线程
-        CoroutineScope(Dispatchers.Default).launch {
+        // 使用共享的协程作用域记录指标，避免阻塞业务线程
+        scope.launch {
             meterRegistry.counter("terminal.errors", listOf(Tag.of("type", errorType)))
                 .increment()
         }
+    }
+    
+    /**
+     * 关闭监控服务，清理资源
+     */
+    fun shutdown() {
+        // 取消所有协程
+        scope.cancel()
     }
 }
