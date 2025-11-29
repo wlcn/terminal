@@ -1,9 +1,11 @@
 package org.now.terminal.infrastructure.config
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.callid.*
-import io.ktor.server.plugins.calllogging.*
+import io.ktor.http.HttpHeaders
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.plugins.callid.CallId
+import io.ktor.server.plugins.callid.callIdMdc
+import io.ktor.server.plugins.calllogging.CallLogging
 
 fun Application.configureMonitoring() {
     install(CallId) {

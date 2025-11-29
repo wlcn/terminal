@@ -1,11 +1,14 @@
 package org.now.terminal.infrastructure.config
 
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.autohead.*
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.application.log
+import io.ktor.server.plugins.autohead.AutoHeadResponse
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 
 
 fun Application.configureRouting() {
@@ -14,7 +17,7 @@ fun Application.configureRouting() {
         exception<Throwable> { call, cause ->
             // Log detailed error stack trace using Ktor's logging system
             call.application.log.error("Internal Server Error: ${cause.message}", cause)
-            call.respondText(text = "500: ${cause.message}" , status = HttpStatusCode.InternalServerError)
+            call.respondText(text = "500: ${cause.message}", status = HttpStatusCode.InternalServerError)
         }
     }
     routing {

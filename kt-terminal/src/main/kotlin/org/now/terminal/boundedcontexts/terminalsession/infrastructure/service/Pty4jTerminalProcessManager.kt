@@ -3,7 +3,6 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.service
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
 import com.pty4j.WinSize
-import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -21,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcess
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
+import org.slf4j.LoggerFactory
 
 private val log = LoggerFactory.getLogger(Pty4jTerminalProcessManager::class.java)
 
@@ -28,7 +28,12 @@ private val log = LoggerFactory.getLogger(Pty4jTerminalProcessManager::class.jav
 class Pty4jTerminalProcessManager : TerminalProcessManager {
     private val processes = ConcurrentHashMap<String, TerminalProcess>()
 
-    override fun createProcess(sessionId: String, workingDirectory: String, shellType: String, terminalSize: TerminalSize): TerminalProcess {
+    override fun createProcess(
+        sessionId: String,
+        workingDirectory: String,
+        shellType: String,
+        terminalSize: TerminalSize
+    ): TerminalProcess {
         val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType, terminalSize)
         processes[sessionId] = process
         process.startReading()
@@ -178,7 +183,7 @@ class Pty4jTerminalProcess(
     private fun cleanupResources() {
         // 标记为已终止，防止重复清理
         isTerminated = true
-        
+
         // Cancel all coroutines
         scope.cancel()
 
@@ -206,40 +211,43 @@ class Pty4jTerminalProcess(
             log.debug("Error destroying process for session {}: {}", sessionId, e.message)
         }
     }
-    
+
     override fun interrupt() {
         if (isTerminated) return
 
         // Send Ctrl+C signal
         write("\u0003")
     }
-    
+
     override fun addOutputListener(listener: (String) -> Unit) {
         if (isTerminated) return
 
         outputListeners.add(listener)
     }
-    
+
     override fun removeOutputListener(listener: (String) -> Unit) {
         outputListeners.remove(listener)
     }
-    
+
     override fun isAlive(): Boolean {
         return !isTerminated && process.isAlive
     }
-    
+
     /**
      * 使用closeable接口确保资源释放
      */
     fun close() {
         cleanupResources()
     }
-    
+
     /**
      * Finalizer as a safety net to ensure resources are released
      * 注意：finalize已被标记为过时，但仍作为安全网保留
      */
-    @Deprecated("Finalizers are deprecated and will be removed in a future release", replaceWith = ReplaceWith("close()"))
+    @Deprecated(
+        "Finalizers are deprecated and will be removed in a future release",
+        replaceWith = ReplaceWith("close()")
+    )
     protected fun finalize() {
         if (!isTerminated) {
             cleanupResources()

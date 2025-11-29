@@ -1,8 +1,10 @@
 package org.now.terminal.infrastructure.config
 
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import java.time.Instant
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -10,19 +12,18 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
-import java.time.Instant
 
 /**
  * Custom serializer for Java Instant type
  */
 object InstantSerializer : KSerializer<Instant> {
-    override val descriptor: SerialDescriptor = 
+    override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("Instant", PrimitiveKind.STRING)
-    
+
     override fun serialize(encoder: Encoder, value: Instant) {
         encoder.encodeString(value.toString())
     }
-    
+
     override fun deserialize(decoder: Decoder): Instant {
         return Instant.parse(decoder.decodeString())
     }

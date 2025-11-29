@@ -17,12 +17,12 @@ interface TerminalCommunicationProtocol {
      * Send data to client
      */
     suspend fun send(data: String)
-    
+
     /**
      * Receive data from client
      */
     suspend fun receive(): String?
-    
+
     /**
      * Close the connection
      */
@@ -41,30 +41,37 @@ class TerminalCommunicationHandler(
     private val terminalProcessService: TerminalProcessService
 ) {
     private val log = org.slf4j.LoggerFactory.getLogger(TerminalCommunicationHandler::class.java)
-    
+
     suspend fun handleCommunication() {
         log.debug("Starting terminal communication for session: {}", sessionId)
-        
+
         // Get or create terminal session
         val session = terminalSessionService.getSessionById(sessionId) ?: run {
             log.warn("Session not found: {}", sessionId)
             protocol.close("Session not found")
             return
         }
-        
-        log.debug("Found session: {}, shellType: {}, workingDirectory: {}", 
-            sessionId, session.shellType, session.workingDirectory)
-        
+
+        log.debug(
+            "Found session: {}, shellType: {}, workingDirectory: {}",
+            sessionId, session.shellType, session.workingDirectory
+        )
+
         // Get or create terminal process
         var process = terminalProcessService.getProcess(sessionId)
         if (process == null) {
             log.debug("Creating new terminal process for session: {}", sessionId)
-            process = terminalProcessService.createProcess(sessionId, session.workingDirectory, session.shellType, session.terminalSize)
+            process = terminalProcessService.createProcess(
+                sessionId,
+                session.workingDirectory,
+                session.shellType,
+                session.terminalSize
+            )
             log.debug("Created terminal process for session: {}", sessionId)
         } else {
             log.debug("Found existing terminal process for session: {}", sessionId)
         }
-        
+
         // Add output listener to send data to client
         val outputListener: (String) -> Unit = { output ->
             try {
@@ -78,17 +85,17 @@ class TerminalCommunicationHandler(
                 log.debug("Error sending output to client for session {}: {}", sessionId, e.message)
             }
         }
-        
+
         log.debug("Adding output listener for session: {}", sessionId)
         process.addOutputListener(outputListener)
-        
+
         try {
             // Receive data from client and send to terminal process
             log.debug("Starting to receive data from client for session: {}", sessionId)
             while (true) {
                 val data = protocol.receive() ?: break
                 log.trace("Received data from client for session {}: {}", sessionId, data)
-                
+
                 // Enhanced error handling for write operation
                 try {
                     val success = terminalProcessService.writeToProcess(sessionId, data)
@@ -113,7 +120,7 @@ class TerminalCommunicationHandler(
             // Cleanup
             log.debug("Cleaning up terminal communication for session: {}", sessionId)
             process.removeOutputListener(outputListener)
-            
+
             // Update session status to inactive
             try {
                 terminalSessionService.updateSessionStatus(sessionId, TerminalSessionStatus.INACTIVE)
@@ -121,7 +128,7 @@ class TerminalCommunicationHandler(
             } catch (e: Exception) {
                 log.error("Failed to update session status for session {}: {}", sessionId, e.message)
             }
-            
+
             log.debug("Cleanup completed for session: {}", sessionId)
         }
     }

@@ -1,10 +1,12 @@
 package org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol
 
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.server.websocket.DefaultWebSocketServerSession
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalCommunicationProtocol
 
 /**
  * WebSocket implementation of TerminalCommunicationProtocol
@@ -13,7 +15,7 @@ class WebSocketProtocol(
     private val session: DefaultWebSocketServerSession
 ) : TerminalCommunicationProtocol {
     private val log = org.slf4j.LoggerFactory.getLogger(WebSocketProtocol::class.java)
-    
+
     override suspend fun send(data: String) {
         try {
             log.trace("Sending data to WebSocket client: {}", data)
@@ -27,7 +29,7 @@ class WebSocketProtocol(
             throw e
         }
     }
-    
+
     override suspend fun receive(): String? {
         return try {
             val frame = session.incoming.receive()
@@ -51,7 +53,7 @@ class WebSocketProtocol(
             null
         }
     }
-    
+
     override suspend fun close(reason: String?) {
         val closeReason = reason ?: "Connection closed"
         log.debug("Closing WebSocket connection: {}", closeReason)

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
  * Collects metrics about terminal sessions and processes
  */
 class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
-    
+
     // Counters
     private val sessionCreatedCounter: Counter = meterRegistry.counter("terminal.sessions.created")
     private val sessionTerminatedCounter: Counter = meterRegistry.counter("terminal.sessions.terminated")
@@ -21,11 +21,11 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
     private val processTerminatedCounter: Counter = meterRegistry.counter("terminal.processes.terminated")
     private val bytesWrittenCounter: Counter = meterRegistry.counter("terminal.bytes.written")
     private val bytesReadCounter: Counter = meterRegistry.counter("terminal.bytes.read")
-    
+
     // Gauges
     private var activeSessionsGauge: Gauge? = null
     private var activeProcessesGauge: Gauge? = null
-    
+
     /**
      * Initialize gauges
      */
@@ -36,40 +36,40 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
         activeSessionsGauge = Gauge.builder("terminal.sessions.active", activeSessionsProvider)
             .description("Number of active terminal sessions")
             .register(meterRegistry)
-        
+
         activeProcessesGauge = Gauge.builder("terminal.processes.active", activeProcessesProvider)
             .description("Number of active terminal processes")
             .register(meterRegistry)
     }
-    
+
     /**
      * Increment session created counter
      */
     fun incrementSessionCreated() {
         sessionCreatedCounter.increment()
     }
-    
+
     /**
      * Increment session terminated counter
      */
     fun incrementSessionTerminated() {
         sessionTerminatedCounter.increment()
     }
-    
+
     /**
      * Increment process created counter
      */
     fun incrementProcessCreated() {
         processCreatedCounter.increment()
     }
-    
+
     /**
      * Increment process terminated counter
      */
     fun incrementProcessTerminated() {
         processTerminatedCounter.increment()
     }
-    
+
     /**
      * Record bytes written to terminal
      */
@@ -79,7 +79,7 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
             bytesWrittenCounter.increment(bytes.toDouble())
         }
     }
-    
+
     /**
      * Record bytes read from terminal
      */
@@ -89,7 +89,7 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
             bytesReadCounter.increment(bytes.toDouble())
         }
     }
-    
+
     /**
      * Record session duration
      */
@@ -100,7 +100,7 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
                 .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
         }
     }
-    
+
     /**
      * Record process duration
      */
@@ -111,7 +111,7 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
                 .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
         }
     }
-    
+
     /**
      * Record error count
      */

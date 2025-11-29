@@ -1,6 +1,6 @@
 package org.now.terminal
 
-import io.ktor.server.application.*
+import io.ktor.server.application.Application
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.config.configureTerminalSessionRoutes
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.config.configureTerminalWebSocketRoutes
 import org.now.terminal.boundedcontexts.terminalsession.infrastructure.config.configureTerminalWebTransportRoutes

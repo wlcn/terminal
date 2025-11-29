@@ -5,7 +5,7 @@
             <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %X{call-id} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    
+
     <!-- 文件输出 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/terminal-server.log</file>
@@ -21,13 +21,13 @@
             <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %X{call-id} %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
-    
+
     <!-- 设置默认日志级别为DEBUG -->
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>
-    
+
     <!-- 特定包的日志级别 -->
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
