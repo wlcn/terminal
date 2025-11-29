@@ -6,15 +6,14 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSes
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 class TerminalSessionService(
-    private val defaultShellType: String,
-    private val sessionTimeoutMs: Long = 30 * 60 * 1000, // 默认30分钟超时
+    private val terminalConfig: org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig,
+    private val sessionStorage: SessionStorage = InMemorySessionStorage(),
     private val terminalProcessManager: TerminalProcessManager? = null
 ) {
-    // 存储会话的ConcurrentHashMap
-    private val sessions = ConcurrentHashMap<String, TerminalSession>()
+    private val defaultShellType = terminalConfig.defaultShellType
+    private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
     
     // 会话过期管理器
     private val sessionExpiryManager = SessionExpiryManager(sessionTimeoutMs, terminalProcessManager)
@@ -34,47 +33,48 @@ class TerminalSessionService(
             workingDirectory = workingDirectory,
             shellType = shellType,
             status = TerminalSessionStatus.ACTIVE,
-            terminalSize = size ?: TerminalSize(80, 24),
+            terminalSize = size ?: terminalConfig.defaultTerminalSize,
             createdAt = now,
             updatedAt = now,
             lastActiveTime = now,
             expiredAt = now + sessionTimeoutMs
         )
-        sessions[session.id] = session
+        sessionStorage.save(session)
         
         // 为新会话启动过期检查
         sessionExpiryManager.startExpiryCheck(session) { expiredSession ->
-            // 会话过期回调，从map中移除
-            sessions.remove(expiredSession.id)
+            // 会话过期回调，从存储中移除
+            sessionStorage.deleteById(expiredSession.id)
         }
         
         return session
     }
     
     fun getSessionById(id: String): TerminalSession? {
-        return sessions[id]?.also {
+        return sessionStorage.getById(id)?.also {
             // 更新活动时间
             updateSessionActivity(it)
         }
     }
     
     fun getSessionsByUserId(userId: String): List<TerminalSession> {
-        return sessions.values.filter { it.userId == userId }
+        return sessionStorage.getByUserId(userId)
     }
     
     fun getAllSessions(): List<TerminalSession> {
-        return sessions.values.toList()
+        return sessionStorage.getAll()
     }
     
     fun resizeTerminal(id: String, columns: Int, rows: Int): TerminalSession? {
-        return sessions[id]?.also {
+        return sessionStorage.getById(id)?.also {
             it.terminalSize = TerminalSize(columns, rows)
             updateSessionActivity(it)
+            sessionStorage.update(it)
         }
     }
     
     fun terminateSession(id: String, reason: String? = null): TerminalSession? {
-        return sessions[id]?.also {
+        return sessionStorage.getById(id)?.also {
             // 取消过期检查
             sessionExpiryManager.cancelExpiryCheck(id)
             
@@ -84,15 +84,16 @@ class TerminalSessionService(
             // 清理相关资源
             terminalProcessManager?.terminateProcess(id)
             
-            // 从map中移除
-            sessions.remove(id)
+            // 从存储中移除
+            sessionStorage.deleteById(id)
         }
     }
     
     fun updateSessionStatus(id: String, status: TerminalSessionStatus): TerminalSession? {
-        return sessions[id]?.also {
+        return sessionStorage.getById(id)?.also {
             it.status = status
             updateSessionActivity(it)
+            sessionStorage.update(it)
         }
     }
     
@@ -100,7 +101,7 @@ class TerminalSessionService(
         // 取消过期检查
         sessionExpiryManager.cancelExpiryCheck(id)
         
-        val session = sessions.remove(id)
+        val session = sessionStorage.deleteById(id)
         if (session != null) {
             // 清理相关资源
             terminalProcessManager?.terminateProcess(id)
@@ -117,10 +118,13 @@ class TerminalSessionService(
         session.updatedAt = now
         session.expiredAt = now + sessionTimeoutMs
         
+        // 更新存储中的会话
+        sessionStorage.update(session)
+        
         // 重新启动过期检查
         sessionExpiryManager.restartExpiryCheck(session) { expiredSession ->
-            // 会话过期回调，从map中移除
-            sessions.remove(expiredSession.id)
+            // 会话过期回调，从存储中移除
+            sessionStorage.deleteById(expiredSession.id)
         }
     }
     

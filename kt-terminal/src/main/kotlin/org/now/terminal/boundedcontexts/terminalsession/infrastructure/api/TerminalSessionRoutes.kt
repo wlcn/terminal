@@ -11,7 +11,6 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSes
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
-import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.TerminalConfigManager
 
 // 响应数据类
 
@@ -57,44 +56,30 @@ fun Application.configureTerminalSessionRoutes() {
                 post {
                     log.debug("Creating new terminal session")
                     
-                    val terminalConfig = TerminalConfigManager.getTerminalConfig()
-
                     val userId = call.request.queryParameters["userId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing userId")
                     val title = call.request.queryParameters["title"]
-                    val requestWorkingDirectory = call.request.queryParameters["workingDirectory"]
-                    val shellType = call.request.queryParameters["shellType"] ?: terminalConfig.defaultShellType
+                    val workingDirectory = call.request.queryParameters["workingDirectory"] ?: "."
+                    val shellType = call.request.queryParameters["shellType"] ?: "powershell"
                     // 获取前端传递的终端尺寸参数
                     val columnsParam = call.request.queryParameters["columns"]
                     val rowsParam = call.request.queryParameters["rows"]
 
                     log.debug("Session creation parameters: userId={}, title={}, workingDirectory={}, shellType={}, columns={}, rows={}",
-                        userId, title, requestWorkingDirectory, shellType, columnsParam, rowsParam)
+                        userId, title, workingDirectory, shellType, columnsParam, rowsParam)
 
-                    val shellConfig = terminalConfig.shells[shellType.lowercase()]
-                        ?: terminalConfig.shells[terminalConfig.defaultShellType.lowercase()]
-                        ?: throw IllegalArgumentException("No shell configuration found for type: $shellType")
-                    
-                    val workingDirectory = requestWorkingDirectory
-                        ?: shellConfig.workingDirectory
-                        ?: terminalConfig.defaultWorkingDirectory
-                    
-                    // 终端尺寸优先级：前端传递的参数 > shell级别的size配置 > 全局默认size配置
+                    // 终端尺寸处理
                     val terminalSize = if (columnsParam != null && rowsParam != null) {
                         try {
                             // 使用前端传递的尺寸参数
                             TerminalSize(columnsParam.toInt(), rowsParam.toInt())
                         } catch (e: NumberFormatException) {
-                            // 参数格式错误，使用shell级别的size配置或全局默认配置
+                            // 参数格式错误，使用默认尺寸
                             log.warn("Invalid terminal size parameters, using default: columns={}, rows={}", columnsParam, rowsParam)
-                            shellConfig.size?.let {
-                                TerminalSize(it.columns, it.rows) 
-                            } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
+                            TerminalSize(80, 24)
                         }
                     } else {
-                        // 前端未传递尺寸参数，使用shell级别的size配置或全局默认配置
-                        shellConfig.size?.let {
-                            TerminalSize(it.columns, it.rows) 
-                        } ?: TerminalSize(terminalConfig.defaultSize.columns, terminalConfig.defaultSize.rows)
+                        // 前端未传递尺寸参数，使用默认尺寸
+                        TerminalSize(80, 24)
                     }
                     
                     val session = terminalSessionService.createSession(

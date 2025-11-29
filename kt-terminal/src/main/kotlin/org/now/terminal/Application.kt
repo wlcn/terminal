@@ -17,9 +17,6 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    // 初始化终端配置管理器
-    TerminalConfigManager.init(this.environment.config)
-    
     configureKoin()
     configureMonitoring()
     configureHTTP()

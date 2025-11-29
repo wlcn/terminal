@@ -86,15 +86,40 @@ class TerminalCommunicationHandler(
             while (true) {
                 val data = protocol.receive() ?: break
                 log.trace("Received data from client for session {}: {}", sessionId, data)
-                terminalProcessService.writeToProcess(sessionId, data)
+                
+                // Enhanced error handling for write operation
+                try {
+                    val success = terminalProcessService.writeToProcess(sessionId, data)
+                    if (!success) {
+                        log.warn("Failed to write data to terminal process for session: {}", sessionId)
+                        protocol.send("ERROR: Failed to write to terminal process")
+                    }
+                } catch (e: Exception) {
+                    log.error("Error writing data to terminal process for session {}: {}", sessionId, e.message, e)
+                    protocol.send("ERROR: Internal server error")
+                }
             }
-            log.debug("Client disconnected for session: {}", sessionId)
+            log.debug("Client disconnected gracefully for session: {}", sessionId)
         } catch (e: Exception) {
-            log.error("Error in terminal communication for session {}: {}", sessionId, e.message, e)
+            log.error("Unexpected error in terminal communication for session {}: {}", sessionId, e.message, e)
+            try {
+                protocol.send("ERROR: Unexpected server error")
+            } catch (sendError: Exception) {
+                log.debug("Failed to send error message to client for session {}: {}", sessionId, sendError.message)
+            }
         } finally {
             // Cleanup
             log.debug("Cleaning up terminal communication for session: {}", sessionId)
             process.removeOutputListener(outputListener)
+            
+            // Update session status to inactive
+            try {
+                terminalSessionService.updateSessionStatus(sessionId, org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus.INACTIVE)
+                log.debug("Updated session {} status to INACTIVE", sessionId)
+            } catch (e: Exception) {
+                log.error("Failed to update session status for session {}: {}", sessionId, e.message)
+            }
+            
             log.debug("Cleanup completed for session: {}", sessionId)
         }
     }

@@ -77,16 +77,18 @@ class Pty4jTerminalProcess(
     private var isTerminated = false
 
     init {
-        val terminalConfig = TerminalConfigManager.getTerminalConfig()
+        // 根据shell类型确定命令
+        val command = when (shellType.lowercase()) {
+            "bash" -> arrayOf("bash")
+            "sh" -> arrayOf("sh")
+            "cmd" -> arrayOf("cmd.exe")
+            "powershell" -> arrayOf("powershell.exe")
+            else -> arrayOf("powershell.exe") // 默认使用powershell
+        }
 
-        val shellConfig = terminalConfig.shells[shellType.lowercase()]
-            ?: terminalConfig.shells[terminalConfig.defaultShellType.lowercase()]
-            ?: throw IllegalArgumentException("No shell configuration found for type: $shellType")
-
+        // 设置环境变量
         val environment = System.getenv().toMutableMap()
-        environment.putAll(shellConfig.environment)
-
-        val command = shellConfig.command.toTypedArray()
+        environment["TERM"] = "xterm-256color"
 
         process = PtyProcessBuilder()
             .setCommand(command)
