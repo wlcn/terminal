@@ -64,8 +64,8 @@ fun Application.configureTerminalSessionRoutes() {
                         "Missing userId"
                     )
                     val title = call.request.queryParameters["title"]
-                    val workingDirectory = call.request.queryParameters["workingDirectory"] ?: "."
-                    val shellType = call.request.queryParameters["shellType"] ?: "powershell"
+                    val workingDirectory = call.request.queryParameters["workingDirectory"]
+                    val shellType = call.request.queryParameters["shellType"]
 
                     val columnsParam = call.request.queryParameters["columns"]
                     val rowsParam = call.request.queryParameters["rows"]

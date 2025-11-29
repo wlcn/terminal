@@ -18,6 +18,7 @@ class TerminalSessionService(
     private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository()
 ) {
     private val defaultShellType = terminalConfig.defaultShellType
+    private val defaultWorkingDirectory = terminalConfig.defaultWorkingDirectory
     private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
 
     /**
@@ -32,8 +33,8 @@ class TerminalSessionService(
     fun createSession(
         userId: String,
         title: String?,
-        workingDirectory: String,
         shellType: String = defaultShellType,
+        workingDirectory: String = defaultWorkingDirectory,
         size: TerminalSize? = null
     ): TerminalSession {
         val now = System.currentTimeMillis()
