@@ -7,6 +7,7 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionRe
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionStatus
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
+import org.slf4j.LoggerFactory
 
 /**
  * 终端会话服务
@@ -17,6 +18,7 @@ class TerminalSessionService(
     private val terminalConfig: TerminalConfig,
     private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository()
 ) {
+    private val log = LoggerFactory.getLogger(TerminalSessionService::class.java)
     private val defaultShellType = terminalConfig.defaultShellType
     private val defaultWorkingDirectory = terminalConfig.defaultWorkingDirectory
     private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
@@ -38,24 +40,25 @@ class TerminalSessionService(
         size: TerminalSize?
     ): TerminalSession {
         val now = System.currentTimeMillis()
-        val shellTypeToCreate = shellType ?: defaultShellType
-        val shellConfigToCreate = terminalConfig.shells[shellType]
-        val workingDirectoryToCreate =
-            workingDirectory ?: shellConfigToCreate?.workingDirectory ?: defaultWorkingDirectory
-        val sizeToCreate = size ?: terminalConfig.defaultTerminalSize
+        val actualShellType = shellType ?: defaultShellType
+        val actualShellConfig = terminalConfig.shells[actualShellType]
+        val actualWorkingDirectory =
+            workingDirectory ?: actualShellConfig?.workingDirectory ?: defaultWorkingDirectory
+        val actualTerminalSize = size ?: terminalConfig.defaultTerminalSize
         val session = TerminalSession(
             id = UUID.randomUUID().toString(),
             userId = userId,
             title = title,
-            workingDirectory = workingDirectoryToCreate,
-            shellType = shellTypeToCreate,
+            workingDirectory = actualWorkingDirectory,
+            shellType = actualShellType,
             status = TerminalSessionStatus.ACTIVE,
-            terminalSize = sizeToCreate,
+            terminalSize = actualTerminalSize,
             createdAt = now,
             updatedAt = now,
             lastActiveTime = now,
             expiredAt = now + sessionTimeoutMs
         )
+        log.debug("TerminalSession created. {}", session)
         terminalSessionRepository.save(session)
 
         return session
