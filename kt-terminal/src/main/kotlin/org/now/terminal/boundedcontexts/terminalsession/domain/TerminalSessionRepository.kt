@@ -1,13 +1,11 @@
-package org.now.terminal.boundedcontexts.terminalsession.domain.service
-
-import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSession
+package org.now.terminal.boundedcontexts.terminalsession.domain
 
 /**
  * Session Storage Interface
  * Defines the contract for session storage operations
  * This allows us to support different storage implementations (memory, Redis, etc.)
  */
-interface SessionStorage {
+interface TerminalSessionRepository {
     /**
      * Save a session
      */
@@ -47,7 +45,7 @@ interface SessionStorage {
 /**
  * In-memory implementation of SessionStorage
  */
-class InMemorySessionStorage : SessionStorage {
+class InMemoryTerminalSessionRepository : TerminalSessionRepository {
     private val sessions = mutableMapOf<String, TerminalSession>()
     
     override fun save(session: TerminalSession) {

@@ -1,12 +1,9 @@
-package org.now.terminal.boundedcontexts.terminalsession.infrastructure.api
+package org.now.terminal.boundedcontexts.terminalsession.infrastructure.config
 
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.koin.ktor.ext.inject
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
 
 /**
  * WebTransport routes for terminal communication

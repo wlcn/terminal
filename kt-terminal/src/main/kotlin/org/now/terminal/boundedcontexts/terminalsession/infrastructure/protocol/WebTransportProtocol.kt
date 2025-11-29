@@ -1,4 +1,4 @@
-package org.now.terminal.boundedcontexts.terminalsession.infrastructure.api
+package org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol
 
 /**
  * WebTransport implementation of TerminalCommunicationProtocol

@@ -4,6 +4,9 @@ import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tag
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Terminal Monitoring Service
@@ -71,37 +74,52 @@ class TerminalMonitoringService(private val meterRegistry: MeterRegistry) {
      * Record bytes written to terminal
      */
     fun recordBytesWritten(bytes: Int) {
-        bytesWrittenCounter.increment(bytes.toDouble())
+        // 使用异步方式记录指标，避免阻塞业务线程
+        CoroutineScope(Dispatchers.Default).launch {
+            bytesWrittenCounter.increment(bytes.toDouble())
+        }
     }
     
     /**
      * Record bytes read from terminal
      */
     fun recordBytesRead(bytes: Int) {
-        bytesReadCounter.increment(bytes.toDouble())
+        // 使用异步方式记录指标，避免阻塞业务线程
+        CoroutineScope(Dispatchers.Default).launch {
+            bytesReadCounter.increment(bytes.toDouble())
+        }
     }
     
     /**
      * Record session duration
      */
     fun recordSessionDuration(durationMs: Long) {
-        meterRegistry.timer("terminal.sessions.duration")
-            .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        // 使用异步方式记录指标，避免阻塞业务线程
+        CoroutineScope(Dispatchers.Default).launch {
+            meterRegistry.timer("terminal.sessions.duration")
+                .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        }
     }
     
     /**
      * Record process duration
      */
     fun recordProcessDuration(durationMs: Long) {
-        meterRegistry.timer("terminal.processes.duration")
-            .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        // 使用异步方式记录指标，避免阻塞业务线程
+        CoroutineScope(Dispatchers.Default).launch {
+            meterRegistry.timer("terminal.processes.duration")
+                .record(durationMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        }
     }
     
     /**
      * Record error count
      */
     fun recordError(errorType: String) {
-        meterRegistry.counter("terminal.errors", listOf(Tag.of("type", errorType)))
-            .increment()
+        // 使用异步方式记录指标，避免阻塞业务线程
+        CoroutineScope(Dispatchers.Default).launch {
+            meterRegistry.counter("terminal.errors", listOf(Tag.of("type", errorType)))
+                .increment()
+        }
     }
 }

@@ -1,8 +1,11 @@
 package org.now.terminal.boundedcontexts.terminalsession.infrastructure.service
 
 import io.ktor.server.application.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
+import org.now.terminal.boundedcontexts.terminalsession.domain.model.ShellConfig
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
-import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
 
 /**
  * Terminal Configuration Service
@@ -22,15 +25,67 @@ class TerminalConfigService(private val application: Application) {
         // Read session timeout in milliseconds
         val sessionTimeoutMs = config.property("terminal.sessionTimeout").getString().toLong()
         
+        // Read default working directory
+        val defaultWorkingDirectory = config.property("terminal.defaultWorkingDirectory").getString()
+        
         // Read default terminal size if configured, otherwise use default
         val defaultColumns = config.propertyOrNull("terminal.defaultSize.columns")?.getString()?.toInt() ?: 80
         val defaultRows = config.propertyOrNull("terminal.defaultSize.rows")?.getString()?.toInt() ?: 24
         val defaultTerminalSize = TerminalSize(defaultColumns, defaultRows)
         
+        // Load shells configuration
+        val shellsConfig = mutableMapOf<String, ShellConfig>()
+        val shellsPath = "terminal.shells"
+        
+        // Check if shells configuration exists
+        if (config.propertyOrNull(shellsPath) != null) {
+            val shells = config.config(shellsPath)
+            shells.keys().forEach { shellName ->
+                val shell = shells.config(shellName)
+                
+                // Read command
+                val command = shell.property("command").getString().split(" ")
+                
+                // Read optional working directory
+                val workingDirectory = shell.propertyOrNull("workingDirectory")?.getString()
+                
+                // Read optional size
+                val size = shell.propertyOrNull("size.columns")?.let {
+                    val columns = shell.property("size.columns").getString().toInt()
+                    val rows = shell.property("size.rows").getString().toInt()
+                    TerminalSize(columns, rows)
+                }
+                
+                // Read environment variables
+                val environment = mutableMapOf<String, String>()
+                shell.propertyOrNull("environment.TERM")?.let {
+                    environment["TERM"] = it.getString()
+                }
+                
+                shellsConfig[shellName] = ShellConfig(
+                    command = command,
+                    workingDirectory = workingDirectory,
+                    size = size,
+                    environment = environment
+                )
+            }
+        }
+        
         return TerminalConfig(
             defaultShellType = defaultShellType,
             sessionTimeoutMs = sessionTimeoutMs,
-            defaultTerminalSize = defaultTerminalSize
+            defaultWorkingDirectory = defaultWorkingDirectory,
+            defaultTerminalSize = defaultTerminalSize,
+            shells = shellsConfig
         )
+    }
+    
+    /**
+     * Load terminal configuration asynchronously
+     */
+    suspend fun loadConfigAsync(): TerminalConfig {
+        return withContext(Dispatchers.Default) {
+            loadConfig()
+        }
     }
 }

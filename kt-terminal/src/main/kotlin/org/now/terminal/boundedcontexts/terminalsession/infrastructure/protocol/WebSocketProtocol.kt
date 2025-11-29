@@ -1,9 +1,10 @@
-package org.now.terminal.boundedcontexts.terminalsession.infrastructure.api
+package org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol
 
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalCommunicationProtocol
 
 /**
  * WebSocket implementation of TerminalCommunicationProtocol

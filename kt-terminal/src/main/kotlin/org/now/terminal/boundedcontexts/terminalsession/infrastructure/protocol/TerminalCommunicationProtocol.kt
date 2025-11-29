@@ -1,8 +1,9 @@
-package org.now.terminal.boundedcontexts.terminalsession.infrastructure.api
+package org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionStatus
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
 
@@ -115,7 +116,7 @@ class TerminalCommunicationHandler(
             
             // Update session status to inactive
             try {
-                terminalSessionService.updateSessionStatus(sessionId, org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus.INACTIVE)
+                terminalSessionService.updateSessionStatus(sessionId, TerminalSessionStatus.INACTIVE)
                 log.debug("Updated session {} status to INACTIVE", sessionId)
             } catch (e: Exception) {
                 log.error("Failed to update session status for session {}: {}", sessionId, e.message)

@@ -1,4 +1,4 @@
-package org.now.terminal.boundedcontexts.terminalsession.domain.model
+package org.now.terminal.boundedcontexts.terminalsession.domain
 
 import kotlinx.serialization.Serializable
 

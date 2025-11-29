@@ -1,11 +1,11 @@
 package org.now.terminal.boundedcontexts.terminalsession.infrastructure.config
 
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.prometheus.PrometheusConfig
-import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.koin.dsl.module
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.SessionStorage
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.InMemorySessionStorage
+import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
+import org.now.terminal.boundedcontexts.terminalsession.domain.InMemoryTerminalSessionRepository
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionRepository
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
@@ -15,8 +15,8 @@ import org.now.terminal.boundedcontexts.terminalsession.infrastructure.service.T
 
 // Export the terminal session module for use in Koin configuration
 val terminalSessionModule = module {
-    // Meter registry for monitoring
-    single<MeterRegistry> { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+    // Meter registry for monitoring - using SimpleMeterRegistry for simplicity
+    single<MeterRegistry> { SimpleMeterRegistry() }
     
     // Terminal monitoring service
     single { TerminalMonitoringService(get()) }
@@ -28,7 +28,7 @@ val terminalSessionModule = module {
     single { get<TerminalConfigService>().loadConfig() }
     
     // Session storage
-    single<SessionStorage> { InMemorySessionStorage() }
+    single<TerminalSessionRepository> { InMemoryTerminalSessionRepository() }
     
     // Terminal process manager
     single<TerminalProcessManager> { Pty4jTerminalProcessManager() }
@@ -38,14 +38,14 @@ val terminalSessionModule = module {
     
     // Terminal session service
     single { 
-        val terminalConfig = get<org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig>()
-        val sessionStorage = get<SessionStorage>()
+        val terminalConfig = get<TerminalConfig>()
+        val terminalSessionRepository = get<TerminalSessionRepository>()
         val terminalProcessManager = get<TerminalProcessManager>()
         val monitoringService = get<TerminalMonitoringService>()
         
         val sessionService = TerminalSessionService(
             terminalConfig = terminalConfig,
-            sessionStorage = sessionStorage,
+            terminalSessionRepository = terminalSessionRepository,
             terminalProcessManager = terminalProcessManager
         )
         

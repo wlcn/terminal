@@ -1,5 +1,18 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.model
 
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
+
+/**
+ * Shell Configuration Model
+ * Represents the configuration for a specific shell type
+ */
+data class ShellConfig(
+    val command: List<String>,
+    val workingDirectory: String? = null,
+    val size: TerminalSize? = null,
+    val environment: Map<String, String> = emptyMap()
+)
+
 /**
  * Terminal Configuration Model
  * Represents the configuration for terminal sessions
@@ -7,6 +20,8 @@ package org.now.terminal.boundedcontexts.terminalsession.domain.model
 data class TerminalConfig(
     val defaultShellType: String,
     val sessionTimeoutMs: Long,
-    val defaultTerminalSize: TerminalSize = TerminalSize(80, 24)
+    val defaultWorkingDirectory: String,
+    val defaultTerminalSize: TerminalSize = TerminalSize(80, 24),
+    val shells: Map<String, ShellConfig> = emptyMap()
 )
 

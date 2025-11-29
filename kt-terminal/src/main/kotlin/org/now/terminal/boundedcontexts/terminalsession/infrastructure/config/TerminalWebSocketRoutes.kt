@@ -1,4 +1,4 @@
-package org.now.terminal.boundedcontexts.terminalsession.infrastructure.api
+package org.now.terminal.boundedcontexts.terminalsession.infrastructure.config
 
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
@@ -7,6 +7,8 @@ import io.ktor.websocket.*
 import org.koin.ktor.ext.inject
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.TerminalCommunicationHandler
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.WebSocketProtocol
 
 fun Application.configureTerminalWebSocketRoutes() {
     routing {

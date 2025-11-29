@@ -1,21 +1,27 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.service
 
-import kotlinx.coroutines.*
+import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSession
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionStatus
 import org.slf4j.LoggerFactory
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 会话过期管理器
  * 负责处理会话的过期检查和清理逻辑
  */
-class SessionExpiryManager(
+class TerminalSessionExpiryManager(
     private val sessionTimeoutMs: Long,
     private val terminalProcessManager: TerminalProcessManager? = null
 ) {
-    private val logger = LoggerFactory.getLogger(SessionExpiryManager::class.java)
+    private val logger = LoggerFactory.getLogger(TerminalSessionExpiryManager::class.java)
     
     // 使用协程作用域和SupervisorJob来管理协程生命周期
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

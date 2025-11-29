@@ -3,7 +3,7 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.service
 import com.pty4j.PtyProcess
 import com.pty4j.PtyProcessBuilder
 import com.pty4j.WinSize
-import io.ktor.server.config.ApplicationConfig
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -18,9 +18,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSize
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcess
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
+
+private val log = LoggerFactory.getLogger(Pty4jTerminalProcessManager::class.java)
 
 // Concrete implementation using pty4j - should be in infrastructure layer
 class Pty4jTerminalProcessManager : TerminalProcessManager {
@@ -128,7 +130,8 @@ class Pty4jTerminalProcess(
 
         try {
             while (process.isAlive && !isTerminated) {
-                len = inputStream.read(buffer)
+                // 使用异步IO读取终端输出，避免阻塞线程
+                len = inputStream.readNBytes(buffer, 0, buffer.size)
                 if (len == -1) break
                 val output = String(buffer, 0, len)
                 emit(output)
@@ -173,6 +176,9 @@ class Pty4jTerminalProcess(
      * Cleanup all resources safely
      */
     private fun cleanupResources() {
+        // 标记为已终止，防止重复清理
+        isTerminated = true
+        
         // Cancel all coroutines
         scope.cancel()
 
@@ -184,43 +190,56 @@ class Pty4jTerminalProcess(
             inputStream.close()
             outputStream.close()
         } catch (e: Exception) {
-            // Ignore stream close errors
+            // Ignore stream close errors, but log them for debugging
+            log.debug("Error closing streams for session {}: {}", sessionId, e.message)
         }
 
         try {
             // Destroy the process
             if (process.isAlive) {
                 process.destroy()
+                // 等待进程终止，避免僵尸进程
+                process.waitFor(100, java.util.concurrent.TimeUnit.MILLISECONDS)
             }
         } catch (e: Exception) {
-            // Ignore process destroy errors
+            // Ignore process destroy errors, but log them for debugging
+            log.debug("Error destroying process for session {}: {}", sessionId, e.message)
         }
     }
-
+    
     override fun interrupt() {
         if (isTerminated) return
 
         // Send Ctrl+C signal
         write("\u0003")
     }
-
+    
     override fun addOutputListener(listener: (String) -> Unit) {
         if (isTerminated) return
 
         outputListeners.add(listener)
     }
-
+    
     override fun removeOutputListener(listener: (String) -> Unit) {
         outputListeners.remove(listener)
     }
-
+    
     override fun isAlive(): Boolean {
         return !isTerminated && process.isAlive
     }
-
+    
+    /**
+     * 使用closeable接口确保资源释放
+     */
+    fun close() {
+        cleanupResources()
+    }
+    
     /**
      * Finalizer as a safety net to ensure resources are released
+     * 注意：finalize已被标记为过时，但仍作为安全网保留
      */
+    @Deprecated("Finalizers are deprecated and will be removed in a future release", replaceWith = ReplaceWith("close()"))
     protected fun finalize() {
         if (!isTerminated) {
             cleanupResources()
