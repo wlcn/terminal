@@ -45,12 +45,7 @@ class TerminalSessionExpiryManager(
                 delay(delayTime)
 
                 // 检查会话是否仍然存在且处于活动状态
-                val now = System.currentTimeMillis()
-
-                if (session.status == TerminalSessionStatus.ACTIVE &&
-                    session.expiredAt != null &&
-                    now > session.expiredAt!!
-                ) {
+                if (session.status == TerminalSessionStatus.ACTIVE && session.isExpired()) {
 
                     try {
                         logger.info(
@@ -59,9 +54,8 @@ class TerminalSessionExpiryManager(
                             Date(session.expiredAt!!)
                         )
 
-                        // 更新session状态
-                        session.status = TerminalSessionStatus.TERMINATED
-                        session.updatedAt = now
+                        // 使用领域模型的terminate()方法更新状态
+                        session.terminate()
 
                         // 清理相关资源
                         terminalProcessManager?.terminateProcess(session.id)
@@ -96,19 +90,13 @@ class TerminalSessionExpiryManager(
      * 清理单个过期会话
      */
     private fun cleanupExpiredSession(session: TerminalSession, onSessionExpired: (TerminalSession) -> Unit) {
-        val now = System.currentTimeMillis()
-
-        if (session.status == TerminalSessionStatus.ACTIVE &&
-            session.expiredAt != null &&
-            now > session.expiredAt!!
-        ) {
+        if (session.status == TerminalSessionStatus.ACTIVE && session.isExpired()) {
 
             try {
                 logger.info("Cleaning up expired session: ${session.id}, expired at: ${Date(session.expiredAt!!)}")
 
-                // 更新session状态
-                session.status = TerminalSessionStatus.TERMINATED
-                session.updatedAt = now
+                // 使用领域模型的terminate()方法更新状态
+                session.terminate()
 
                 // 清理相关资源
                 terminalProcessManager?.terminateProcess(session.id)

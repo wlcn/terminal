@@ -53,11 +53,8 @@ class TerminalSessionService(
 
     fun getSessionById(id: String): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
-            // 使用领域模型的方法更新活动时间和过期时间
-            val now = System.currentTimeMillis()
-            it.updateActivity(now)
-            it.updateExpiryTime(sessionTimeoutMs, now)
-            terminalSessionRepository.update(it)
+            // 调用updateSessionActivity方法，避免重复代码
+            updateSessionActivity(it)
         }
     }
 
