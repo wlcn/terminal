@@ -59,10 +59,16 @@ impl TerminalProcess {
         // 获取默认的PTY系统
         let pty_system = native_pty_system();
         
+        // 获取终端大小配置
+        let (rows, cols) = match &shell_config.terminal_size {
+            Some(size) => (size.rows, size.columns),
+            None => (24, 80), // 默认值
+        };
+        
         // 创建PTY对
         let pty_pair = pty_system.openpty(PtySize {
-            rows: 24,
-            cols: 80,
+            rows: rows as u16,
+            cols: cols as u16,
             pixel_width: 0,
             pixel_height: 0,
         })?;

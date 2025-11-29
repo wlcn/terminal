@@ -100,9 +100,8 @@ impl Config {
             }
         }
         
-        // 如果没有找到配置文件，使用默认配置
-        log::warn!("No configuration file found, using default configuration");
-        Ok(Self::default())
+        // 如果没有找到配置文件，返回错误
+        anyhow::bail!("No configuration file found")
     }
     
     // 获取指定shell类型的配置
@@ -121,70 +120,4 @@ impl Config {
     }
 }
 
-// 默认配置实现
-impl Default for Config {
-    fn default() -> Self {
-        let mut shells = HashMap::new();
-        
-        // 默认环境变量
-        let mut default_env = HashMap::new();
-        default_env.insert("TERM".to_string(), "xterm-256color".to_string());
-        
-        // 添加bash配置
-        shells.insert("bash".to_string(), ShellConfig {
-            command: vec!["bash".to_string()],
-            working_directory: None,
-            environment: default_env.clone(),
-            terminal_size: None,
-        });
-        
-        // 添加sh配置
-        shells.insert("sh".to_string(), ShellConfig {
-            command: vec!["sh".to_string()],
-            working_directory: None,
-            environment: default_env.clone(),
-            terminal_size: None,
-        });
-        
-        // 添加cmd配置
-        shells.insert("cmd".to_string(), ShellConfig {
-            command: vec!["cmd.exe".to_string()],
-            working_directory: None,
-            environment: default_env.clone(),
-            terminal_size: None,
-        });
-        
-        // 添加powershell配置
-        shells.insert("powershell".to_string(), ShellConfig {
-            command: vec!["powershell.exe".to_string()],
-            working_directory: Some(std::env::var("USERPROFILE").unwrap_or(".".to_string())),
-            environment: default_env,
-            terminal_size: None,
-        });
-        
-        Self {
-            terminal: TerminalConfig {
-                default_shell_type: "bash".to_string(),
-                default_terminal_size: TerminalSize {
-                    columns: 80,
-                    rows: 24,
-                },
-                default_working_directory: ".".to_string(),
-                session_timeout: 1800000, // 30分钟
-                shells,
-            },
-            http: HttpConfig {
-                port: 8082,
-                use_https: false,
-                cert_path: None,
-                key_path: None,
-            },
-            websocket: WebSocketConfig {
-                port: 8081,
-            },
-            webtransport: WebTransportConfig {
-                port: 8083,
-            },
-        }
-    }
-}
+
