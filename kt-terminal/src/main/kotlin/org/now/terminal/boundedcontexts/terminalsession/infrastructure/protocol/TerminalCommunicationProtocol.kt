@@ -94,7 +94,7 @@ class TerminalCommunicationHandler(
             log.debug("Starting to receive data from client for session: {}", sessionId)
             while (true) {
                 val data = protocol.receive() ?: break
-                log.trace("Received data from client for session {}: {}", sessionId, data)
+                log.debug("Received data from client for session {}: {}", sessionId, data)
 
                 // Enhanced error handling for write operation
                 try {

@@ -18,7 +18,7 @@ class WebSocketProtocol(
 
     override suspend fun send(data: String) {
         try {
-            log.trace("Sending data to WebSocket client: {}", data)
+            log.debug("Sending data to WebSocket client: {}", data)
             session.outgoing.send(Frame.Text(data))
         } catch (e: ClosedSendChannelException) {
             // Client disconnected
@@ -32,19 +32,24 @@ class WebSocketProtocol(
 
     override suspend fun receive(): String? {
         return try {
-            val frame = session.incoming.receive()
-            if (frame is Frame.Text) {
-                val text = frame.readText()
-                log.trace("Received data from WebSocket client: {}", text)
-                text
-            } else if (frame is Frame.Close) {
-                log.debug("Received close frame from WebSocket client")
-                null
-            } else {
-                log.debug("Received non-text frame from WebSocket client: {}", frame.frameType)
-                null
+            when (val frame = session.incoming.receive()) {
+                is Frame.Text -> {
+                    val text = frame.readText()
+                    log.debug("Received data from WebSocket client: {}", text)
+                    text
+                }
+
+                is Frame.Close -> {
+                    log.debug("Received close frame from WebSocket client")
+                    null
+                }
+
+                else -> {
+                    log.debug("Received non-text frame from WebSocket client: {}", frame.frameType)
+                    null
+                }
             }
-        } catch (e: ClosedReceiveChannelException) {
+        } catch (_: ClosedReceiveChannelException) {
             // Client disconnected
             log.debug("WebSocket client disconnected, closing receive loop")
             null

@@ -43,7 +43,6 @@ val terminalSessionModule = module {
         val terminalProcessManager = get<TerminalProcessManager>()
         val terminalSessionRepository = get<TerminalSessionRepository>()
         TerminalSessionExpiryManager(
-            sessionTimeoutMs = terminalConfig.sessionTimeoutMs,
             terminalProcessManager = terminalProcessManager,
             terminalSessionRepository = terminalSessionRepository
         )
