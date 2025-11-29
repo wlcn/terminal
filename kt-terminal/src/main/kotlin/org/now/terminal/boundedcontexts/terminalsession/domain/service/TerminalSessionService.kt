@@ -38,14 +38,19 @@ class TerminalSessionService(
         size: TerminalSize?
     ): TerminalSession {
         val now = System.currentTimeMillis()
+        val shellTypeToCreate = shellType ?: defaultShellType
+        val shellConfigToCreate = terminalConfig.shells[shellType]
+        val workingDirectoryToCreate =
+            workingDirectory ?: shellConfigToCreate?.workingDirectory ?: defaultWorkingDirectory
+        val sizeToCreate = size ?: terminalConfig.defaultTerminalSize
         val session = TerminalSession(
             id = UUID.randomUUID().toString(),
             userId = userId,
             title = title,
-            workingDirectory = workingDirectory ?: defaultWorkingDirectory,
-            shellType = shellType ?: defaultShellType,
+            workingDirectory = workingDirectoryToCreate,
+            shellType = shellTypeToCreate,
             status = TerminalSessionStatus.ACTIVE,
-            terminalSize = size ?: terminalConfig.defaultTerminalSize,
+            terminalSize = sizeToCreate,
             createdAt = now,
             updatedAt = now,
             lastActiveTime = now,
