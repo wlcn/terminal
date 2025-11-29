@@ -146,7 +146,7 @@ fun Application.configureTerminalSessionRoutes() {
                     val response = TerminalResizeResponse(
                         sessionId = session.id,
                         terminalSize = session.terminalSize,
-                        status = session.status.name
+                        status = session.status.toString()
                     )
                     log.debug("Resized terminal session {} successfully", id)
                     call.respond(HttpStatusCode.OK, response)
@@ -194,7 +194,7 @@ fun Application.configureTerminalSessionRoutes() {
                     val response = TerminalTerminateResponse(
                         sessionId = session.id,
                         reason = "User terminated",
-                        status = session.status.name
+                        status = session.status.toString()
                     )
                     log.info("Terminated terminal session: {}", id)
                     call.respond(HttpStatusCode.OK, response)
@@ -213,7 +213,7 @@ fun Application.configureTerminalSessionRoutes() {
                     )
 
                     val response = TerminalStatusResponse(
-                        status = session.status.name
+                        status = session.status.toString()
                     )
                     log.debug("Session {} status: {}", id, session.status)
                     call.respond(HttpStatusCode.OK, response)

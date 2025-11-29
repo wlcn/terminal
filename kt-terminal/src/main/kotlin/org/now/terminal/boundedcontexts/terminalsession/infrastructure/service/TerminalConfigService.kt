@@ -40,11 +40,11 @@ class TerminalConfigService(private val application: Application) {
         // Check if shells configuration exists
         if (config.propertyOrNull(shellsPath) != null) {
             val shells = config.config(shellsPath)
-            shells.keys().forEach { shellName ->
+            shells.toMap().keys.forEach { shellName ->
                 val shell = shells.config(shellName)
 
                 // Read command
-                val command = shell.property("command").getList()
+                val command = shell.property("command").getList().map { it.toString() }
 
                 // Read optional working directory
                 val workingDirectory = shell.propertyOrNull("workingDirectory")?.getString()

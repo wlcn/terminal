@@ -8,6 +8,11 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionSt
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
 import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
 
+/**
+ * 终端会话服务
+ * 负责协调终端会话的生命周期管理
+ * 符合DDD最佳实践：服务层只负责协调，不包含业务逻辑
+ */
 class TerminalSessionService(
     private val terminalConfig: TerminalConfig,
     private val terminalSessionRepository: TerminalSessionRepository = InMemoryTerminalSessionRepository()
@@ -15,7 +20,15 @@ class TerminalSessionService(
     private val defaultShellType = terminalConfig.defaultShellType
     private val sessionTimeoutMs = terminalConfig.sessionTimeoutMs
 
-
+    /**
+     * 创建终端会话
+     * @param userId 用户ID
+     * @param title 会话标题
+     * @param workingDirectory 工作目录
+     * @param shellType shell类型
+     * @param size 终端尺寸
+     * @return 创建的终端会话
+     */
     fun createSession(
         userId: String,
         title: String?,
@@ -42,20 +55,41 @@ class TerminalSessionService(
         return session
     }
 
+    /**
+     * 根据ID获取终端会话
+     * @param id 会话ID
+     * @return 终端会话，如果不存在则返回null
+     */
     fun getSessionById(id: String): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
             updateSessionActivity(it)
         }
     }
 
+    /**
+     * 根据用户ID获取终端会话列表
+     * @param userId 用户ID
+     * @return 终端会话列表
+     */
     fun getSessionsByUserId(userId: String): List<TerminalSession> {
         return terminalSessionRepository.getByUserId(userId)
     }
 
+    /**
+     * 获取所有终端会话
+     * @return 所有终端会话列表
+     */
     fun getAllSessions(): List<TerminalSession> {
         return terminalSessionRepository.getAll()
     }
 
+    /**
+     * 调整终端大小
+     * @param id 会话ID
+     * @param columns 列数
+     * @param rows 行数
+     * @return 调整后的终端会话，如果不存在则返回null
+     */
     fun resizeTerminal(id: String, columns: Int, rows: Int): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
             it.resize(columns, rows)
@@ -63,6 +97,12 @@ class TerminalSessionService(
         }
     }
 
+    /**
+     * 终止终端会话
+     * @param id 会话ID
+     * @param reason 终止原因
+     * @return 终止的终端会话，如果不存在则返回null
+     */
     fun terminateSession(id: String, reason: String? = null): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
             // 使用领域模型的terminate方法
@@ -73,6 +113,12 @@ class TerminalSessionService(
         }
     }
 
+    /**
+     * 更新终端会话状态
+     * @param id 会话ID
+     * @param status 新状态
+     * @return 更新后的终端会话，如果不存在则返回null
+     */
     fun updateSessionStatus(id: String, status: TerminalSessionStatus): TerminalSession? {
         return terminalSessionRepository.getById(id)?.also {
             // 使用领域模型的updateStatus方法
@@ -81,15 +127,21 @@ class TerminalSessionService(
         }
     }
 
+    /**
+     * 删除终端会话
+     * @param id 会话ID
+     * @return 是否删除成功
+     */
     fun deleteSession(id: String): Boolean {
         val session = terminalSessionRepository.deleteById(id)
         return session != null
     }
 
     /**
-     * 更新session活动时间
+     * 更新会话活动时间
+     * @param session 终端会话
      */
-    fun updateSessionActivity(session: TerminalSession) {
+    private fun updateSessionActivity(session: TerminalSession) {
         val now = System.currentTimeMillis()
 
         // 使用领域模型的方法更新活动时间和过期时间
@@ -99,6 +151,4 @@ class TerminalSessionService(
         // 更新存储中的会话
         terminalSessionRepository.update(session)
     }
-
-
 }

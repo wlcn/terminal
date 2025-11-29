@@ -2,8 +2,12 @@ package org.now.terminal.boundedcontexts.terminalsession.domain
 
 import kotlinx.serialization.Serializable
 
+/**
+ * 终端会话实体
+ * 聚合根，管理终端会话的生命周期
+ */
 @Serializable
-class TerminalSession(
+data class TerminalSession(
     val id: String,
     val userId: String,
     val title: String?,
@@ -19,33 +23,37 @@ class TerminalSession(
     /**
      * 更新会话活动时间
      */
-    fun updateActivity(now: Long = System.currentTimeMillis()) {
+    fun updateActivity(now: Long = System.currentTimeMillis()): TerminalSession {
         this.lastActiveTime = now
         this.updatedAt = now
+        return this
     }
     
     /**
      * 计算并更新过期时间
      */
-    fun updateExpiryTime(timeoutMs: Long, now: Long = System.currentTimeMillis()) {
+    fun updateExpiryTime(timeoutMs: Long, now: Long = System.currentTimeMillis()): TerminalSession {
         this.expiredAt = now + timeoutMs
         this.updatedAt = now
+        return this
     }
     
     /**
      * 调整终端大小
      */
-    fun resize(columns: Int, rows: Int) {
+    fun resize(columns: Int, rows: Int): TerminalSession {
         this.terminalSize = TerminalSize(columns, rows)
         this.updatedAt = System.currentTimeMillis()
+        return this
     }
     
     /**
      * 终止会话
      */
-    fun terminate() {
+    fun terminate(): TerminalSession {
         this.status = TerminalSessionStatus.TERMINATED
         this.updatedAt = System.currentTimeMillis()
+        return this
     }
     
     /**
@@ -58,21 +66,40 @@ class TerminalSession(
     /**
      * 更新会话状态
      */
-    fun updateStatus(newStatus: TerminalSessionStatus) {
+    fun updateStatus(newStatus: TerminalSessionStatus): TerminalSession {
         this.status = newStatus
         this.updatedAt = System.currentTimeMillis()
+        return this
     }
 }
 
+/**
+ * 终端会话状态
+ * 使用密封类，确保编译时检查所有状态
+ */
 @Serializable
-enum class TerminalSessionStatus {
-    ACTIVE,
-    INACTIVE,
-    TERMINATED
+sealed class TerminalSessionStatus {
+    @Serializable
+    object ACTIVE : TerminalSessionStatus()
+    
+    @Serializable
+    object INACTIVE : TerminalSessionStatus()
+    
+    @Serializable
+    object TERMINATED : TerminalSessionStatus()
 }
 
+/**
+ * 终端尺寸值对象
+ * 不可变，没有标识
+ */
 @Serializable
-class TerminalSize(
+data class TerminalSize(
     val columns: Int,
     val rows: Int
-)
+) {
+    init {
+        require(columns > 0) { "Columns must be greater than 0" }
+        require(rows > 0) { "Rows must be greater than 0" }
+    }
+}
