@@ -1,9 +1,8 @@
 package org.now.terminal.boundedcontexts.terminalsession.domain.service
 
 import kotlinx.coroutines.*
-import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSession
-import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalSessionStatus
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSession
+import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionStatus
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
