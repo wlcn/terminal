@@ -9,3 +9,4 @@ data class TerminalConfig(
     val sessionTimeoutMs: Long,
     val defaultTerminalSize: TerminalSize = TerminalSize(80, 24)
 )
+

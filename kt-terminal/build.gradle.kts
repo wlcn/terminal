@@ -26,9 +26,9 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)
-    implementation("org.jetbrains.pty4j:pty4j:0.13.11")
-    
-
+    implementation(libs.pty4j)
+    implementation(libs.micrometer.core)
+    implementation(libs.micrometer.registry.prometheus)
     
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
