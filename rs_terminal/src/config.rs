@@ -164,7 +164,7 @@ impl Default for Config {
         
         Self {
             terminal: TerminalConfig {
-                default_shell_type: "powershell".to_string(),
+                default_shell_type: "bash".to_string(),
                 default_terminal_size: TerminalSize {
                     columns: 80,
                     rows: 24,

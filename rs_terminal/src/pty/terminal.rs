@@ -240,7 +240,7 @@ impl TerminalProcess {
         #[cfg(unix)]
         {
             // Unix: 获取PTY主设备
-            let mut pty_master = self.pty_master.lock().await;
+            let pty_master = self.pty_master.lock().await;
             
             // 调用PTY主设备的resize方法调整终端大小，转换参数类型
             // 注意：tokio-pty-process 0.4.0的resize方法签名是resize(rows, cols)

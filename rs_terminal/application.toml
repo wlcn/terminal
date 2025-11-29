@@ -25,7 +25,7 @@ port = 8082
 # 终端配置
 [terminal]
 # 默认shell类型
-default_shell_type = "powershell"
+default_shell_type = "bash"
 
 # 默认终端尺寸
 default_terminal_size.columns = 80
