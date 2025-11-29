@@ -6,6 +6,7 @@ import com.pty4j.WinSize
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
+import org.now.terminal.boundedcontexts.terminalsession.domain.model.TerminalConfig
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcess
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessManager
 import org.slf4j.LoggerFactory
@@ -25,7 +27,7 @@ import org.slf4j.LoggerFactory
 private val log = LoggerFactory.getLogger(Pty4jTerminalProcessManager::class.java)
 
 // Concrete implementation using pty4j - should be in infrastructure layer
-class Pty4jTerminalProcessManager : TerminalProcessManager {
+class Pty4jTerminalProcessManager(private val terminalConfig: TerminalConfig) : TerminalProcessManager {
     private val processes = ConcurrentHashMap<String, TerminalProcess>()
 
     override fun createProcess(
@@ -34,7 +36,7 @@ class Pty4jTerminalProcessManager : TerminalProcessManager {
         shellType: String,
         terminalSize: TerminalSize
     ): TerminalProcess {
-        val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType, terminalSize)
+        val process = Pty4jTerminalProcess(sessionId, workingDirectory, shellType, terminalSize, terminalConfig)
         processes[sessionId] = process
         process.startReading()
         return process
@@ -73,7 +75,8 @@ class Pty4jTerminalProcess(
     private val sessionId: String,
     workingDirectory: String,
     shellType: String,
-    terminalSize: TerminalSize
+    terminalSize: TerminalSize,
+    terminalConfig: TerminalConfig
 ) : TerminalProcess {
     private val process: PtyProcess
     private val inputStream: InputStream
@@ -84,25 +87,26 @@ class Pty4jTerminalProcess(
     private var isTerminated = false
 
     init {
-        // 根据shell类型确定命令
-        val command = when (shellType.lowercase()) {
-            "bash" -> arrayOf("bash")
-            "sh" -> arrayOf("sh")
-            "cmd" -> arrayOf("cmd.exe")
-            "powershell" -> arrayOf("powershell.exe")
-            else -> arrayOf("powershell.exe") // 默认使用powershell
-        }
+        // 从终端配置中获取shell配置
+        val shellConfig = terminalConfig.shells[shellType]
 
-        // 设置环境变量
-        val environment = System.getenv().toMutableMap()
-        environment["TERM"] = "xterm-256color"
+        // 使用配置文件中的shell配置，否则使用默认值
+        val command = shellConfig?.command?.toTypedArray()
+
+        // 确定工作目录
+        val actualWorkingDirectory = workingDirectory
+
+        val environment = shellConfig?.environment
+
+        // 确定终端尺寸
+        val actualSize = terminalSize
 
         process = PtyProcessBuilder()
             .setCommand(command)
-            .setDirectory(workingDirectory)
+            .setDirectory(actualWorkingDirectory)
             .setEnvironment(environment)
-            .setInitialColumns(terminalSize.columns)
-            .setInitialRows(terminalSize.rows)
+            .setInitialColumns(actualSize.columns)
+            .setInitialRows(actualSize.rows)
             .start()
 
         inputStream = process.inputStream
@@ -137,7 +141,6 @@ class Pty4jTerminalProcess(
             while (process.isAlive && !isTerminated) {
                 // 使用异步IO读取终端输出，避免阻塞线程
                 len = inputStream.readNBytes(buffer, 0, buffer.size)
-                if (len == -1) break
                 val output = String(buffer, 0, len)
                 emit(output)
             }
@@ -204,7 +207,7 @@ class Pty4jTerminalProcess(
             if (process.isAlive) {
                 process.destroy()
                 // 等待进程终止，避免僵尸进程
-                process.waitFor(100, java.util.concurrent.TimeUnit.MILLISECONDS)
+                process.waitFor(100, TimeUnit.MILLISECONDS)
             }
         } catch (e: Exception) {
             // Ignore process destroy errors, but log them for debugging
@@ -240,17 +243,4 @@ class Pty4jTerminalProcess(
         cleanupResources()
     }
 
-    /**
-     * Finalizer as a safety net to ensure resources are released
-     * 注意：finalize已被标记为过时，但仍作为安全网保留
-     */
-    @Deprecated(
-        "Finalizers are deprecated and will be removed in a future release",
-        replaceWith = ReplaceWith("close()")
-    )
-    protected fun finalize() {
-        if (!isTerminated) {
-            cleanupResources()
-        }
-    }
 }

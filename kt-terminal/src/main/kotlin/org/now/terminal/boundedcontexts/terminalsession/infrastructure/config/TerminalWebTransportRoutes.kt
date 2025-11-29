@@ -5,6 +5,12 @@ import io.ktor.server.application.Application
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import jdk.internal.vm.ScopedValueContainer.call
+import org.koin.ktor.ext.inject
+import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
+import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.TerminalCommunicationHandler
+import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.WebTransportProtocol
 
 /**
  * WebTransport routes for terminal communication
@@ -23,28 +29,6 @@ fun Application.configureTerminalWebTransportRoutes() {
             )
         }
 
-        // Example of how WebTransport route would look once Ktor supports it
-        /*
-        webTransport("/webtransport/{sessionId}") { webTransportSession ->
-            val sessionId = call.parameters["sessionId"] ?: return@webTransport webTransportSession.close("Invalid session ID")
-            
-            val terminalSessionService by inject<TerminalSessionService>()
-            val terminalProcessService by inject<TerminalProcessService>()
-            
-            // Create WebTransport protocol implementation
-            val protocol = WebTransportProtocol(webTransportSession)
-            
-            // Create communication handler
-            val handler = TerminalCommunicationHandler(
-                sessionId = sessionId,
-                protocol = protocol,
-                terminalSessionService = terminalSessionService,
-                terminalProcessService = terminalProcessService
-            )
-            
-            // Handle communication
-            handler.handleCommunication()
-        }
-        */
+
     }
 }

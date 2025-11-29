@@ -66,7 +66,7 @@ fun Application.configureTerminalSessionRoutes() {
                     val title = call.request.queryParameters["title"]
                     val workingDirectory = call.request.queryParameters["workingDirectory"] ?: "."
                     val shellType = call.request.queryParameters["shellType"] ?: "powershell"
-                    // 获取前端传递的终端尺寸参数
+
                     val columnsParam = call.request.queryParameters["columns"]
                     val rowsParam = call.request.queryParameters["rows"]
 
@@ -75,22 +75,9 @@ fun Application.configureTerminalSessionRoutes() {
                         userId, title, workingDirectory, shellType, columnsParam, rowsParam
                     )
 
-                    // 终端尺寸处理
                     val terminalSize = if (columnsParam != null && rowsParam != null) {
-                        try {
-                            // 使用前端传递的尺寸参数
-                            TerminalSize(columnsParam.toInt(), rowsParam.toInt())
-                        } catch (e: NumberFormatException) {
-                            // 参数格式错误，使用默认尺寸
-                            log.warn(
-                                "Invalid terminal size parameters, using default: columns={}, rows={}",
-                                columnsParam,
-                                rowsParam
-                            )
-                            TerminalSize(80, 24)
-                        }
+                        TerminalSize(columnsParam.toInt(), rowsParam.toInt())
                     } else {
-                        // 前端未传递尺寸参数，使用默认尺寸
                         TerminalSize(80, 24)
                     }
 
