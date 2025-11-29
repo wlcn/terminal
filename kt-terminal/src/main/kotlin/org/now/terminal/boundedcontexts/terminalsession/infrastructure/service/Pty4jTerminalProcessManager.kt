@@ -96,16 +96,11 @@ class Pty4jTerminalProcess(
         // 确定工作目录
         val actualWorkingDirectory = workingDirectory
 
-        // 对于Windows PowerShell，需要继承系统环境变量
-        // 否则会出现证书信任错误（8009001d）
         val environment = mutableMapOf<String, String>()
-        
-        // 对于PowerShell和cmd，需要继承完整的系统环境变量
-        if (shellType == "powershell" || shellType == "cmd") {
-            // 添加所有系统环境变量
-            environment.putAll(System.getenv())
-        }
-        
+
+        // 添加所有系统环境变量
+        environment.putAll(System.getenv())
+
         // 覆盖配置中的环境变量
         if (shellConfig?.environment != null) {
             environment.putAll(shellConfig.environment)
@@ -152,33 +147,26 @@ class Pty4jTerminalProcess(
 
         try {
             log.debug("Starting to read output from terminal process for session: {}", sessionId)
-            
-            // 立即发送一个测试消息，验证flow是否正常工作
-            emit("=== Terminal session started ===\r\n")
-            
+
             while (process.isAlive && !isTerminated) {
                 // 检查流是否可用
                 if (inputStream.available() > 0) {
                     // 使用read()方法，更可靠的阻塞读取
                     len = inputStream.read(buffer)
-                    if (len > 0) {
-                        val output = String(buffer, 0, len)
-                        log.debug("Read {} bytes from terminal process for session {}: {}", len, sessionId, output.trim())
-                        emit(output)
-                    } else if (len == -1) {
-                        // 流已关闭
-                        log.debug("Terminal process input stream closed for session: {}", sessionId)
-                        break
-                    } else {
-                        // 没有读取到数据，短暂休眠
-                        kotlinx.coroutines.delay(10)
-                    }
+                    val output = String(buffer, 0, len)
+                    log.debug(
+                        "Read {} bytes from terminal process for session {}: {}",
+                        len,
+                        sessionId,
+                        output.trim()
+                    )
+                    emit(output)
                 } else {
                     // 没有可用数据，短暂休眠
                     kotlinx.coroutines.delay(10)
                 }
             }
-            
+
             log.debug("Terminal process output reading completed for session: {}", sessionId)
         } catch (e: Exception) {
             // Process closed or error occurred
@@ -198,7 +186,7 @@ class Pty4jTerminalProcess(
             outputStream.write(data.toByteArray())
             outputStream.flush()
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
