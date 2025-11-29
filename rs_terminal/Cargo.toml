@@ -25,3 +25,8 @@ config = { version = "0.15.0", features = ["json", "toml", "yaml"] }
 # Unix-specific dependencies
 [target.'cfg(unix)'.dependencies]
 tokio-pty-process = "0.4.0"
+nix = "0.29.0"
+
+# Windows-specific dependencies
+[target.'cfg(windows)'.dependencies]
+# Windows ConPTY handling - we'll use the existing tokio process handling

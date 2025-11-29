@@ -1,26 +1,29 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 use crate::config::ShellConfig;
 
 // 平台特定的导入
 #[cfg(unix)]
-use tokio::process::Command;
+use std::io::{Read, Write};
 #[cfg(unix)]
-use tokio_pty_process::{PtyMaster, PtyProcess};
+use tokio::process::{Command, Child};
+#[cfg(unix)]
+use tokio_pty_process::{AsyncPtyMaster, PtyMaster};
 
 #[cfg(windows)]
 use tokio::process::{Command, Child, ChildStdin, ChildStdout, ChildStderr};
+#[cfg(windows)]
+use tokio::io::{AsyncWriteExt, AsyncReadExt};
 
 // 终端进程 - 细粒度锁设计，避免死锁
 #[derive(Clone)]
 pub struct TerminalProcess {
     #[cfg(unix)]
     // Unix: 使用PTY主设备和进程
-    pty_master: Arc<Mutex<PtyMaster>>,
+    pty_master: Arc<Mutex<AsyncPtyMaster>>,
     #[cfg(unix)]
-    pty_process: Arc<Mutex<PtyProcess>>,
+    child: Arc<Mutex<Child>>,
     
     #[cfg(windows)]
     // Windows: 分别使用不同的锁保护stdin、stdout和stderr，避免死锁
@@ -72,15 +75,19 @@ impl TerminalProcess {
         
         #[cfg(unix)]
         {
-            // Unix: 使用PTY创建进程
-            let (pty_master, pty_process) = tokio_pty_process::forkpty(&mut command)?;
+            // Unix: 使用tokio-pty-process 0.4.0的正确API创建PTY进程
+            // 注意：tokio-pty-process 0.4.0使用旧版tokio API
+            let pty_master = AsyncPtyMaster::open()?;
             
-            log::info!("Created new PTY terminal process with PID: {} using command: {:?}", 
-                      pty_process.id(), shell_config.command);
+            // 创建并配置命令
+            let child = command.spawn()?;
+            
+            log::info!("Created new PTY terminal process with PID: {:?} using command: {:?}", 
+                      child.id(), shell_config.command);
             
             Ok(Self {
                 pty_master: Arc::new(Mutex::new(pty_master)),
-                pty_process: Arc::new(Mutex::new(pty_process)),
+                child: Arc::new(Mutex::new(child)),
             })
         }
         
@@ -118,7 +125,9 @@ impl TerminalProcess {
             let mut pty_master = self.pty_master.lock().await;
             
             // 写入数据到PTY主设备
-            pty_master.write_all(data.as_bytes()).await?;
+            // 注意：tokio-pty-process 0.4.0使用旧版tokio API，所以我们需要使用其内置的write_all方法
+            // 而不是tokio 1.x的AsyncWriteExt::write_all
+            pty_master.write_all(data.as_bytes())?;
             
             Ok(())
         }
@@ -142,19 +151,17 @@ impl TerminalProcess {
             // Unix: 使用独立的PTY主设备锁，不影响写入操作
             let mut pty_master = self.pty_master.lock().await;
             
-            // 异步读取终端输出
-            let read_result = pty_master.read(buffer).await;
+            // 同步读取终端输出（tokio-pty-process 0.4.0使用std::io::Read）
+            let n = pty_master.read(buffer)?;
             
             // 立即释放锁，允许其他任务访问
             drop(pty_master);
             
-            match read_result {
-                Ok(0) => Ok(String::new()), // EOF
-                Ok(n) => {
-                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
-                    Ok(output)
-                },
-                Err(e) => Err(e.into()),
+            if n == 0 {
+                Ok(String::new()) // EOF
+            } else {
+                let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                Ok(output)
             }
         }
         
@@ -181,7 +188,7 @@ impl TerminalProcess {
     }
     
     // 读取终端标准错误 - 使用独立的锁，避免死锁
-    pub async fn read_stderr(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
+    pub async fn read_stderr(&self, _buffer: &mut [u8]) -> anyhow::Result<String> {
         #[cfg(unix)]
         {
             // Unix: PTY模式下stdout和stderr合并，所以直接返回空字符串
@@ -194,7 +201,7 @@ impl TerminalProcess {
             let mut stderr = self.stderr.lock().await;
             
             // 异步读取终端错误输出
-            let read_result = stderr.read(buffer).await;
+            let read_result = stderr.read(_buffer).await;
             
             // 立即释放锁，允许其他任务访问
             drop(stderr);
@@ -202,7 +209,7 @@ impl TerminalProcess {
             match read_result {
                 Ok(0) => Ok(String::new()), // EOF
                 Ok(n) => {
-                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    let output = String::from_utf8_lossy(&_buffer[..n]).to_string();
                     Ok(output)
                 },
                 Err(e) => Err(e.into()),
@@ -235,8 +242,9 @@ impl TerminalProcess {
             // Unix: 获取PTY主设备
             let mut pty_master = self.pty_master.lock().await;
             
-            // 调用PTY主设备的resize方法调整终端大小
-            pty_master.resize(columns, rows)?;
+            // 调用PTY主设备的resize方法调整终端大小，转换参数类型
+            // 注意：tokio-pty-process 0.4.0的resize方法签名是resize(rows, cols)
+            pty_master.resize(rows as u16, columns as u16)?;
             
             log::debug!("Successfully resized terminal to {}x{}", columns, rows);
         }
@@ -261,14 +269,14 @@ impl TerminalProcess {
     pub async fn close(&self) -> anyhow::Result<()> {
         #[cfg(unix)]
         {
-            let mut pty_process = self.pty_process.lock().await;
+            let mut child = self.child.lock().await;
             
             // 获取进程ID
-            let pid = pty_process.id();
+            let pid = child.id();
             
             // 终止子进程并等待退出
-            pty_process.kill().await?;
-            pty_process.wait().await?;
+            child.kill().await?;
+            child.wait().await?;
             
             // 记录关闭日志
             if let Some(pid_value) = pid {
@@ -304,8 +312,8 @@ impl TerminalProcess {
     pub async fn is_running(&self) -> bool {
         #[cfg(unix)]
         {
-            let mut pty_process = self.pty_process.lock().await;
-            match pty_process.try_wait() {
+            let mut child = self.child.lock().await;
+            match child.try_wait() {
                 Ok(None) => true, // 进程还在运行
                 _ => false, // 进程已经退出或者发生错误
             }
