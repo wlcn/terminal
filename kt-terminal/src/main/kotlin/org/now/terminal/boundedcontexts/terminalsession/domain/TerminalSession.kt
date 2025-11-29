@@ -78,15 +78,10 @@ data class TerminalSession(
  * 使用密封类，确保编译时检查所有状态
  */
 @Serializable
-sealed class TerminalSessionStatus {
-    @Serializable
-    object ACTIVE : TerminalSessionStatus()
-    
-    @Serializable
-    object INACTIVE : TerminalSessionStatus()
-    
-    @Serializable
-    object TERMINATED : TerminalSessionStatus()
+enum class TerminalSessionStatus {
+    ACTIVE,
+    INACTIVE,
+    TERMINATED
 }
 
 /**

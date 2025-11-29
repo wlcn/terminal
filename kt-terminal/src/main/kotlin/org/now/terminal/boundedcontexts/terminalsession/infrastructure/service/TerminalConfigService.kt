@@ -44,7 +44,7 @@ class TerminalConfigService(private val application: Application) {
                 val shell = shells.config(shellName)
 
                 // Read command
-                val command = shell.property("command").getList().map { it.toString() }
+                val command = shell.property("command").getList()
 
                 // Read optional working directory
                 val workingDirectory = shell.propertyOrNull("workingDirectory")?.getString()
