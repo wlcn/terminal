@@ -18,7 +18,7 @@ data class TerminalSession(
     val createdAt: Long = System.currentTimeMillis(),
     var updatedAt: Long = System.currentTimeMillis(),
     var lastActiveTime: Long = System.currentTimeMillis(),
-    var expiredAt: Long? = null
+    var expiredAt: Long?
 ) {
     /**
      * 更新会话活动时间

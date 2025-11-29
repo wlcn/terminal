@@ -33,17 +33,17 @@ class TerminalSessionService(
     fun createSession(
         userId: String,
         title: String?,
-        shellType: String = defaultShellType,
-        workingDirectory: String = defaultWorkingDirectory,
-        size: TerminalSize? = null
+        shellType: String?,
+        workingDirectory: String?,
+        size: TerminalSize?
     ): TerminalSession {
         val now = System.currentTimeMillis()
         val session = TerminalSession(
             id = UUID.randomUUID().toString(),
             userId = userId,
             title = title,
-            workingDirectory = workingDirectory,
-            shellType = shellType,
+            workingDirectory = workingDirectory ?: defaultWorkingDirectory,
+            shellType = shellType ?: defaultShellType,
             status = TerminalSessionStatus.ACTIVE,
             terminalSize = size ?: terminalConfig.defaultTerminalSize,
             createdAt = now,

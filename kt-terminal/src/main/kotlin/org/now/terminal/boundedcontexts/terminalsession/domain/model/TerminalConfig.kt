@@ -8,8 +8,8 @@ import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSize
  */
 data class ShellConfig(
     val command: List<String>,
-    val workingDirectory: String? = null,
-    val size: TerminalSize? = null,
+    val workingDirectory: String?,
+    val size: TerminalSize?,
     val environment: Map<String, String> = emptyMap()
 )
 
