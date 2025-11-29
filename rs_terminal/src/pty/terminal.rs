@@ -1,22 +1,22 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::process::Child;
+use std::io::{Read, Write};
 
 use crate::config::ShellConfig;
 
 // 使用portable-pty的统一API
-use portable_pty::{PtyPair, CommandBuilder, PtySize};
+use portable_pty::{CommandBuilder, PtySize, PtyPair, native_pty_system};
 
 // 终端进程 - 使用portable-pty的统一API
 #[derive(Clone)]
 pub struct TerminalProcess {
     // 异步读取器
-    reader: Arc<Mutex<portable_pty::tokio::AsyncReader>>,
+    reader: Arc<Mutex<Box<dyn Read + Send>>>,
     // 异步写入器
-    writer: Arc<Mutex<portable_pty::tokio::AsyncWriter>>,
+    writer: Arc<Mutex<Box<dyn Write + Send>>>,
     // 子进程，用于检查是否运行
-    child: Arc<Mutex<Child>>,
-    // 主PTY，用于调整大小
+    child: Arc<Mutex<Box<dyn portable_pty::Child + Send + Sync>>>,
+    // PTY对，用于调整大小
     pty_pair: Arc<Mutex<PtyPair>>,
 }
 
@@ -57,10 +57,10 @@ impl TerminalProcess {
         }
         
         // 获取默认的PTY系统
-        let pty_system = portable_pty::native_pty_system();
+        let pty_system = native_pty_system();
         
         // 创建PTY对
-        let mut pty_pair = pty_system.openpty(PtySize {
+        let pty_pair = pty_system.openpty(PtySize {
             rows: 24,
             cols: 80,
             pixel_width: 0,
@@ -68,18 +68,13 @@ impl TerminalProcess {
         })?;
         
         // 生成子进程
-        let child = pty_pair.master.spawn_command(command_builder)?;
+        let child = pty_pair.slave.spawn_command(command_builder)?;
         
-        // 创建异步读取器
-        let reader = pty_pair.slave.try_clone_reader()?;
-        let async_reader = portable_pty::tokio::AsyncReader::from_std(reader)?;
+        // 创建异步读取器和写入器
+        let async_reader = Box::new(pty_pair.master.try_clone_reader()?) as Box<dyn Read + Send>;
+        let async_writer = Box::new(pty_pair.master.take_writer()?) as Box<dyn Write + Send>;
         
-        // 创建异步写入器
-        let writer = pty_pair.slave.take_writer()?;
-        let async_writer = portable_pty::tokio::AsyncWriter::from_std(writer)?;
-        
-        log::info!("Created new PTY terminal process with PID: {:?} using command: {:?}", 
-                  child.id(), shell_config.command);
+        log::info!("Created new PTY terminal process using command: {:?}", shell_config.command);
         
         Ok(Self {
             reader: Arc::new(Mutex::new(async_reader)),
@@ -92,14 +87,14 @@ impl TerminalProcess {
     // 写入输入到终端 - 使用独立的锁，避免死锁
     pub async fn write_input(&self, data: &str) -> anyhow::Result<()> {
         let mut writer = self.writer.lock().await;
-        writer.write_all(data.as_bytes()).await?;
+        writer.write_all(data.as_bytes())?;
         Ok(())
     }
     
     // 读取终端输出 - 使用独立的锁，避免死锁
     pub async fn read_output(&self, buffer: &mut [u8]) -> anyhow::Result<String> {
         let mut reader = self.reader.lock().await;
-        let n = reader.read(buffer).await?;
+        let n = reader.read(buffer)?;
         
         if n == 0 {
             Ok(String::new()) // EOF
