@@ -24,6 +24,8 @@ pub(crate) struct Session {
     expired_at: u64,
     // 最后活动时间
     last_active_time: Arc<std::sync::atomic::AtomicU64>,
+    // 是否已启动终端输出监听任务
+    listener_started: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl Session {
@@ -40,6 +42,7 @@ impl Session {
             status: Arc::new(std::sync::atomic::AtomicU8::new(SessionStatus::Active as u8)),
             expired_at: now + session_timeout,
             last_active_time: Arc::new(std::sync::atomic::AtomicU64::new(now)),
+            listener_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
     
@@ -122,30 +125,28 @@ impl SessionManager {
         // 创建会话对象
         let session = Session::new(terminal.clone(), self.config.terminal.session_timeout);
         
-        // 获取会话的client_senders
-        let client_senders = session.client_senders.clone();
-        
         // 添加到会话映射 - 只持有写锁一小段时间
         {
             let mut sessions_write = self.sessions.write().unwrap();
             sessions_write.insert(session_id.clone(), session.clone());
         }
         
-        // 启动终端输出监听 - 完全独立的任务，不持有会话管理器锁
-        self.spawn_terminal_listener(terminal, session_id.clone(), client_senders).await;
-        
         log::info!("Created new session with ID: {} using shell: {:?}", 
                   session_id, default_shell_config.command);
+        
+        // 注意：我们不再在这里启动终端输出监听任务
+        // 终端输出监听任务将在第一个客户端连接时启动
+        // 这样可以确保只有在有客户端连接时才会读取终端输出，避免输出被丢弃
         
         Ok(session_id)
     }
     
     // 启动终端输出监听任务 - 独立异步任务，不阻塞主线程
-    async fn spawn_terminal_listener(&self, terminal: TerminalProcess, session_id: String, client_senders: Arc<Mutex<Vec<tokio::sync::mpsc::Sender<String>>>>) {
-        let session_id_clone = session_id.clone();
+    async fn spawn_terminal_listener(&self, terminal: TerminalProcess, session_id: String) {
+        let session_manager_clone = self.clone();
         tokio::spawn(async move { 
             let mut buffer = [0; 1024];
-            let session_id = session_id_clone;
+            let session_id = session_id.clone();
             
             loop {
                 // 检查终端进程是否还在运行
@@ -177,27 +178,53 @@ impl SessionManager {
                 };
                 
                 if !output.is_empty() {
-                    log::debug!("Terminal output for session {}: {:?}", session_id, output);
+                    log::info!("Terminal output for session {}: {:?}", session_id, output);
                     
-                    // 发送输出到所有连接的客户端 - 只持有锁一小段时间
+                    // 从会话管理器中获取最新的会话和client_senders
                     let senders = {
-                        let client_senders_lock = client_senders.lock().unwrap();
-                        client_senders_lock.clone()
+                        // 获取读锁
+                        let sessions_read = session_manager_clone.sessions.read().unwrap();
+                        
+                        // 查找会话
+                        match sessions_read.get(&session_id) {
+                            Some(session) => {
+                                // 获取client_senders并克隆
+                                let client_senders_lock = session.client_senders.lock().unwrap();
+                                let senders_count = client_senders_lock.len();
+                                log::info!("Found {} client senders for session {}", senders_count, session_id);
+                                client_senders_lock.clone()
+                            },
+                            None => {
+                                log::warn!("Session {} not found when sending terminal output", session_id);
+                                Vec::new()
+                            }
+                        }
                     };
                     
+                    log::info!("Sending terminal output to {} clients for session {}", senders.len(), session_id);
+                    
                     // 异步发送，不阻塞主循环
-                    for sender in senders {
+                    for (i, sender) in senders.iter().enumerate() {
+                        // 克隆sender，确保它有'static生命周期
+                        let sender_clone = sender.clone();
                         let output_clone = output.clone();
-                        let client_senders_clone = client_senders.clone();
                         let session_id_clone = session_id.clone();
+                        let session_manager_clone = session_manager_clone.clone();
+                        log::info!("Sending output to client {} for session {}", i, session_id_clone);
                         tokio::spawn(async move {
-                            if let Err(_e) = sender.send(output_clone).await {
-                                log::debug!("Client sender closed, removing from session");
+                            if let Err(e) = sender_clone.send(output_clone).await {
+                                log::info!("Client sender closed for session {}: {}", session_id_clone, e);
                                 // 异步移除失效的发送者
-                                let mut client_senders_lock = client_senders_clone.lock().unwrap();
-                                client_senders_lock.retain(|s| !std::ptr::eq(s, &sender));
+                                
+                                // 获取读锁查找会话
+                                let sessions_read = session_manager_clone.sessions.read().unwrap();
+                                if let Some(session) = sessions_read.get(&session_id_clone) {
+                                    let mut client_senders_lock = session.client_senders.lock().unwrap();
+                                    client_senders_lock.retain(|s| !std::ptr::eq(s, &sender_clone));
+                                    log::info!("Removed closed sender from session {}", session_id_clone);
+                                }
                             } else {
-                                log::debug!("Sent terminal output to client for session {}", session_id_clone);
+                                log::info!("Sent terminal output to client for session {}", session_id_clone);
                             }
                         });
                     }
@@ -224,9 +251,25 @@ impl SessionManager {
         };
         
         // 添加发送者到会话
-        let mut client_senders = session.client_senders.lock().unwrap();
-        client_senders.push(sender);
-        log::info!("Added client sender for session: {}", session_id);
+        {
+            let mut client_senders = session.client_senders.lock().unwrap();
+            client_senders.push(sender);
+            log::info!("Added client sender for session: {}", session_id);
+        } // 在这里释放client_senders锁
+        
+        // 检查是否需要启动终端输出监听任务
+        // 使用compare_exchange确保只有一个线程能启动监听任务
+        if !session.listener_started.load(std::sync::atomic::Ordering::SeqCst) {
+            if session.listener_started.compare_exchange(
+                false, true, 
+                std::sync::atomic::Ordering::SeqCst, 
+                std::sync::atomic::Ordering::SeqCst
+            ).is_ok() {
+                // 启动终端输出监听任务
+                log::info!("Starting terminal output listener for session: {}", session_id);
+                self.spawn_terminal_listener(session.terminal.clone(), session_id.to_string()).await;
+            }
+        }
     }
     
     // 写入数据到会话 - 线程安全，只需要&self
