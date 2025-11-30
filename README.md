@@ -4,9 +4,9 @@
 基于现代技术栈构建的高性能Web终端应用平台，支持WebSocket实时通信协议，提供终端会话管理和实时终端操作。项目同时提供Kotlin和Rust两种后端实现，满足不同部署需求。
 
 ## 🎬 快速演示
-![KT Terminal Demo1](path/to/your-terminal-demo1.gif)
-![KT Terminal Demo2](path/to/your-terminal-demo2.gif)
-![KT Terminal Demo3](path/to/your-terminal-demo3.gif)
+![KT Terminal Demo1](assets/kt-terminal-demo1.gif)
+![KT Terminal Demo2](assets/kt-terminal-demo2.gif)
+![KT Terminal Demo3](assets/kt-terminal-demo3.gif)
 
 ## 🏗️ 核心架构
 ...- **交互式命令处理**: 完整的终端命令输入输出流程

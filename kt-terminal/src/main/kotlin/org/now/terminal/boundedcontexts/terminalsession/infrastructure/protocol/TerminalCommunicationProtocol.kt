@@ -73,16 +73,28 @@ class TerminalCommunicationHandler(
         }
 
         // Add output listener to send data to client
-        val outputListener: (String) -> Unit = { output ->
+        // 使用单一协程通道确保输出顺序正确
+        val outputChannel = kotlinx.coroutines.channels.Channel<String>(capacity = 1024)
+        
+        // 启动单一协程处理所有输出，确保顺序正确
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             try {
-                // 使用结构化并发，避免创建过多的协程
-                // 使用Dispatchers.IO确保send操作不会阻塞业务线程
-                CoroutineScope(Dispatchers.IO).launch {
+                for (output in outputChannel) {
                     protocol.send(output)
                 }
             } catch (e: Exception) {
                 // Ignore send errors, connection might be closed
                 log.debug("Error sending output to client for session {}: {}", sessionId, e.message)
+            }
+        }
+        
+        val outputListener: (String) -> Unit = { output ->
+            try {
+                // 发送到通道，由单一协程处理
+                outputChannel.trySend(output)
+            } catch (e: Exception) {
+                // Ignore channel send errors, connection might be closed
+                log.debug("Error sending output to channel for session {}: {}", sessionId, e.message)
             }
         }
 
@@ -120,6 +132,14 @@ class TerminalCommunicationHandler(
             // Cleanup
             log.debug("Cleaning up terminal communication for session: {}", sessionId)
             process.removeOutputListener(outputListener)
+            
+            // Close the output channel
+            try {
+                outputChannel.close()
+                log.debug("Closed output channel for session: {}", sessionId)
+            } catch (e: Exception) {
+                log.debug("Error closing output channel for session {}: {}", sessionId, e.message)
+            }
 
             // Terminate the terminal process
             try {
