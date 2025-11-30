@@ -117,6 +117,16 @@ export const TerminalActions: React.FC<TerminalActionsProps> = ({
           <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-500 py-1 w-48">
             <button
               onClick={() => {
+                onResizeTerminal();
+                setShowMoreMenu(false);
+              }}
+              className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+            >
+              <Maximize size={14} className="text-teal-500" />
+              <span>Resize Terminal</span>
+            </button>
+            <button
+              onClick={() => {
                 onRefresh();
                 setShowMoreMenu(false);
               }}
@@ -135,16 +145,7 @@ export const TerminalActions: React.FC<TerminalActionsProps> = ({
               <X size={14} className="text-red-500" />
               <span>Terminate Session</span>
             </button>
-            <button
-              onClick={() => {
-                onResizeTerminal();
-                setShowMoreMenu(false);
-              }}
-              className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-            >
-              <Maximize size={14} className="text-teal-500" />
-              <span>Resize Terminal</span>
-            </button>
+            
           </div>
         )}
       </div>
