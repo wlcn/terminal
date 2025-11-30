@@ -10,7 +10,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // 协议选择状态
-  const [protocol, setProtocol] = useState<'websocket' | 'webtransport' | 'auto'>('auto');
+  const [protocol, setProtocol] = useState<'websocket' | 'webtransport' | 'auto'>('websocket');
   
   // 会话信息状态 - 使用与后端一致的默认尺寸
   const [currentSessionInfo, setCurrentSessionInfo] = useState<{
@@ -238,7 +238,6 @@ function App() {
               <div className="absolute bottom-0 right-0 w-12 h-12 bg-primary/30 rounded-full blur-xl animate-pulse delay-900 pointer-events-none"></div>
               
               {/* Digital data stream effects */}
-              <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-data-flow pointer-events-none"></div>
               <div className="absolute bottom-0 left-0 w-full h-3 bg-gradient-to-r from-transparent via-accent/50 to-transparent animate-data-flow-reverse pointer-events-none"></div>
               
               {/* Vertical data streams on sides */}

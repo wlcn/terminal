@@ -1,16 +1,8 @@
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
-import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
-import { createSession, resizeTerminal, interruptTerminal, terminateSession } from '../services/terminalApi';
-import { APP_CONFIG } from '../config/appConfig';
-import { createTerminalCommunication, TerminalCommunication, isWebTransportSupported } from '../services/terminalCommunication';
-
-// WebSocket服务器配置
-const WS_SERVER_URL = APP_CONFIG.WS_SERVER.URL;
-const WS_SERVER_PATH = APP_CONFIG.WS_SERVER.PATH;
+import { TerminalService, initializeTerminal, terminalUtils } from '../services/terminalService';
 
 interface TerminalComponentProps {
   className?: string;
@@ -25,24 +17,17 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
   const fitAddon = useRef<FitAddon | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const [shellType, setShellType] = useState<string>('');
-  const communication = useRef<TerminalCommunication | null>(null);
+  const terminalService = useRef<TerminalService | null>(null);
   const isInitialized = useRef(false);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     connect: connectTerminal,
     disconnect: () => {
-      if (sessionId) {
-        handleTerminate('USER_DISCONNECTED');
-      } else if (communication.current) {
-        communication.current.disconnect();
-      }
+      terminalService.current?.disconnect();
     },
     send: (data: string) => {
-      if (communication.current && communication.current.isConnected()) {
-        communication.current.send(data);
-      }
+      terminalService.current?.send(data);
     },
     resize: handleResize,
     interrupt: handleInterrupt,
@@ -120,352 +105,95 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
     getSessionId: () => sessionId
   }));
 
-  // Connect terminal - one-to-one binding between session and WebSocket
-  const connectTerminal = async () => {
-    try {
-      console.log('🔄 Starting terminal connection process...');
-      
-      // Get or generate user ID
-      let userId = localStorage.getItem('terminal_user_id');
-      
-      // Check if userId exists and has correct format (usr_ + 12 lowercase hex chars)
-      const isValidUserId = userId && userId.startsWith('usr_') && userId.length === 16 && /^usr_[a-f0-9]{12}$/.test(userId);
-      
-      if (!userId || !isValidUserId) {
-        // Generate user ID in format required by backend: usr_ + 12 lowercase hex characters
-        const hexChars = 'abcdef0123456789';
-        let hexId = '';
-        for (let i = 0; i < 12; i++) {
-          hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
-        }
-        userId = 'usr_' + hexId.toLowerCase();
-        localStorage.setItem('terminal_user_id', userId);
-        
-        if (!isValidUserId && userId) {
-          console.log('🔄 Replaced invalid userId format with new valid format:', userId);
-        }
-      }
-      
-      // 1. Create new session via API
-      console.log('📡 Creating new session via API...');
-      
-      // 使用fitAddon获取当前终端的实际尺寸
-      fitAddon.current?.fit();
-      
-      // 获取终端尺寸
-      const columns = terminal.current?.cols || 80;
-      const rows = terminal.current?.rows || 24;
-      
-      const sessionResponse = await createSession(userId, 'Terminal Session', undefined, columns, rows);
-      const newSessionId = sessionResponse.id; // 后端返回的是id字段，不是sessionId
-      const shellType = sessionResponse.shellType; // 后端直接返回shellType字段，不是在configuration中
-      setShellType(shellType);
-      
-      // 使用实际的终端尺寸数据
-      const terminalSize = { columns, rows };
-      
-      console.log('✅ Session created:', newSessionId, 'Shell type:', shellType, 'Terminal size:', `${terminalSize.columns}×${terminalSize.rows}`);
-      setSessionId(newSessionId);
-      
-      // 2. Try to establish communication connection (one-to-one binding)
-      console.log('🌐 Attempting to establish communication connection for session...');
-      
-      try {
-        // Determine which protocol to use
-        let selectedProtocol: 'websocket' | 'webtransport';
-        
-        if (protocol === 'auto') {
-          // Auto-detect: use WebTransport if supported, otherwise WebSocket
-          selectedProtocol = isWebTransportSupported() ? 'webtransport' : 'websocket';
-        } else {
-          // Use the protocol specified by the user
-          selectedProtocol = protocol;
-        }
-        
-        console.log(`📡 Using communication protocol: ${selectedProtocol}`);
-        
-        // Create communication instance
-        communication.current = createTerminalCommunication(newSessionId, selectedProtocol);
-        
-        // Set up event handlers
-        communication.current.on('open', () => {
-          console.log('✅ Communication connection established successfully');
-          
-          // Configure terminal parameters after connection is successful
-          configureTerminalForShell(shellType);
-          
-          // 使用fitAddon让终端自动适应容器大小
-          fitAddon.current?.fit();
-          
-          // 获取当前终端的实际大小
-          const cols = terminal.current?.cols || 80;
-          const rows = terminal.current?.rows || 24;
-          
-          // 更新终端大小对象
-          const actualTerminalSize = { columns: cols, rows: rows };
-          
-          terminal.current?.write('Terminal ready\r\n');
-          terminal.current?.write('$ ');
-          
-          setIsConnected(true);
-          
-          // 传递会话信息给父组件
-          onConnectionStatusChange?.(true, {
-            sessionId: newSessionId,
-            shellType: shellType,
-            terminalSize: actualTerminalSize // 使用实际的终端大小
-          });
-          
-          // After successful connection, session and communication have established one-to-one relationship
-          console.log(`🔗 Session ${newSessionId} ↔ ${selectedProtocol} connection established`);
-        });
-        
-        communication.current.on('message', (data) => {
-          console.log('📨 Received terminal output:', data);
-          
-          // Communication is only used for command line output, display directly
-          if (typeof data === 'string') {
-            // xterm.js is specifically designed to handle terminal escape sequences, no manual escaping needed
-            // Write data directly, let xterm.js handle all ANSI escape sequences
-            terminal.current?.write(data);
-          }
-        });
-        
-        communication.current.on('close', (event) => {
-          console.log('🔌 Communication connection closed');
-          console.log(`📊 Close event:`, event);
-          
-          setIsConnected(false);
-          onConnectionStatusChange?.(false);
-          terminal.current?.writeln('\r\nCommunication connection closed');
-          
-          // When connection closes, session should also be terminated (one-to-one relationship)
-          if (sessionId) {
-            console.log(`🛑 Terminating session ${sessionId} due to communication closure`);
-            handleTerminate('COMMUNICATION_CLOSED');
-          }
-        });
-        
-        communication.current.on('error', (error) => {
-          console.error('❌ Communication connection error:', error);
-          terminal.current?.writeln('❌ Communication connection error');
-          
-          setIsConnected(false);
-          onConnectionStatusChange?.(false);
-          
-          // When communication error occurs, session should also be terminated (one-to-one relationship)
-          if (sessionId) {
-            console.log(`🛑 Terminating session ${sessionId} due to communication error`);
-            handleTerminate('COMMUNICATION_ERROR');
-          }
-        });
-        
-        // Connect to the server
-        communication.current.connect();
-      } catch (error) {
-        console.warn('⚠️ Communication connection failed, using fallback mode:', error);
-        
-        // Configure terminal parameters even without communication
-        configureTerminalForShell(shellType);
-        
-        // 直接使用尺寸对象调整xterm.js
-        if (terminalSize.columns && terminalSize.rows) {
-          terminal.current?.resize(terminalSize.columns, terminalSize.rows);
-        }
-        
-        terminal.current?.write('$ ');
-        
-        setIsConnected(true);
-        
-        // 传递会话信息给父组件
-        onConnectionStatusChange?.(true, {
-          sessionId: newSessionId,
-          shellType: shellType,
-          terminalSize: terminalSize // 使用尺寸对象
-        });
-        
-        console.log(`✅ Session ${newSessionId} created (fallback mode)`);
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to connect terminal:', error);
-      terminal.current?.writeln('❌ Failed to connect terminal');
-      
-      setIsConnected(false);
-      onConnectionStatusChange?.(false);
+  // Connection status change handler
+  const handleConnectionStatusChange = (connected: boolean, sessionInfo?: {
+    sessionId: string;
+    shellType: string;
+    terminalSize: { columns: number; rows: number };
+  }) => {
+    setIsConnected(connected);
+    if (connected && sessionInfo) {
+      setSessionId(sessionInfo.sessionId);
+    } else {
+      setSessionId('');
     }
+    onConnectionStatusChange?.(connected, sessionInfo);
   };
-  
 
-
-  // Resize terminal
-  const handleResize = async (columns: number, rows: number) => {
-    if (!sessionId) {
-      console.warn('⚠️ No active session to resize');
+  // Connect terminal
+  const connectTerminal = async () => {
+    if (!terminal.current) {
+      console.error('❌ Terminal not initialized');
       return;
     }
+
+    // 使用fitAddon获取当前终端的实际尺寸
+    fitAddon.current?.fit();
     
-    try {
-      console.log(`📐 Resizing terminal to ${columns}x${rows}`);
-      await resizeTerminal(sessionId, columns, rows);
-      
-      // 更新xterm.js尺寸
-      if (terminal.current) {
-        terminal.current.resize(columns, rows);
-      }
-      
-      // 更新父组件状态
-      onConnectionStatusChange?.(true, {
-        sessionId: sessionId,
-        shellType: shellType,
-        terminalSize: { columns, rows }
-      });
-      
-      console.log('✅ Terminal resized successfully');
-    } catch (error) {
-      console.error('❌ Failed to resize terminal:', error);
+    // 获取终端尺寸
+    const columns = terminal.current?.cols || 80;
+    const rows = terminal.current?.rows || 24;
+
+    // 创建或使用现有的终端服务实例
+    if (!terminalService.current) {
+      terminalService.current = new TerminalService(protocol, handleConnectionStatusChange);
+    }
+
+    // 连接终端
+    await terminalService.current.connect(terminal.current, columns, rows);
+  };
+  
+  // Resize terminal
+  const handleResize = async (columns: number, rows: number) => {
+    await terminalService.current?.resize(columns, rows);
+    
+    // 更新xterm.js尺寸
+    if (terminal.current) {
+      terminal.current.resize(columns, rows);
     }
   };
   
   // Interrupt terminal (send Ctrl+C signal)
   const handleInterrupt = async () => {
-    if (!sessionId) {
-      console.warn('⚠️ No active session to interrupt');
-      return;
-    }
+    await terminalService.current?.interrupt();
     
-    try {
-      console.log('⏹️ Sending interrupt signal to terminal');
-      await interruptTerminal(sessionId);
-      
-      // 在终端中显示中断提示
-      if (terminal.current) {
-        terminal.current.write('\r\n^C\r\n');
-      }
-      
-      console.log('✅ Terminal interrupted successfully');
-    } catch (error) {
-      console.error('❌ Failed to interrupt terminal:', error);
+    // 在终端中显示中断提示
+    if (terminal.current) {
+      terminal.current.write('\r\n^C\r\n');
     }
   };
   
-  // Terminate session - also close communication connection (one-to-one relationship)
+  // Terminate session
   const handleTerminate = async (reason?: string) => {
-    if (!sessionId) {
-      console.warn('⚠️ No active session to terminate');
-      return;
-    }
-    
-    try {
-      console.log(`🛑 Terminating session: ${reason || 'USER_REQUESTED'}`);
-      
-      // First close communication connection
-      if (communication.current) {
-        communication.current.disconnect();
-        console.log('🔌 Communication connection closed');
-      }
-      
-      // Then terminate session
-      await terminateSession(sessionId, reason);
-      console.log('✅ Session terminated successfully');
-      
-      // Reset state
-      setSessionId('');
-      setIsConnected(false);
-      onConnectionStatusChange?.(false);
-      
-    } catch (error) {
-      console.error('❌ Failed to terminate session:', error);
-      
-      // Even if API call fails, ensure communication is closed
-      if (communication.current) {
-        communication.current.disconnect();
-      }
-    }
+    await terminalService.current?.terminate(reason);
   };
 
-  // Dynamically configure xterm.js parameters based on shell type
-  const configureTerminalForShell = (shellType: string | undefined) => {
-    if (!terminal.current) return;
-    
-    // Handle undefined or empty values
-    if (!shellType) {
-      console.warn('⚠️ Shell type is undefined or empty, using auto-detection');
-      shellType = 'AUTO';
-    }
-    
-    console.log(`⚙️ Configuring terminal for shell type: ${shellType}`);
-    
-    // Set different xterm.js configurations based on shell type
-    switch (shellType.toUpperCase()) {
-      case 'WINDOWS_CMD':
-      case 'WINDOWS_POWERSHELL':
-        // Windows environment: enable Windows mode, handle carriage return correctly
-        terminal.current.options.windowsMode = true;
-        terminal.current.options.convertEol = true; // Convert \n to \r\n
-        break;
-        
-      case 'UNIX':
-        // Unix/Linux environment: use Unix-style line endings
-        terminal.current.options.windowsMode = false;
-        terminal.current.options.convertEol = false; // Keep \n unchanged
-        break;
-        
-      case 'AUTO':
-      default:
-        // Auto-detection: determine based on browser environment
-        const isWindows = navigator.userAgent.includes('Windows');
-        terminal.current.options.windowsMode = isWindows;
-        terminal.current.options.convertEol = isWindows;
-        break;
-    }
-    
-    // Refresh terminal configuration
-    terminal.current.refresh(0, terminal.current.rows - 1);
-  };
-
-
-  // Initialize terminal - using xterm.js official best practice configuration
+  // Initialize terminal
   useEffect(() => {
     if (!terminalRef.current || isInitialized.current) return;
 
-    console.log('🎯 Initializing xterm.js terminal with official best practices...');
+    console.log('🎯 Initializing xterm.js terminal...');
     
-    // Create terminal instance - using the most concise official recommended configuration
-        terminal.current = new Terminal({
-          // Basic configuration
-          fontSize: 14,
-          fontFamily: 'Consolas, "Courier New", monospace',
-          theme: {
-            background: '#1e1e1e',
-            foreground: '#cccccc',
-            cursor: '#ffffff',
-            selection: '#3a3d41'
-          }
-          // 不设置固定尺寸，让终端自动适应容器大小
-          // Do not add any special configuration, let xterm.js handle all characters in default way
-        });
+    // 初始化终端
+    const { terminal: initializedTerminal, fitAddon: initializedFitAddon } = initializeTerminal(
+      terminalRef,
+      (data) => {
+        console.log('⌨️ Terminal input:', data);
+        terminalService.current?.send(data);
+      }
+    );
 
-    // Create and install addons
-    fitAddon.current = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
-    const webglAddon = new WebglAddon();
+    terminal.current = initializedTerminal;
+    fitAddon.current = initializedFitAddon;
 
-    terminal.current.loadAddon(fitAddon.current);
-    terminal.current.loadAddon(webLinksAddon);
-    terminal.current.loadAddon(webglAddon);
-
-    // Mount to DOM
-    terminal.current.open(terminalRef.current);
-
-    // 使用fitAddon获取实际终端尺寸，而不是固定的80x24
+    // 使用fitAddon获取实际终端尺寸
     setTimeout(() => {
       // 使用fitAddon让终端自动适应容器大小，获取实际尺寸
       fitAddon.current?.fit();
       
       // 窗口大小改变时，重新调整终端大小
       const handleResize = () => {
-        fitAddon.current?.fit();
+        terminalUtils.handleWindowResize(fitAddon.current!);
       };
       
       window.addEventListener('resize', handleResize);
@@ -476,24 +204,11 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       };
     }, 100);
 
-    // Listen for keyboard input - using the simplest processing method
-        terminal.current.onData((data) => {
-          console.log('⌨️ Terminal input:', data);
-          
-          if (communication.current && communication.current.isConnected()) {
-            // Do not perform any local echo, let backend handle all output
-            // Send all input to backend, backend is responsible for complete command processing and echo
-            communication.current.send(data);
-          }
-        });
-
     isInitialized.current = true;
-    console.log('✅ Terminal initialized with official best practices');
+    console.log('✅ Terminal initialized successfully');
     
     // Display welcome message
-    // terminal.current.writeln('🚀 Web Terminal Ready');
-    terminal.current.writeln('Click the "Connect" button to start a session');
-    terminal.current.write('$ ');
+    terminalUtils.showWelcomeMessage(terminal.current);
 
   }, []);
 
