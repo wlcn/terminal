@@ -2,7 +2,6 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.config
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import kotlinx.coroutines.runBlocking
 import org.koin.dsl.module
 import org.now.terminal.boundedcontexts.terminalsession.domain.InMemoryTerminalSessionRepository
 import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionRepository

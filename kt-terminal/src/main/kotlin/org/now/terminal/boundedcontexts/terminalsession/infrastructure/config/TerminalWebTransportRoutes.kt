@@ -5,12 +5,6 @@ import io.ktor.server.application.Application
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import jdk.internal.vm.ScopedValueContainer.call
-import org.koin.ktor.ext.inject
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
-import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
-import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.TerminalCommunicationHandler
-import org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol.WebTransportProtocol
 
 /**
  * WebTransport routes for terminal communication

@@ -2,8 +2,8 @@ package org.now.terminal.boundedcontexts.terminalsession.infrastructure.protocol
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import org.now.terminal.boundedcontexts.terminalsession.domain.TerminalSessionStatus
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalProcessService
 import org.now.terminal.boundedcontexts.terminalsession.domain.service.TerminalSessionService
 
@@ -74,10 +74,10 @@ class TerminalCommunicationHandler(
 
         // Add output listener to send data to client
         // 使用单一协程通道确保输出顺序正确
-        val outputChannel = kotlinx.coroutines.channels.Channel<String>(capacity = 1024)
+        val outputChannel = Channel<String>(capacity = 1024)
         
         // 启动单一协程处理所有输出，确保顺序正确
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 for (output in outputChannel) {
                     protocol.send(output)
