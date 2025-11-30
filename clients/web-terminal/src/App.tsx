@@ -197,7 +197,7 @@ function App() {
       />
 
       {/* Main Content - Full width with minimal padding */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-auto">
         {/* Terminal area that can grow with content */}
         <div className="p-4">
           {/* Terminal Container with enhanced border effect - full width */}
@@ -212,7 +212,7 @@ function App() {
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNGM1LjUyMyAwIDEwLTMuOTc3IDEwLTEwcy0zLjk3Ny0xMC0xMC0xMGMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNHoiIGZpbGw9IiMwMDgwZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PHBhdGggZD0iTTMwIDE4YzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00Yy01LjUyMyAwLTEwIDMuOTc3LTEwIDEwczMuOTc3IDEwIDEwIDEwYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00eiIgZmlsbD0iIzAwODBmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48cGF0aCBkPSJNMTggMThjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTRjLTUuNTIzIDAtMTAgMy45NzctMTAgMTBzMy45NzcgMTAgMTAgMTBjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTR6IiBmaWxsPSIjMDA4MGZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPjxwYXRoIGQ9Ik00OCAxOGMyLjIxIDAgNC0xLjc5IDQtNHMtMS43OS00LTQtNGMtNS41MjMgMC0xMCAzLjk3Ny0xMCAxMHMzLjk3NyAxMCAxMCAxMGMzLjMxNCAwIDYtMi42ODYgNi02cy0yLjY4Ni02LTYtNnptLTEyIDBjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNHoiIGZpbGw9IiMwMDgwZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9nPjwvc3ZnPg==')] opacity-20 pointer-events-none"></div>
             
             {/* Monitor frame - enhanced border effect with tech elements */}
-            <div className="relative bg-card/95 backdrop-blur-xl border-2 border-primary/40 shadow-2xl overflow-hidden">
+            <div className="relative bg-card/95 backdrop-blur-xl border-2 border-primary/40 shadow-2xl">
               {/* Modern tech elements - dynamic gradient border */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 opacity-40 animate-gradientShift pointer-events-none"></div>
               
