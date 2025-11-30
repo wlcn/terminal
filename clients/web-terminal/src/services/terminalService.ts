@@ -1,6 +1,10 @@
+import React from 'react';
 import { createSession, resizeTerminal, interruptTerminal, terminateSession } from './terminalApi';
 import { createTerminalCommunication, TerminalCommunication, isWebTransportSupported } from './terminalCommunication';
 import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 
 // 终端服务类，处理终端相关的业务逻辑
 export class TerminalService {
@@ -322,10 +326,6 @@ export const initializeTerminal = (terminalRef: React.RefObject<HTMLDivElement>,
   terminal: Terminal;
   fitAddon: FitAddon;
 } => {
-  const { FitAddon } = require('@xterm/addon-fit');
-  const { WebLinksAddon } = require('@xterm/addon-web-links');
-  const { WebglAddon } = require('@xterm/addon-webgl');
-  
   const terminal = new Terminal({
     // Basic configuration
     fontSize: 14,
