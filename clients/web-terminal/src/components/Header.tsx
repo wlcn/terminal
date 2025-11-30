@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize, User, Settings, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface HeaderProps {
@@ -20,6 +20,15 @@ interface HeaderProps {
   onResizeTerminal: () => void;
 }
 
+// 用户信息类型
+interface UserInfo {
+  id: string;
+  name: string;
+  avatar: string;
+  sessionLimit: number;
+  activeSessions: number;
+}
+
 export const Header: React.FC<HeaderProps> = ({
   isConnected,
   isFullscreen,
@@ -34,13 +43,27 @@ export const Header: React.FC<HeaderProps> = ({
   onResizeTerminal
 }) => {
   const [showMoreMenu, setShowMoreMenu] = React.useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // 模拟用户信息
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    id: 'user-1',
+    name: 'Long Wang',
+    avatar: 'https://ui-avatars.com/api/?name=Long+Wang&background=random',
+    sessionLimit: 5,
+    activeSessions: 1
+  });
   
   // 点击外部区域关闭下拉菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setShowMoreMenu(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     
@@ -188,6 +211,95 @@ export const Header: React.FC<HeaderProps> = ({
                   <Maximize size={14} className="text-teal-500" />
                   <span>Resize Terminal</span>
                 </button>
+              </div>
+            )}
+          </div>
+          
+          {/* User Avatar with Dropdown Menu */}
+          <div className="relative" ref={userMenuRef}>
+            <Button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-md"
+              title="User profile"
+            >
+              <img 
+                src={userInfo.avatar} 
+                alt={userInfo.name} 
+                className="w-full h-full object-cover rounded-full border-2 border-primary/30 hover:border-primary/50 transition-all duration-200 shadow-lg"
+              />
+            </Button>
+            
+            {/* User Menu Dropdown */}
+            {showUserMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-500 py-2 w-56">
+                {/* User Info */}
+                <div className="px-4 py-3 border-b border-border">
+                  <div className="flex items-center space-x-3">
+                    <img 
+                      src={userInfo.avatar} 
+                      alt={userInfo.name} 
+                      className="w-10 h-10 object-cover rounded-full border border-primary/30"
+                    />
+                    <div>
+                      <div className="font-medium text-sm">{userInfo.name}</div>
+                      <div className="text-xs text-muted-foreground">{userInfo.id}</div>
+                    </div>
+                  </div>
+                  {/* Session Usage */}
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">Session Usage</span>
+                      <span className="font-medium">{userInfo.activeSessions}/{userInfo.sessionLimit}</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300 ease-in-out"
+                        style={{ width: `${(userInfo.activeSessions / userInfo.sessionLimit) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Menu Items */}
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      onListSessions();
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                  >
+                    <List size={14} className="text-purple-500" />
+                    <span>My Sessions</span>
+                  </button>
+                  <button
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                  >
+                    <Settings size={14} className="text-blue-500" />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
+                  >
+                    <User size={14} className="text-green-500" />
+                    <span>Profile</span>
+                  </button>
+                </div>
+                
+                {/* Logout */}
+                <div className="border-t border-border py-1">
+                  <button
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={14} className="text-red-500" />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
