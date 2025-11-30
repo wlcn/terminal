@@ -133,7 +133,12 @@ export const terminateSession = async (
  */
 export const listSessions = async (userId?: string): Promise<{ sessions: any[]; count: number }> => {
   try {
-    const url = `${API_BASE_URL}`;
+    let url = `${API_BASE_URL}`;
+    
+    // 如果提供了userId，只获取该用户的会话
+    if (userId) {
+      url = `${url}?userId=${encodeURIComponent(userId)}`;
+    }
     
     const response = await fetch(url);
     

@@ -94,28 +94,48 @@ function App() {
   // Session List Modal state and handlers
   const [showSessionList, setShowSessionList] = useState(false);
   const [sessionList, setSessionList] = useState<any[]>([]);
+  const [sessionListTitle, setSessionListTitle] = useState('Sessions');
 
-  const handleListSessions = async () => {
-    try {
-      // Get or generate user ID
-      let userId = localStorage.getItem('terminal_user_id');
-      if (!userId) {
-        // Generate user ID in format required by backend: usr_ + 12 lowercase hex characters
-        const hexChars = 'abcdef0123456789';
-        let hexId = '';
-        for (let i = 0; i < 12; i++) {
-          hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
-        }
-        userId = 'usr_' + hexId.toLowerCase();
-        localStorage.setItem('terminal_user_id', userId);
+  // Get or generate user ID
+  const getUserId = () => {
+    let userId = localStorage.getItem('terminal_user_id');
+    if (!userId) {
+      // Generate user ID in format required by backend: usr_ + 12 lowercase hex characters
+      const hexChars = 'abcdef0123456789';
+      let hexId = '';
+      for (let i = 0; i < 12; i++) {
+        hexId += hexChars.charAt(Math.floor(Math.random() * hexChars.length));
       }
-      
+      userId = 'usr_' + hexId.toLowerCase();
+      localStorage.setItem('terminal_user_id', userId);
+    }
+    return userId;
+  };
+
+  // Handle listing all sessions (global)
+  const handleListAllSessions = async () => {
+    try {
       const data = await listSessions();
-      console.log('Active sessions:', data);
+      console.log('All sessions:', data);
       setSessionList(data.sessions);
+      setSessionListTitle('Global Sessions');
       setShowSessionList(true);
     } catch (error) {
-      console.error('Failed to list sessions:', error);
+      console.error('Failed to list all sessions:', error);
+    }
+  };
+
+  // Handle listing user's sessions
+  const handleListUserSessions = async () => {
+    try {
+      const userId = getUserId();
+      const data = await listSessions(userId);
+      console.log('User sessions:', data);
+      setSessionList(data.sessions);
+      setSessionListTitle('My Sessions');
+      setShowSessionList(true);
+    } catch (error) {
+      console.error('Failed to list user sessions:', error);
     }
   };
 
@@ -150,7 +170,8 @@ function App() {
         onConnect={handleConnect}
         onToggleFullscreen={toggleFullscreen}
         onRefresh={handleRefresh}
-        onListSessions={handleListSessions}
+        onListUserSessions={handleListUserSessions}
+        onListAllSessions={handleListAllSessions}
         onTerminateSession={handleTerminateSession}
         onResizeTerminal={handleResizeTerminal}
       />
@@ -160,6 +181,7 @@ function App() {
         isOpen={showSessionList}
         sessions={sessionList}
         currentSessionId={currentSessionInfo.sessionId}
+        title={sessionListTitle}
         onClose={() => setShowSessionList(false)}
       />
       

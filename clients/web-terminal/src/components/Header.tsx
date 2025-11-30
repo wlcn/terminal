@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Maximize2, Minimize2, Power, RefreshCw, List, X, Maximize, User, Settings, LogOut } from 'lucide-react';
-import { Button } from './ui/button';
+import React, { useState } from 'react';
+import { UserAvatar, UserInfo } from './UserAvatar';
+import { TerminalActions } from './TerminalActions';
 
 interface HeaderProps {
   isConnected: boolean;
@@ -15,18 +15,10 @@ interface HeaderProps {
   onConnect: () => void;
   onToggleFullscreen: () => void;
   onRefresh: () => void;
-  onListSessions: () => void;
+  onListUserSessions: () => void;
+  onListAllSessions: () => void;
   onTerminateSession: () => void;
   onResizeTerminal: () => void;
-}
-
-// 用户信息类型
-interface UserInfo {
-  id: string;
-  name: string;
-  avatar: string;
-  sessionLimit: number;
-  activeSessions: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -38,15 +30,11 @@ export const Header: React.FC<HeaderProps> = ({
   onConnect,
   onToggleFullscreen,
   onRefresh,
-  onListSessions,
+  onListUserSessions,
+  onListAllSessions,
   onTerminateSession,
   onResizeTerminal
 }) => {
-  const [showMoreMenu, setShowMoreMenu] = React.useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  
   // 模拟用户信息
   const [userInfo, setUserInfo] = useState<UserInfo>({
     id: 'user-1',
@@ -55,31 +43,12 @@ export const Header: React.FC<HeaderProps> = ({
     sessionLimit: 5,
     activeSessions: 1
   });
-  
-  // 点击外部区域关闭下拉菜单
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setShowMoreMenu(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
-    
-    // 添加事件监听器
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    // 清理函数
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   return (
     <header className="glass border-b border-border/50 px-4 py-3 relative z-10">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-4">
+          {/* Logo and Status */}
           <div className="flex items-center space-x-3">
             <div className={`w-3 h-3 rounded-full relative ${isConnected ? 'status-connected glow-success' : 'status-disconnected'}`}>
               <div className={`absolute inset-0 rounded-full animate-ping ${isConnected ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></div>
@@ -125,184 +94,24 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
-          {/* Main action buttons */}
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={onConnect}
-              variant={isConnected ? "destructive" : "default"}
-              size="sm"
-              className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-md ${isConnected 
-                ? 'bg-green-500/30 hover:bg-green-500/40 border-green-500/40' 
-                : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg animate-pulse'}`}
-              title={isConnected ? 'Disconnect' : 'Connect to terminal'}
-            >
-              <Power size={16} className={isConnected ? "text-white" : "text-white"} />
-            </Button>
-            
-            <Button
-              onClick={onToggleFullscreen}
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
-              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 size={16} className="text-primary" /> : <Maximize2 size={16} className="text-primary" />}
-            </Button>
-          </div>
+        <div className="flex items-center space-x-4">
+          {/* Terminal Actions Component */}
+          <TerminalActions
+            isConnected={isConnected}
+            isFullscreen={isFullscreen}
+            onConnect={onConnect}
+            onToggleFullscreen={onToggleFullscreen}
+            onRefresh={onRefresh}
+            onListSessions={onListAllSessions}
+            onTerminateSession={onTerminateSession}
+            onResizeTerminal={onResizeTerminal}
+          />
           
-          {/* More options dropdown - 作为按钮的直接子元素 */}
-          <div className="relative" ref={moreMenuRef}>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-sm ${isConnected ? 'bg-primary/20 hover:bg-primary/30 border-primary/30' : 'bg-background/80 opacity-50 cursor-not-allowed'}`}
-              title={isConnected ? "More options" : "Connect to enable"}
-              disabled={!isConnected}
-              onClick={() => setShowMoreMenu(!showMoreMenu)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isConnected ? "text-primary" : "text-muted-foreground"}>
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="19" cy="12" r="1"></circle>
-                <circle cx="5" cy="12" r="1"></circle>
-              </svg>
-            </Button>
-            
-            {/* Dropdown content - 直接作为按钮的子元素，使用absolute定位 */}
-            {isConnected && showMoreMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-500 py-1 w-48">
-                <button
-                  onClick={() => {
-                    onRefresh();
-                    setShowMoreMenu(false);
-                  }}
-                  className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                >
-                  <RefreshCw size={14} className="text-orange-500" />
-                  <span>Refresh Terminal</span>
-                </button>
-                <button
-                  onClick={() => {
-                    onListSessions();
-                    setShowMoreMenu(false);
-                  }}
-                  className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                >
-                  <List size={14} className="text-purple-500" />
-                  <span>List Sessions</span>
-                </button>
-                <button
-                  onClick={() => {
-                    onTerminateSession();
-                    setShowMoreMenu(false);
-                  }}
-                  className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
-                >
-                  <X size={14} className="text-red-500" />
-                  <span>Terminate Session</span>
-                </button>
-                <button
-                  onClick={() => {
-                    onResizeTerminal();
-                    setShowMoreMenu(false);
-                  }}
-                  className="w-full flex items-center space-x-2 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                >
-                  <Maximize size={14} className="text-teal-500" />
-                  <span>Resize Terminal</span>
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* User Avatar with Dropdown Menu */}
-          <div className="relative" ref={userMenuRef}>
-            <Button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-md"
-              title="User profile"
-            >
-              <img 
-                src={userInfo.avatar} 
-                alt={userInfo.name} 
-                className="w-full h-full object-cover rounded-full border-2 border-primary/30 hover:border-primary/50 transition-all duration-200 shadow-lg"
-              />
-            </Button>
-            
-            {/* User Menu Dropdown */}
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-500 py-2 w-56">
-                {/* User Info */}
-                <div className="px-4 py-3 border-b border-border">
-                  <div className="flex items-center space-x-3">
-                    <img 
-                      src={userInfo.avatar} 
-                      alt={userInfo.name} 
-                      className="w-10 h-10 object-cover rounded-full border border-primary/30"
-                    />
-                    <div>
-                      <div className="font-medium text-sm">{userInfo.name}</div>
-                      <div className="text-xs text-muted-foreground">{userInfo.id}</div>
-                    </div>
-                  </div>
-                  {/* Session Usage */}
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">Session Usage</span>
-                      <span className="font-medium">{userInfo.activeSessions}/{userInfo.sessionLimit}</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-gradient-to-r from-primary to-accent h-2 rounded-full transition-all duration-300 ease-in-out"
-                        style={{ width: `${(userInfo.activeSessions / userInfo.sessionLimit) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Menu Items */}
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      onListSessions();
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                  >
-                    <List size={14} className="text-purple-500" />
-                    <span>My Sessions</span>
-                  </button>
-                  <button
-                    onClick={() => setShowUserMenu(false)}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                  >
-                    <Settings size={14} className="text-blue-500" />
-                    <span>Settings</span>
-                  </button>
-                  <button
-                    onClick={() => setShowUserMenu(false)}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-primary/10 transition-colors"
-                  >
-                    <User size={14} className="text-green-500" />
-                    <span>Profile</span>
-                  </button>
-                </div>
-                
-                {/* Logout */}
-                <div className="border-t border-border py-1">
-                  <button
-                    onClick={() => setShowUserMenu(false)}
-                    className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut size={14} className="text-red-500" />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* User Avatar Component */}
+          <UserAvatar 
+            userInfo={userInfo} 
+            onListSessions={onListUserSessions} 
+          />
         </div>
       </div>
     </header>

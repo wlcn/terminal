@@ -24,10 +24,11 @@ interface SessionListModalProps {
   isOpen: boolean;
   sessions: Session[];
   currentSessionId: string;
+  title?: string;
   onClose: () => void;
 }
 
-export const SessionListModal: React.FC<SessionListModalProps> = ({ isOpen, sessions, currentSessionId, onClose }) => {
+export const SessionListModal: React.FC<SessionListModalProps> = ({ isOpen, sessions, currentSessionId, title = 'Terminal Sessions', onClose }) => {
   const [filteredSessions, setFilteredSessions] = React.useState<Session[]>([]);
   const [filterStatus, setFilterStatus] = React.useState('all');
   const [sortBy, setSortBy] = React.useState('createdAt-desc');
@@ -90,7 +91,7 @@ export const SessionListModal: React.FC<SessionListModalProps> = ({ isOpen, sess
         <div className="flex flex-col md:flex-row md:items-center justify-between p-6 border-b border-border gap-3">
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <List size={18} className="text-primary" />
-            Terminal Sessions
+            {title}
           </h3>
           
           {/* Session Stats */}
