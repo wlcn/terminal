@@ -95,7 +95,6 @@ export class TerminalService {
           this.configureTerminalForShell(terminal, shellType);
           
           terminal.write('Terminal ready\r\n');
-          terminal.write('$ ');
           
           // 传递会话信息给父组件
           this.onConnectionStatusChange?.(true, {
