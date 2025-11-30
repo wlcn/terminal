@@ -518,7 +518,7 @@ const TerminalComponent = forwardRef<any, TerminalComponentProps>(({ className, 
       
       <div 
         ref={terminalRef} 
-        className="w-full h-full bg-slate-900 overflow-hidden"
+        className="w-full bg-slate-900"
       />
     </div>
   );

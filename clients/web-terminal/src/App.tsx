@@ -197,41 +197,69 @@ function App() {
       />
 
       {/* Main Content - Full width with minimal padding */}
-      <main className="flex-1 p-4 overflow-hidden flex flex-col">
-        {/* Terminal Container with enhanced border effect - full width */}
-        <div className="flex-1 relative">
-          {/* Enhanced monitor bezel with glass effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 opacity-40 pointer-events-none"></div>
-          
-          {/* Tech glow overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 blur-xl pointer-events-none"></div>
-          
-          {/* Monitor frame - enhanced border effect */}
-          <div className="absolute inset-0 bg-card/95 backdrop-blur-xl border-2 border-primary/30 shadow-2xl overflow-hidden relative">
-            {/* Modern tech elements - monitor screen edges */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-70 animate-pulse-slow pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-70 animate-pulse-slow pointer-events-none"></div>
-            {/* Left and right border accents */}
-            <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-primary via-accent to-primary opacity-70 animate-pulse-slow pointer-events-none"></div>
-            <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-primary via-accent to-primary opacity-70 animate-pulse-slow pointer-events-none"></div>
+      <div className="flex-1 flex flex-col">
+        {/* Terminal area that can grow with content */}
+        <div className="p-4">
+          {/* Terminal Container with enhanced border effect - full width */}
+          <div className="relative w-full">
+            {/* Enhanced tech background effects */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 opacity-40 pointer-events-none"></div>
             
-            {/* Scan line effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-transparent pointer-events-none"></div>
+            {/* Sharp tech glow overlay - no blur */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-accent/15 to-primary/15 pointer-events-none"></div>
             
-            {/* Monitor screen */}
-            <div className="h-full relative p-4">
-              <TerminalComponent 
-                ref={terminalRef}
-                className="h-full overflow-hidden"
-                protocol={protocol}
-                onConnectionStatusChange={handleConnectionStatusChange}
-              />
+            {/* Digital circuit pattern overlay */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNGM1LjUyMyAwIDEwLTMuOTc3IDEwLTEwcy0zLjk3Ny0xMC0xMC0xMGMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNHoiIGZpbGw9IiMwMDgwZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PHBhdGggZD0iTTMwIDE4YzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00Yy01LjUyMyAwLTEwIDMuOTc3LTEwIDEwczMuOTc3IDEwIDEwIDEwYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00eiIgZmlsbD0iIzAwODBmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48cGF0aCBkPSJNMTggMThjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTRjLTUuNTIzIDAtMTAgMy45NzctMTAgMTBzMy45NzcgMTAgMTAgMTBjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTR6IiBmaWxsPSIjMDA4MGZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPjxwYXRoIGQ9Ik00OCAxOGMyLjIxIDAgNC0xLjc5IDQtNHMtMS43OS00LTQtNGMtNS41MjMgMC0xMCAzLjk3Ny0xMCAxMHMzLjk3NyAxMCAxMCAxMGMzLjMxNCAwIDYtMi42ODYgNi02cy0yLjY4Ni02LTYtNnptLTEyIDBjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNHoiIGZpbGw9IiMwMDgwZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9nPjwvc3ZnPg==')] opacity-20 pointer-events-none"></div>
+            
+            {/* Monitor frame - enhanced border effect with tech elements */}
+            <div className="relative bg-card/95 backdrop-blur-xl border-2 border-primary/40 shadow-2xl overflow-hidden">
+              {/* Modern tech elements - dynamic gradient border */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/20 opacity-40 animate-gradientShift pointer-events-none"></div>
+              
+              {/* Enhanced glowing edges with pulse effect */}
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-90 animate-pulse-slow pointer-events-none"></div>
+              <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-primary via-accent to-primary opacity-90 animate-pulse-slow pointer-events-none"></div>
+              <div className="absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-primary via-accent to-primary opacity-90 animate-pulse-slow pointer-events-none"></div>
+              
+              {/* Corner accents - tech style */}
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary opacity-90 pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary opacity-90 pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary opacity-90 pointer-events-none"></div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary opacity-90 pointer-events-none"></div>
+              
+              {/* Scan line effect with digital distortion */}
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/8 to-transparent pointer-events-none"></div>
+              <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(0,0,0,0.12)0%,rgba(0,0,0,0)100%)] bg-[length:100%_3px] pointer-events-none"></div>
+              
+              {/* Tech glow pulses - corner effects */}
+              <div className="absolute top-0 left-0 w-12 h-12 bg-primary/30 rounded-full blur-xl animate-pulse pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-12 h-12 bg-accent/30 rounded-full blur-xl animate-pulse delay-300 pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-12 h-12 bg-accent/30 rounded-full blur-xl animate-pulse delay-600 pointer-events-none"></div>
+              <div className="absolute bottom-0 right-0 w-12 h-12 bg-primary/30 rounded-full blur-xl animate-pulse delay-900 pointer-events-none"></div>
+              
+              {/* Digital data stream effects */}
+              <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-data-flow pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-full h-3 bg-gradient-to-r from-transparent via-accent/50 to-transparent animate-data-flow-reverse pointer-events-none"></div>
+              
+              {/* Vertical data streams on sides */}
+              <div className="absolute top-0 left-0 h-full w-3 bg-gradient-to-b from-transparent via-primary/40 to-transparent animate-data-stream pointer-events-none"></div>
+              <div className="absolute top-0 right-0 h-full w-3 bg-gradient-to-b from-transparent via-accent/40 to-transparent animate-data-stream-reverse pointer-events-none"></div>
+              
+              {/* Monitor screen with padding to avoid content clipping */}
+              <div className="relative p-4">
+                <TerminalComponent 
+                  ref={terminalRef}
+                  className="w-full"
+                  protocol={protocol}
+                  onConnectionStatusChange={handleConnectionStatusChange}
+                />
+              </div>
             </div>
           </div>
         </div>
         
         {/* Author and repository info with glass effect */}
-        <div className="mt-2 glass p-3 flex items-center justify-between text-sm text-muted-foreground relative overflow-hidden rounded-xl">
+        <div className="glass p-3 flex items-center justify-between text-sm text-muted-foreground relative overflow-hidden rounded-xl m-4 mt-0">
           {/* Modern decorative elements */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50 pointer-events-none"></div>
           <div className="absolute -top-1 left-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-pulse-slow pointer-events-none"></div>
@@ -270,7 +298,7 @@ function App() {
             </a>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

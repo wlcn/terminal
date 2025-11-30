@@ -49,24 +49,30 @@ export const TerminalActions: React.FC<TerminalActionsProps> = ({
       <div className="flex items-center space-x-2">
         <Button
           onClick={onConnect}
-          variant={isConnected ? "destructive" : "default"}
+          variant="default"
           size="sm"
-          className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-md ${isConnected 
-            ? 'bg-green-500/30 hover:bg-green-500/40 border-green-500/40' 
-            : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg animate-pulse'}`}
+          className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 relative overflow-hidden ${isConnected 
+            ? 'bg-green-500/30 hover:bg-green-500/40 border-green-500/40 text-white shadow-lg shadow-green-500/30 animate-pulse-slow' 
+            : 'bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 animate-pulse'}`}
           title={isConnected ? 'Disconnect' : 'Connect to terminal'}
         >
-          <Power size={16} className={isConnected ? "text-white" : "text-white"} />
+          <Power size={16} className="relative z-10" />
+          {/* Tech glow effect */}
+          <div className={`absolute inset-0 opacity-30 pointer-events-none ${isConnected 
+            ? 'bg-gradient-to-r from-green-400 via-green-500 to-green-400 animate-glow-shift' 
+            : 'bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 animate-glow-shift'}`}></div>
         </Button>
         
         <Button
           onClick={onToggleFullscreen}
           variant="outline"
           size="sm"
-          className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
+          className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200 relative overflow-hidden border-primary/30 hover:border-primary/50 shadow-md hover:shadow-primary/20"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
-          {isFullscreen ? <Minimize2 size={16} className="text-primary" /> : <Maximize2 size={16} className="text-primary" />}
+          {isFullscreen ? <Minimize2 size={16} className="text-primary relative z-10" /> : <Maximize2 size={16} className="text-primary relative z-10" />}
+          {/* Tech glow effect */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-r from-primary via-accent to-primary animate-glow-shift"></div>
         </Button>
       </div>
       
@@ -75,10 +81,12 @@ export const TerminalActions: React.FC<TerminalActionsProps> = ({
         onClick={onListSessions}
         variant="outline"
         size="sm"
-        className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200"
+        className="h-9 w-9 p-0 bg-background/80 hover:bg-primary/10 hover:scale-105 transition-all duration-200 relative overflow-hidden border-primary/30 hover:border-primary/50 shadow-md hover:shadow-primary/20"
         title="List Sessions"
       >
-        <List size={16} className="text-primary" />
+        <List size={16} className="text-primary relative z-10" />
+        {/* Tech glow effect */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-r from-primary via-accent to-primary animate-glow-shift"></div>
       </Button>
       
       {/* More options dropdown - 作为按钮的直接子元素 */}
@@ -86,16 +94,22 @@ export const TerminalActions: React.FC<TerminalActionsProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 shadow-sm ${isConnected ? 'bg-primary/20 hover:bg-primary/30 border-primary/30' : 'bg-background/80 opacity-50 cursor-not-allowed'}`}
+          className={`h-9 w-9 p-0 hover:scale-105 transition-all duration-200 relative overflow-hidden shadow-sm ${isConnected 
+            ? 'bg-primary/20 hover:bg-primary/30 border-primary/30 hover:border-primary/50 shadow-md hover:shadow-primary/20' 
+            : 'bg-background/80 opacity-50 cursor-not-allowed'}`}
           title={isConnected ? "More options" : "Connect to enable"}
           disabled={!isConnected}
           onClick={() => setShowMoreMenu(!showMoreMenu)}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isConnected ? "text-primary" : "text-muted-foreground"}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`relative z-10 ${isConnected ? "text-primary" : "text-muted-foreground"}`}>
             <circle cx="12" cy="12" r="1"></circle>
             <circle cx="19" cy="12" r="1"></circle>
             <circle cx="5" cy="12" r="1"></circle>
           </svg>
+          {/* Tech glow effect */}
+          {isConnected && (
+            <div className="absolute inset-0 opacity-20 pointer-events-none bg-gradient-to-r from-primary via-accent to-primary animate-glow-shift"></div>
+          )}
         </Button>
         
         {/* Dropdown content - 直接作为按钮的子元素，使用absolute定位 */}

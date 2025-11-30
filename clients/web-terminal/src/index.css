@@ -185,6 +185,28 @@
   100% { transform: translateY(100vh) scaleY(1.2); opacity: 0; }
 }
 
+/* Glow shift animation for buttons */
+@keyframes glow-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Data flow animation for terminal borders */
+@keyframes data-flow {
+  0% { transform: translateX(-100%); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.7; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes data-flow-reverse {
+  0% { transform: translateX(100%); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.7; }
+  100% { transform: translateX(-100%); opacity: 0; }
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 4s ease-in-out infinite;
 }
@@ -195,6 +217,27 @@
 
 .animate-data-stream {
   animation: data-stream linear infinite;
+}
+
+/* New animation classes */
+.animate-glow-shift {
+  animation: glow-shift 2s ease infinite;
+  background-size: 200% 200%;
+}
+
+.animate-gradientShift {
+  animation: gradientShift 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+.animate-data-flow {
+  animation: data-flow 4s linear infinite;
+  background-size: 200% 200%;
+}
+
+.animate-data-flow-reverse {
+  animation: data-flow-reverse 4s linear infinite;
+  background-size: 200% 200%;
 }
 
 /* Enhanced Corner Radius */
